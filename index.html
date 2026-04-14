@@ -239,7 +239,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .kc-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px}
 .kc-goods{font-size:11px;color:var(--text2);margin-bottom:6px}
 .kc-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.kc-site{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace}
+.kc-site{font-size:10px;color:var(--blue);font-family:'DM Mono',monospace;background:var(--blue-dim);border:1px solid rgba(91,156,246,.28);padding:1px 7px;border-radius:10px}
+.kc-note{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace}
 .drop-zone{min-height:40px}
 
 
@@ -1710,13 +1711,35 @@ let eventList = [
 const EV_MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const EV_STYLE={
   '예정':'background:var(--purple-dim);color:var(--purple)',
+  '참여확정':'background:var(--teal-dim);color:var(--teal)',
   '검토중':'background:var(--bg3);color:var(--text3);border:1px solid var(--border)',
   '완료':'background:var(--green-dim);color:var(--green)'
 };
+function parseEventRange(ev){
+  let start = ev.startDate || ev.date || '';
+  let end = ev.endDate || '';
+  if(!end && typeof ev.date === 'string' && ev.date.includes('~')){
+    const parts = ev.date.split('~').map(s=>s.trim());
+    start = parts[0] || start;
+    end = parts[1] || '';
+  }
+  return { start, end: end || start };
+}
+function fmtEventPeriod(start,end){
+  if(!start) return '-';
+  const sd = new Date(start);
+  const ed = new Date(end||start);
+  if(Number.isNaN(sd.getTime()) || Number.isNaN(ed.getTime())) return start===end?start:`${start} ~ ${end}`;
+  const sm = sd.getMonth()+1, sday = sd.getDate();
+  const em = ed.getMonth()+1, eday = ed.getDate();
+  return (sm===em && sday===eday) ? `${sm}월 ${sday}일` : `${sm}월 ${sday}일 ~ ${em}월 ${eday}일`;
+}
 function renderEventListPanel(){
   const el=document.getElementById('event-list-panel'); if(!el)return;
   el.innerHTML=eventList.map((ev,ei)=>{
-    const dd=new Date(ev.date), past=ev.status==='완료';
+    const {start,end} = parseEventRange(ev);
+    const dd=new Date(start), past=ev.status==='완료';
+    const period = fmtEventPeriod(start,end);
     return `<div class="event-row${past?' past':''}">
       <div class="event-date-col">
         <div class="event-month" style="${past?'color:var(--text3)':''}">${EV_MONTHS[dd.getMonth()]}</div>
@@ -1724,7 +1747,7 @@ function renderEventListPanel(){
       </div>
       <div class="event-info">
         <div class="event-name" style="${past?'color:var(--text2)':''}">${ev.name}</div>
-        <div class="event-meta">${ev.booth}${ev.note?' · '+ev.note:''}</div>
+        <div class="event-meta">${period} · ${ev.booth}${ev.note?' · '+ev.note:''}</div>
       </div>
       <span style="${EV_STYLE[ev.status]||''};font-size:10px;padding:3px 8px;border-radius:10px;font-family:'DM Mono';flex-shrink:0">${ev.status}</span>
       <div class="row-actions" style="margin-left:6px;opacity:1">
@@ -2286,6 +2309,7 @@ function saveKanbanFilters(){
   }catch(e){}
 }
 window._kf = window._kf || loadKanbanFilters();
+window._ksort = window._ksort || { '대기':'기본', '제작중':'기본', '재생산':'기본', '완료':'기본' };
 
 function getFilteredTasks(){
   const f = window._kf || { artist:'all', genre:'all' };
@@ -2293,6 +2317,19 @@ function getFilteredTasks(){
     (f.artist === 'all' || t.artist === f.artist) &&
     (f.genre === 'all' || t.genre === f.genre)
   );
+}
+function sortTasksByMode(items, mode){
+  const list = [...items];
+  if(mode==='장르'){
+    return list.sort((a,b)=>String(a.genre||'').localeCompare(String(b.genre||''),'ko') || String(a.artist||'').localeCompare(String(b.artist||''),'ko'));
+  }
+  if(mode==='작가'){
+    return list.sort((a,b)=>String(a.artist||'').localeCompare(String(b.artist||''),'ko') || String(a.goods||'').localeCompare(String(b.goods||''),'ko'));
+  }
+  if(mode==='비고'){
+    return list.sort((a,b)=>String(a.note||'').localeCompare(String(b.note||''),'ko') || String(a.artist||'').localeCompare(String(b.artist||''),'ko'));
+  }
+  return list;
 }
 
 function renderKanbanFilters(){
@@ -2326,6 +2363,11 @@ window.setKanbanGenreFilter = function(genre){
   saveKanbanFilters();
   renderBoard();
 };
+window.setKanbanSort = function(colKey, mode){
+  window._ksort = window._ksort || {};
+  window._ksort[colKey] = mode || '기본';
+  renderBoard();
+};
 
 function renderBoard(){
   const board = document.getElementById('kanban-board');
@@ -2334,13 +2376,19 @@ function renderBoard(){
   const filtered = getFilteredTasks();
   board.innerHTML = '';
   cols.forEach(col=>{
-    const items = filtered.filter(t=>t.status===col.key);
+    const mode = (window._ksort && window._ksort[col.key]) || '기본';
+    const items = sortTasksByMode(filtered.filter(t=>t.status===col.key), mode);
     const wrap = document.createElement('div');
     wrap.className='kanban-col-wrap';
     wrap.innerHTML=`
       <div class="kanban-col-head">
-        <span class="kanban-col-label" style="color:${col.color}">${col.key}</span>
-        <span class="kanban-count">${items.length}</span>
+        <span class="kanban-col-label" style="color:${col.color}">${col.key} <span class="kanban-count">${items.length}</span></span>
+        <select class="form-select" style="width:96px;padding:4px 8px;font-size:11px" onchange="setKanbanSort('${col.key}',this.value)">
+          <option value="기본" ${mode==='기본'?'selected':''}>기본</option>
+          <option value="장르" ${mode==='장르'?'selected':''}>장르별</option>
+          <option value="작가" ${mode==='작가'?'selected':''}>작가별</option>
+          <option value="비고" ${mode==='비고'?'selected':''}>비고별</option>
+        </select>
       </div>
       <div class="drop-zone" id="col-${col.key}">
         ${items.map(t=>`
@@ -2350,7 +2398,7 @@ function renderBoard(){
             <div class="kc-meta">
               <span class="status-tag ${t.genre==='미츄'?'tag-warn':'tag-making'}" style="margin:0;font-size:9px">${t.genre}</span>
               <span class="kc-site">${t.site}</span>
-              ${t.note?`<span class="status-tag tag-good" style="margin:0;font-size:9px">${t.note}</span>`:''}
+              ${t.note?`<span class="kc-note">${t.note}</span>`:''}
             </div></div><div class='row-actions' style='flex-direction:column;gap:3px;opacity:1'><button class='act-btn edit' onclick='event.stopPropagation();editTask(${t.id})' title='수정'>✎</button><button class='act-btn del' onclick='event.stopPropagation();deleteTask(${t.id})' title='삭제'>✕</button></div></div>
           </div>`).join('')}
       </div>`;
@@ -2544,10 +2592,47 @@ function closeAddVendorModal(){document.getElementById('modal-add-vendor').class
 function submitAddVendor(){const name=document.getElementById('av-name').value.trim();if(!name){alert('업체명 입력');return;}const type=document.getElementById('av-type').value;const tags=['아크릴','키링','포토카드'].filter(k=>type.includes(k));if(!tags.length)tags.push('기타');vendors.unshift({name,type,price:+document.getElementById('av-price').value,discount:+document.getElementById('av-discount').value,size:document.getElementById('av-size').value,contact:document.getElementById('av-contact').value,link:document.getElementById('av-link').value,note:document.getElementById('av-note').value,tags});renderVendors(window._vf||'all');if(window.fbSave)fbSave('vendors');closeAddVendorModal();['av-name','av-type','av-size','av-contact','av-link','av-note'].forEach(id=>{document.getElementById(id).value='';});}
 
 // 행사 일정
-function openEventModal(){document.getElementById('ev-date').value=new Date().toISOString().split('T')[0];document.getElementById('modal-event').classList.add('open');}
-function closeEventModal(){document.getElementById('modal-event').classList.remove('open');}
-function submitEventModal(){const name=document.getElementById('ev-name').value.trim(),date=document.getElementById('ev-date').value;if(!name||!date){alert('행사명과 날짜 입력');return;}eventList.unshift({name,date,booth:document.getElementById('ev-booth').value,status:document.getElementById('ev-status').value,note:document.getElementById('ev-note').value});renderEventListPanel();if(window.fbSave)fbSave('eventList');closeEventModal();['ev-name','ev-booth','ev-note'].forEach(id=>{document.getElementById(id).value='';});}
-window.editEvent=function(idx){const ev=eventList[idx];openEdit('일정 수정',mfields({l:'행사명',id:'n',val:ev.name},{l:'날짜',id:'d',type:'date',val:ev.date},{l:'부스',id:'b',val:ev.booth||''},{l:'상태',id:'s',type:'select',val:ev.status,opts:['예정','검토중','완료']},{l:'메모',id:'no',val:ev.note||''}),()=>{eventList[idx]={...ev,name:gv('n'),date:gv('d'),booth:gv('b'),status:gv('s'),note:gv('no')};closeEdit();renderEventListPanel();if(window.fbSave)fbSave('eventList');});};
+function openEventModal(){
+  const today = new Date().toISOString().split('T')[0];
+  openEdit('행사 일정 추가',mfields(
+    {l:'행사명',id:'n',val:''},
+    {l:'상태',id:'s',type:'select',val:'예정',opts:['예정','참여확정','검토중','완료']},
+    {l:'시작일',id:'sd',type:'date',val:today},
+    {l:'종료일',id:'ed',type:'date',val:today},
+    {l:'부스',id:'b',val:''},
+    {l:'메모',id:'no',val:''}
+  ),()=>{
+    const name = gv('n').trim();
+    const startDate = gv('sd');
+    const endDate = gv('ed') || startDate;
+    if(!name || !startDate || !endDate){ alert('행사명과 날짜를 입력해주세요.'); return; }
+    eventList.unshift({name,startDate,endDate,date:startDate,booth:gv('b'),status:gv('s'),note:gv('no')});
+    closeEdit();
+    renderEventListPanel();
+    if(window.fbSave)fbSave('eventList');
+  });
+}
+function closeEventModal(){document.getElementById('modal-event')?.classList.remove('open');}
+function submitEventModal(){}
+window.editEvent=function(idx){
+  const ev=eventList[idx];
+  const {start,end} = parseEventRange(ev);
+  openEdit('일정 수정',mfields(
+    {l:'행사명',id:'n',val:ev.name},
+    {l:'상태',id:'s',type:'select',val:ev.status,opts:['예정','참여확정','검토중','완료']},
+    {l:'시작일',id:'sd',type:'date',val:start},
+    {l:'종료일',id:'ed',type:'date',val:end},
+    {l:'부스',id:'b',val:ev.booth||''},
+    {l:'메모',id:'no',val:ev.note||''}
+  ),()=>{
+    const startDate = gv('sd');
+    const endDate = gv('ed') || startDate;
+    eventList[idx]={...ev,name:gv('n'),startDate,endDate,date:startDate,booth:gv('b'),status:gv('s'),note:gv('no')};
+    closeEdit();
+    renderEventListPanel();
+    if(window.fbSave)fbSave('eventList');
+  });
+};
 window.deleteEvent=function(idx){openConfirm(`<b>${eventList[idx].name}</b> 일정 삭제?`,()=>{eventList.splice(idx,1);renderEventListPanel();if(window.fbSave)fbSave('eventList');});};
 
 // 행사 손익 추가
