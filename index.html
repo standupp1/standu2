@@ -56,6 +56,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .kpi-value{font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.8px;line-height:1;font-family:'DM Mono',monospace}
 .kpi-value span{font-size:13px;font-weight:400;color:var(--text2);margin-right:2px;font-family:'Noto Sans KR',sans-serif}
 #balance-display{font-size:inherit;font-weight:inherit;font-family:inherit;color:inherit}
+#capital-total-display{font-size:inherit;font-weight:inherit;font-family:inherit;color:inherit}
 .share-amount{font-family:'DM Mono';font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
 .share-amount-value{font-family:'DM Mono';font-size:14px;font-weight:700;color:var(--text)}
 .share-total{margin-top:12px;padding:10px 0 2px;display:flex;justify-content:space-between;border-top:1px solid var(--border)}
@@ -1820,7 +1821,26 @@ window.editMemberShare = function(idx){
   });
 };
 
+function recalcTxBalances(){
+  let runningBalance = 0;
+  for(let i = txData.length - 1; i >= 0; i--){
+    const row = txData[i];
+    const amount = Math.max(0, Math.round(Number(row.amount) || 0));
+    row.amount = amount;
+    runningBalance += row.type === 'in' ? amount : -amount;
+    row.balance = runningBalance;
+  }
+}
+
+function syncAccountingBalances(){
+  const latestBalance = txData.length ? (Number(txData[0].balance) || 0) : 0;
+  const topBalance = document.getElementById('balance-display');
+  if(topBalance) topBalance.textContent = latestBalance.toLocaleString();
+}
+
 function renderTable(filter){
+  recalcTxBalances();
+  syncAccountingBalances();
   const tbody = document.getElementById('tx-tbody');
   const rows = txData
     .map((r, idx) => ({ r, idx }))
@@ -1859,10 +1879,8 @@ function submitTx(){
   const amount = parseInt(document.getElementById('m-amount').value)||0;
   const note = document.getElementById('m-note').value.trim();
   if(!desc||!amount){alert('내용과 금액을 입력해주세요.');return;}
-  const lastBal = txData[0]?.balance||0;
-  const newBal = type==='in' ? lastBal+amount : lastBal-amount;
-  txData.unshift({date,desc,note,type,amount,balance:newBal});
-  document.getElementById('balance-display').textContent = newBal.toLocaleString();
+  txData.unshift({date,desc,note,type,amount,balance:0});
+  renderTable(window._tf||'all');
   if(window.fbSave)fbSave('txData');
   closeModal();
   document.getElementById('m-desc').value='';
