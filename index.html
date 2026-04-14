@@ -157,6 +157,10 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .event-cal{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px}
 .event-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .event-cal-title{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace}
+.event-cal-nav{display:flex;align-items:center;gap:6px}
+.event-cal-nav-btn{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px}
+.event-cal-nav-btn:hover{border-color:var(--border2);color:var(--text)}
+.event-cal-now{font-size:10px;padding:3px 7px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text3);font-family:'DM Mono',monospace;cursor:pointer}
 .event-cal-week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
 .event-cal-wd{font-size:9px;color:var(--text3);text-align:center;font-family:'DM Mono',monospace}
 .event-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
@@ -1749,8 +1753,11 @@ function fmtEventPeriod(start,end){
 function renderEventListPanel(){
   const el=document.getElementById('event-list-panel'); if(!el)return;
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  if(typeof window._eventCalYM !== 'number'){
+    window._eventCalYM = now.getFullYear() * 12 + now.getMonth();
+  }
+  const year = Math.floor(window._eventCalYM / 12);
+  const month = window._eventCalYM % 12;
   const first = new Date(year, month, 1);
   const firstWeekday = first.getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -1801,6 +1808,11 @@ function renderEventListPanel(){
     <div class="event-cal">
       <div class="event-cal-head">
         <div class="event-cal-title">${year}.${String(month+1).padStart(2,'0')} CALENDAR</div>
+        <div class="event-cal-nav">
+          <button class="event-cal-nav-btn" onclick="shiftEventCalendar(-1)" title="이전 달">‹</button>
+          <button class="event-cal-now" onclick="resetEventCalendar()">이번달</button>
+          <button class="event-cal-nav-btn" onclick="shiftEventCalendar(1)" title="다음 달">›</button>
+        </div>
       </div>
       <div class="event-cal-week">${weekdayLabels.map(w=>`<div class="event-cal-wd">${w}</div>`).join('')}</div>
       <div class="event-cal-grid">${cells.join('')}</div>
@@ -1825,6 +1837,15 @@ function renderEventListPanel(){
     </div>
   `;
 }
+window.shiftEventCalendar = function(step){
+  window._eventCalYM = (typeof window._eventCalYM === 'number' ? window._eventCalYM : (new Date().getFullYear()*12 + new Date().getMonth())) + step;
+  renderEventListPanel();
+};
+window.resetEventCalendar = function(){
+  const now = new Date();
+  window._eventCalYM = now.getFullYear() * 12 + now.getMonth();
+  renderEventListPanel();
+};
 
 
 function renderRecruitList() {
