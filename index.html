@@ -154,6 +154,18 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .tag-upcoming{background:var(--purple-dim);color:var(--purple)}
 .tag-planning{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
 .tag-done{background:var(--green-dim);color:var(--green)}
+.event-cal{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px}
+.event-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.event-cal-title{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace}
+.event-cal-week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.event-cal-wd{font-size:9px;color:var(--text3);text-align:center;font-family:'DM Mono',monospace}
+.event-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.event-cal-cell{min-height:52px;border:1px solid var(--border);border-radius:8px;padding:4px;display:flex;flex-direction:column;gap:3px}
+.event-cal-cell.muted{opacity:.45}
+.event-cal-cell.today{border-color:rgba(240,168,48,.45);background:rgba(240,168,48,.08)}
+.event-cal-day{font-size:10px;color:var(--text2);font-family:'DM Mono',monospace}
+.event-cal-pill{font-size:9px;line-height:1.2;padding:2px 4px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event-month-list{display:flex;flex-direction:column;gap:4px}
 .tx-table{width:100%;border-collapse:collapse}
 .tx-table th{font-size:11px;color:var(--text3);font-weight:500;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);letter-spacing:.5px}
 .tx-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
@@ -1736,26 +1748,82 @@ function fmtEventPeriod(start,end){
 }
 function renderEventListPanel(){
   const el=document.getElementById('event-list-panel'); if(!el)return;
-  el.innerHTML=eventList.map((ev,ei)=>{
-    const {start,end} = parseEventRange(ev);
-    const dd=new Date(start), past=ev.status==='완료';
-    const period = fmtEventPeriod(start,end);
-    return `<div class="event-row${past?' past':''}">
-      <div class="event-date-col">
-        <div class="event-month" style="${past?'color:var(--text3)':''}">${EV_MONTHS[dd.getMonth()]}</div>
-        <div class="event-day" style="${past?'color:var(--text3)':''}">${dd.getDate()}</div>
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const first = new Date(year, month, 1);
+  const firstWeekday = first.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
+  const weekdayLabels = ['일','월','화','수','목','금','토'];
+  const dayMap = {};
+
+  eventList.forEach((ev, ei) => {
+    const {start, end} = parseEventRange(ev);
+    const s = new Date(start);
+    const e = new Date(end || start);
+    if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return;
+    for(let d = new Date(s); d <= e; d.setDate(d.getDate()+1)){
+      if(d.getFullYear() !== year || d.getMonth() !== month) continue;
+      const key = d.getDate();
+      if(!dayMap[key]) dayMap[key] = [];
+      dayMap[key].push({ei, ev});
+    }
+  });
+
+  const cells = [];
+  for(let i=0;i<42;i++){
+    const dayNum = i - firstWeekday + 1;
+    const inMonth = dayNum >= 1 && dayNum <= daysInMonth;
+    const shownDay = inMonth ? dayNum : (dayNum < 1 ? prevMonthDays + dayNum : dayNum - daysInMonth);
+    const today = inMonth && dayNum === now.getDate();
+    const events = inMonth ? (dayMap[dayNum] || []) : [];
+    cells.push(`<div class="event-cal-cell ${inMonth?'':'muted'} ${today?'today':''}">
+      <div class="event-cal-day">${shownDay}</div>
+      ${events.slice(0,2).map(({ev})=>`<div class="event-cal-pill" style="${EV_STYLE[ev.status]||'background:var(--bg2);color:var(--text2)'}">${ev.name}</div>`).join('')}
+      ${events.length>2?`<div class="event-cal-pill" style="background:var(--bg2);color:var(--text3)">+${events.length-2}</div>`:''}
+    </div>`);
+  }
+
+  const monthEvents = eventList
+    .map((ev, ei)=>({ev, ei}))
+    .filter(({ev})=>{
+      const {start,end} = parseEventRange(ev);
+      const s = new Date(start);
+      const e = new Date(end || start);
+      if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return false;
+      const mStart = new Date(year, month, 1);
+      const mEnd = new Date(year, month + 1, 0, 23, 59, 59);
+      return s <= mEnd && e >= mStart;
+    });
+
+  el.innerHTML = `
+    <div class="event-cal">
+      <div class="event-cal-head">
+        <div class="event-cal-title">${year}.${String(month+1).padStart(2,'0')} CALENDAR</div>
       </div>
-      <div class="event-info">
-        <div class="event-name" style="${past?'color:var(--text2)':''}">${ev.name}</div>
-        <div class="event-meta">${period} · ${ev.booth}${ev.note?' · '+ev.note:''}</div>
-      </div>
-      <span style="${EV_STYLE[ev.status]||''};font-size:10px;padding:3px 8px;border-radius:10px;font-family:'DM Mono';flex-shrink:0">${ev.status}</span>
-      <div class="row-actions" style="margin-left:6px;opacity:1">
-        <button class="act-btn edit" onclick="editEvent(${ei})" title="수정">✎</button>
-        <button class="act-btn del" onclick="deleteEvent(${ei})" title="삭제">✕</button>
-      </div>
-    </div>`;
-  }).join('');
+      <div class="event-cal-week">${weekdayLabels.map(w=>`<div class="event-cal-wd">${w}</div>`).join('')}</div>
+      <div class="event-cal-grid">${cells.join('')}</div>
+    </div>
+    <div class="event-month-list">
+      ${monthEvents.map(({ev,ei})=>{
+        const {start,end} = parseEventRange(ev);
+        const period = fmtEventPeriod(start,end);
+        const past = ev.status==='완료';
+        return `<div class="event-row${past?' past':''}">
+          <div class="event-info">
+            <div class="event-name" style="${past?'color:var(--text2)':''}">${ev.name}</div>
+            <div class="event-meta">${period} · ${ev.booth}${ev.note?' · '+ev.note:''}</div>
+          </div>
+          <span style="${EV_STYLE[ev.status]||''};font-size:10px;padding:3px 8px;border-radius:10px;font-family:'DM Mono';flex-shrink:0">${ev.status}</span>
+          <div class="row-actions" style="margin-left:6px;opacity:1">
+            <button class="act-btn edit" onclick="editEvent(${ei})" title="수정">✎</button>
+            <button class="act-btn del" onclick="deleteEvent(${ei})" title="삭제">✕</button>
+          </div>
+        </div>`;
+      }).join('') || `<div style="font-size:12px;color:var(--text3);padding:6px 2px">이번 달 등록된 일정이 없습니다.</div>`}
+    </div>
+  `;
 }
 
 
