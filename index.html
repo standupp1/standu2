@@ -55,6 +55,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .kpi-label{font-size:11px;color:var(--text3);margin-bottom:10px;letter-spacing:.3px}
 .kpi-value{font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.8px;line-height:1;font-family:'DM Mono',monospace}
 .kpi-value span{font-size:13px;font-weight:400;color:var(--text2);margin-right:2px;font-family:'Noto Sans KR',sans-serif}
+#balance-display{font-size:inherit;font-weight:inherit;font-family:inherit;color:inherit}
 .kpi-change{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-family:'DM Mono',monospace;margin-top:8px;padding:2px 6px;border-radius:4px}
 .kpi-change.up{background:var(--green-dim);color:var(--green)}
 .kpi-change.neutral{background:var(--bg3);color:var(--text3)}
@@ -1144,10 +1145,11 @@ PAGES['accounting'] = `<div class="main-header">
       <thead><tr>
         <th style="width:110px">날짜</th>
         <th>내용</th>
-        <th style="width:90px">참고</th>
+        <th style="width:72px">참고</th>
         <th style="width:110px;text-align:right">입금</th>
         <th style="width:110px;text-align:right">지출</th>
-        <th style="text-align:right">잔고</th><th style="width:70px"></th>
+        <th style="width:70px"></th>
+        <th style="text-align:right">잔고</th>
       </tr></thead>
       <tbody id="tx-tbody"></tbody>
     </table>
@@ -1247,6 +1249,7 @@ PAGES['cost'] = `<div class="main-header">
       <button class="filter-btn on" onclick="filterCost('all',this)">전체</button>
       <button class="filter-btn" onclick="filterCost('danger',this)">⚠ 위험</button>
       <button class="filter-btn" onclick="filterCost('good',this)">● 좋음</button>
+      <button class="btn btn-primary" onclick="openAddCostModal()" style="font-size:11px;padding:5px 12px;margin-left:6px">+ 추가</button>
     </div>
   </div>
   <div class="panel-body" style="padding:0">
@@ -1790,19 +1793,20 @@ let currentFilter = 'all';
 
 function renderTable(filter){
   const tbody = document.getElementById('tx-tbody');
-  const rows = filter==='all' ? txData : txData.filter(r=>r.type===filter);
-  tbody.innerHTML = rows.map((r,i)=>{
-  const idx=txData.indexOf(r);
+  const rows = txData
+    .map((r, idx) => ({ r, idx }))
+    .filter(({ r }) => filter === 'all' ? true : r.type === filter);
+  tbody.innerHTML = rows.map(({ r, idx })=>{
   return `
     <tr data-type="${r.type}">
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.date}</td>
       <td style="font-weight:500">${r.desc}</td>
-      <td style="font-size:12px;color:var(--text3)">${r.note}</td>
+      <td style="font-size:12px;color:var(--text3);max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.note}</td>
       <td style="text-align:right;font-family:'DM Mono';color:var(--teal)">${r.type==='in'?'₩'+r.amount.toLocaleString():''}</td>
       <td style="text-align:right;font-family:'DM Mono';color:var(--coral)">${r.type==='out'?'₩'+r.amount.toLocaleString():''}</td>
+      <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editTx(${idx})' title='수정'>✎</button><button class='act-btn del' onclick='deleteTx(${idx})' title='삭제'>✕</button></div></td>
       <td style="text-align:right;font-family:'DM Mono';font-size:12px;padding-right:20px;color:var(--text2)">₩${r.balance.toLocaleString()}</td>
-    </tr>
-    <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editTx(${idx})' title='수정'>✎</button><button class='act-btn del' onclick='deleteTx(${idx})' title='삭제'>✕</button></div></td></tr>`;
+    </tr>`;
 }).join('');
 }
 
@@ -1810,6 +1814,7 @@ function filterTx(type, btn){
   currentFilter = type;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
+  renderTable(type);
 }
 
 function openModal(){
@@ -1961,11 +1966,14 @@ var costData = [
 ];
 
 function renderCost(filter){
-  const data = filter==='all' ? costData
-    : filter==='danger' ? costData.filter(r=>r.status==='위험')
-    : costData.filter(r=>r.status==='좋음');
-  document.getElementById('cost-tbody').innerHTML = data.map(r=>{
-    const ci=costData.indexOf(r);
+  const data = costData
+    .map((r, ci) => ({ r, ci }))
+    .filter(({ r }) => filter === 'all'
+      ? true
+      : filter === 'danger'
+        ? r.status === '위험'
+        : r.status === '좋음');
+  document.getElementById('cost-tbody').innerHTML = data.map(({ r, ci })=>{
     const rate = r.cost/r.price;
     const pct = Math.round(rate*100);
     const totalCost = r.qty*r.cost;
@@ -1991,6 +1999,7 @@ function renderCost(filter){
 function filterCost(f, btn){
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
+  renderCost(f);
 }
 
 function calcSim(){
@@ -2046,8 +2055,10 @@ var orderData = [
 ];
 const artistColor={'닐마':'var(--coral)','맹이':'var(--teal)','양초':'var(--amber)','하쿠야':'var(--purple)'};
 function renderOrders(filter){
-  const data = filter==='all'?orderData:orderData.filter(r=>r.artist===filter);
-  document.getElementById('order-tbody').innerHTML = data.map((r,ri)=>{
+  const data = orderData
+    .map((r, ri) => ({ r, ri }))
+    .filter(({ r }) => filter==='all' ? true : r.artist===filter);
+  document.getElementById('order-tbody').innerHTML = data.map(({ r, ri })=>{
     const ac = artistColor[r.artist]||'var(--text2)';
     return `<tr>
       <td><span style="font-weight:600;color:${ac}">${r.artist}</span></td>
@@ -2064,6 +2075,7 @@ function renderOrders(filter){
 function filterOrder(f,btn){
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
+  renderOrders(f);
 }
 
 // ── inventory ──────────────
@@ -2092,9 +2104,10 @@ var invData = [
 const acInv={'양초':'var(--amber)','맹이':'var(--teal)'};
 
 function renderInv(filter){
-  const data = filter==='all'?invData:invData.filter(r=>r.artist===filter);
-  document.getElementById('inv-tbody').innerHTML = data.map(r=>{
-    const ii=invData.indexOf(r);
+  const data = invData
+    .map((r, ii) => ({ r, ii }))
+    .filter(({ r }) => filter==='all' ? true : r.artist===filter);
+  document.getElementById('inv-tbody').innerHTML = data.map(({ r, ii })=>{
     const color = acInv[r.artist]||'var(--text2)';
     const stockValue = r.stock * r.cost;
     const stockColor = r.stock<=0?'var(--coral)':r.stock<=2?'var(--amber)':'var(--blue)';
@@ -2904,6 +2917,7 @@ function syncSalesMetaFromInventory(eventKey, artist) {
 // { eventKey: { name, date, manager, artists: { artistName: [ {name, prod, sample, presale, onsite, gift, price, distPct, note} ] } } }
 var salesData = {};
 const SALES_LOCAL_KEY = 'standup_app_sales_data';
+let salesLocalSaveTimer = null;
 
 function loadSalesDataLocal() {
   try {
@@ -2925,6 +2939,12 @@ function saveSalesDataLocal() {
   } catch (e) {
     console.error('saveSalesDataLocal:', e);
   }
+}
+function scheduleSalesDataLocalSave(delay = 180) {
+  clearTimeout(salesLocalSaveTimer);
+  salesLocalSaveTimer = setTimeout(() => {
+    saveSalesDataLocal();
+  }, delay);
 }
 
 async function loadSalesDataFb() {
@@ -3806,7 +3826,7 @@ function updateSalesField(eventKey, artist, idx, field, value) {
     if (cells[10]) cells[10].textContent = '₩' + dist.toLocaleString();
   }
   updateSalesFooter(eventKey, artist);
-  saveSalesDataLocal();
+  scheduleSalesDataLocalSave();
 }
 function updateSalesFooter(eventKey, artist) {
   const items = salesData[eventKey]?.artists[artist] || [];
