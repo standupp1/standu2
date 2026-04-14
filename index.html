@@ -233,6 +233,9 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .kanban-card-full{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;position:relative}
 .kanban-card-full:hover{border-color:var(--border2);transform:translateY(-1px)}
 .kanban-card-full:last-child{margin-bottom:0}
+.kanban-filter-wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.kanban-filter-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kanban-filter-label{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
 .kc-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px}
 .kc-goods{font-size:11px;color:var(--text2);margin-bottom:6px}
 .kc-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
@@ -1326,6 +1329,11 @@ PAGES['kanban'] = `<div class="main-header">
   <div class="kpi-card teal"><div class="kpi-label">완료</div><div class="kpi-value" id="cnt-done">0</div><div class="kpi-change up">↑ 완료</div></div>
 </div>
 
+<div class="kanban-filter-wrap">
+  <div class="kanban-filter-group" id="kanban-artist-filters"></div>
+  <div class="kanban-filter-group" id="kanban-genre-filters"></div>
+</div>
+
 <div class="kanban-board" id="kanban-board"></div>`;
 PAGES['artists'] = `<div class="main-header">
   <div>
@@ -2258,12 +2266,75 @@ const cols = [
   {key:'완료', color:'var(--green)', border:'rgba(91,207,126,.25)'},
 ];
 const acKanban={'닐마':'var(--coral)','맹이':'var(--teal)','양초':'var(--amber)','하쿠야':'var(--purple)'};
+const KANBAN_FILTER_KEY = 'standup_kanban_filters';
+function loadKanbanFilters(){
+  try{
+    const raw = localStorage.getItem(KANBAN_FILTER_KEY);
+    if(!raw) return { artist:'all', genre:'all' };
+    const parsed = JSON.parse(raw);
+    return {
+      artist: parsed?.artist || 'all',
+      genre: parsed?.genre || 'all'
+    };
+  }catch(e){
+    return { artist:'all', genre:'all' };
+  }
+}
+function saveKanbanFilters(){
+  try{
+    localStorage.setItem(KANBAN_FILTER_KEY, JSON.stringify(window._kf || { artist:'all', genre:'all' }));
+  }catch(e){}
+}
+window._kf = window._kf || loadKanbanFilters();
+
+function getFilteredTasks(){
+  const f = window._kf || { artist:'all', genre:'all' };
+  return tasks.filter(t =>
+    (f.artist === 'all' || t.artist === f.artist) &&
+    (f.genre === 'all' || t.genre === f.genre)
+  );
+}
+
+function renderKanbanFilters(){
+  const artistWrap = document.getElementById('kanban-artist-filters');
+  const genreWrap = document.getElementById('kanban-genre-filters');
+  if(!artistWrap || !genreWrap) return;
+  const artists = [...new Set(tasks.map(t=>t.artist))];
+  const f = window._kf || { artist:'all', genre:'all' };
+
+  artistWrap.innerHTML =
+    `<span class="kanban-filter-label">작가</span>` +
+    `<button class="filter-btn ${f.artist==='all'?'on':''}" onclick="setKanbanArtistFilter('all')">전체</button>` +
+    artists.map(a=>`<button class="filter-btn ${f.artist===a?'on':''}" onclick="setKanbanArtistFilter('${a}')">${a}</button>`).join('');
+
+  genreWrap.innerHTML =
+    `<span class="kanban-filter-label">장르</span>` +
+    `<button class="filter-btn ${f.genre==='all'?'on':''}" onclick="setKanbanGenreFilter('all')">전체</button>` +
+    `<button class="filter-btn ${f.genre==='미츄'?'on':''}" onclick="setKanbanGenreFilter('미츄')">미츄</button>` +
+    `<button class="filter-btn ${f.genre==='스텔라이브'?'on':''}" onclick="setKanbanGenreFilter('스텔라이브')">스텔라이브</button>`;
+}
+
+window.setKanbanArtistFilter = function(artist){
+  window._kf = window._kf || { artist:'all', genre:'all' };
+  window._kf.artist = artist;
+  saveKanbanFilters();
+  renderBoard();
+};
+window.setKanbanGenreFilter = function(genre){
+  window._kf = window._kf || { artist:'all', genre:'all' };
+  window._kf.genre = genre;
+  saveKanbanFilters();
+  renderBoard();
+};
 
 function renderBoard(){
   const board = document.getElementById('kanban-board');
+  if(!board) return;
+  renderKanbanFilters();
+  const filtered = getFilteredTasks();
   board.innerHTML = '';
   cols.forEach(col=>{
-    const items = tasks.filter(t=>t.status===col.key);
+    const items = filtered.filter(t=>t.status===col.key);
     const wrap = document.createElement('div');
     wrap.className='kanban-col-wrap';
     wrap.innerHTML=`
@@ -2285,10 +2356,10 @@ function renderBoard(){
       </div>`;
     board.appendChild(wrap);
   });
-  document.getElementById('cnt-wait').textContent = tasks.filter(t=>t.status==='대기').length;
-  document.getElementById('cnt-wip').textContent = tasks.filter(t=>t.status==='제작중').length;
-  document.getElementById('cnt-repro').textContent = tasks.filter(t=>t.status==='재생산').length;
-  document.getElementById('cnt-done').textContent = tasks.filter(t=>t.status==='완료').length;
+  document.getElementById('cnt-wait').textContent = filtered.filter(t=>t.status==='대기').length;
+  document.getElementById('cnt-wip').textContent = filtered.filter(t=>t.status==='제작중').length;
+  document.getElementById('cnt-repro').textContent = filtered.filter(t=>t.status==='재생산').length;
+  document.getElementById('cnt-done').textContent = filtered.filter(t=>t.status==='완료').length;
 
   // 상태 변경 클릭
   document.querySelectorAll('.kanban-card-full').forEach(card=>{
@@ -2298,6 +2369,8 @@ function renderBoard(){
       const order = ['대기','제작중','재생산','완료'];
       const next = order[(order.indexOf(task.status)+1)%order.length];
       task.status = next;
+      renderBoard();
+      if(window.fbSave)fbSave('tasks');
     });
   });
 }
