@@ -864,8 +864,8 @@ PAGES['dashboard'] = `<div class="main-header">
   <div class="kpi-grid">
     <div class="kpi-card amber">
       <div class="kpi-label">모임통장 잔고</div>
-      <div class="kpi-value"><span>₩</span>1,045,934</div>
-      <div class="kpi-change neutral">최근 업데이트 26/02</div>
+      <div class="kpi-value"><span>₩</span><span id="dash-balance-display">1,045,934</span></div>
+      <div class="kpi-change neutral" id="dash-balance-updated">최근 업데이트 -</div>
     </div>
     <div class="kpi-card teal">
       <div class="kpi-label">최근 행사 손익 (코믹월드)</div>
@@ -909,16 +909,10 @@ PAGES['dashboard'] = `<div class="main-header">
       </div>
       <div class="panel-body" style="padding:10px 12px">
         <div class="balance-display">
-          <div><div class="balance-label">현재 잔고 (토스뱅크)</div><div class="balance-value">₩1,045,934</div></div>
-          <div style="text-align:right"><div class="balance-label">자본금 출자</div><div class="balance-sub">₩2,970,000</div></div>
+          <div><div class="balance-label">현재 잔고 (토스뱅크)</div><div class="balance-value" id="dash-panel-balance-value">₩1,045,934</div></div>
+          <div style="text-align:right"><div class="balance-label">자본금 출자</div><div class="balance-sub" id="dash-panel-capital-value">₩2,970,000</div></div>
         </div>
-        <div class="tx-list" id="tx-list">
-          <div class="tx-item"><div class="tx-icon" style="background:var(--coral-dim)">💸</div><div class="tx-info"><div class="tx-name">굿즈 제작비용 — 힙덕 신규</div><div class="tx-date">26/02/04</div></div><div class="tx-amount out">-563,300</div></div>
-          <div class="tx-item"><div class="tx-icon" style="background:var(--coral-dim)">💸</div><div class="tx-info"><div class="tx-name">굿즈 제작비용 — 힙덕 재생산</div><div class="tx-date">26/02/02</div></div><div class="tx-amount out">-1,082,900</div></div>
-          <div class="tx-item"><div class="tx-icon" style="background:var(--teal-dim)">💰</div><div class="tx-info"><div class="tx-name">오결제 비용 상계</div><div class="tx-date">26/01</div></div><div class="tx-amount in">+8,000</div></div>
-          <div class="tx-item"><div class="tx-icon" style="background:var(--coral-dim)">💸</div><div class="tx-info"><div class="tx-name">행사 신청비용 — 코믹월드</div><div class="tx-date">26/01/14</div></div><div class="tx-amount out">-226,000</div></div>
-          <div class="tx-item"><div class="tx-icon" style="background:var(--teal-dim)">💰</div><div class="tx-info"><div class="tx-name">레드프린팅 환불</div><div class="tx-date">26/01/20</div></div><div class="tx-amount in">+11,990</div></div>
-        </div>
+        <div class="tx-list" id="tx-list"></div>
       </div>
     </div>
 
@@ -1435,6 +1429,7 @@ PAGE_INITS['dashboard'] = function(){
   if(_de) _de.textContent=`${_now.getFullYear()}년 ${_now.getMonth()+1}월 ${_now.getDate()}일 (${_days[_now.getDay()]})`;
   const _txd=document.getElementById('tx-date');
   if(_txd) _txd.value=_now.toISOString().split('T')[0];
+  renderDashboardAccounting();
   renderEventListPanel();
 
 };
@@ -1832,16 +1827,61 @@ function recalcTxBalances(){
   }
 }
 
+function formatTxDateShort(dateStr){
+  if(!dateStr) return '-';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  const yy = String(d.getFullYear()).slice(-2);
+  const mm = String(d.getMonth() + 1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yy}/${mm}/${dd}`;
+}
+
+function renderDashboardAccounting(){
+  const dashBalance = document.getElementById('dash-balance-display');
+  const dashUpdated = document.getElementById('dash-balance-updated');
+  const panelBalance = document.getElementById('dash-panel-balance-value');
+  const panelCapital = document.getElementById('dash-panel-capital-value');
+  const list = document.getElementById('tx-list');
+  if(!dashBalance && !panelBalance && !panelCapital && !list) return;
+
+  recalcTxBalances();
+  const latestBalance = txData.length ? (Number(txData[0].balance) || 0) : 0;
+  const latestDate = txData.length ? formatTxDateShort(txData[0].date) : '-';
+  const capitalTotal = memberShares.reduce((sum, m)=>sum + (Number(m.amount)||0), 0);
+
+  if(dashBalance) dashBalance.textContent = latestBalance.toLocaleString();
+  if(dashUpdated) dashUpdated.textContent = `최근 업데이트 ${latestDate}`;
+  if(panelBalance) panelBalance.textContent = `₩${latestBalance.toLocaleString()}`;
+  if(panelCapital) panelCapital.textContent = `₩${capitalTotal.toLocaleString()}`;
+
+  if(list){
+    const recentRows = txData.slice(0,5);
+    list.innerHTML = recentRows.map((r)=>`
+      <div class="tx-item">
+        <div class="tx-icon" style="background:${r.type==='out'?'var(--coral-dim)':'var(--teal-dim)'}">${r.type==='out'?'💸':'💰'}</div>
+        <div class="tx-info">
+          <div class="tx-name">${r.note ? `${r.desc} — ${r.note}` : r.desc}</div>
+          <div class="tx-date">${formatTxDateShort(r.date)}</div>
+        </div>
+        <div class="tx-amount ${r.type==='out'?'out':'in'}">${r.type==='out'?'-':'+'}${r.amount.toLocaleString()}</div>
+      </div>
+    `).join('');
+  }
+}
+
 function syncAccountingBalances(){
   const latestBalance = txData.length ? (Number(txData[0].balance) || 0) : 0;
   const topBalance = document.getElementById('balance-display');
   if(topBalance) topBalance.textContent = latestBalance.toLocaleString();
+  renderDashboardAccounting();
 }
 
 function renderTable(filter){
   recalcTxBalances();
   syncAccountingBalances();
   const tbody = document.getElementById('tx-tbody');
+  if(!tbody) return;
   const rows = txData
     .map((r, idx) => ({ r, idx }))
     .filter(({ r }) => filter === 'all' ? true : r.type === filter);
@@ -2336,16 +2376,13 @@ function addTransaction() {
   const type = document.getElementById('tx-type').value;
   const desc = document.getElementById('tx-desc').value.trim();
   const amount = parseInt(document.getElementById('tx-amount').value) || 0;
+  const note = document.getElementById('tx-note').value.trim();
   if (!desc || !amount) { alert('내용과 금액을 입력해주세요.'); return; }
-  const list = document.getElementById('tx-list');
-  const item = document.createElement('div');
-  item.className = 'tx-item';
-  item.style.animation = 'fadeUp .3s ease both';
-  item.innerHTML = `
-    <div class="tx-icon" style="background:${type==='out'?'var(--coral-dim)':'var(--teal-dim)'}">${type==='out'?'💸':'💰'}</div>
-    <div class="tx-info"><div class="tx-name">${desc}</div><div class="tx-date">${date}</div></div>
-    <div class="tx-amount ${type==='out'?'out':'in'}">${type==='out'?'-':'+'}${amount.toLocaleString()}</div>`;
-  list.insertBefore(item, list.firstChild);
+  txData.unshift({date,type,desc,note,amount,balance:0});
+  recalcTxBalances();
+  renderDashboardAccounting();
+  if(window.currentPage==='accounting') renderTable(window._tf||'all');
+  if(window.fbSave)fbSave('txData');
   document.getElementById('tx-desc').value = '';
   document.getElementById('tx-amount').value = '';
   document.getElementById('tx-note').value = '';
