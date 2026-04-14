@@ -1318,7 +1318,7 @@ PAGES['inventory'] = `<div class="main-header">
   <div class="panel-body" style="padding:0">
     <table class="inv-table">
       <thead><tr>
-        <th>작가</th><th>굿즈명</th><th style="text-align:center">생산</th><th style="text-align:right">생산단가</th><th style="text-align:right">판매가</th><th style="text-align:center">실재고</th><th style="text-align:right">재고 금액</th><th style="width:70px"></th>
+        <th>작가</th><th>굿즈명</th><th style="text-align:center">생산</th><th style="text-align:right">생산단가</th><th style="text-align:right">판매가</th><th style="text-align:center">실재고</th><th style="text-align:right">재고 금액</th><th style="text-align:center">배분율</th><th style="text-align:center">정산완료수량</th><th style="width:70px"></th>
       </tr></thead>
       <tbody id="inv-tbody"></tbody>
     </table>
@@ -2105,6 +2105,8 @@ function renderInv(filter){
       <td style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--blue)">₩${(r.price||0).toLocaleString()}</td>
       <td style="text-align:center;font-family:'DM Mono';font-weight:700;color:${stockColor}">${r.stock}</td>
       <td style="text-align:right;font-family:'DM Mono';font-weight:600;color:var(--blue)">₩${stockValue.toLocaleString()}</td>
+      <td style="text-align:center;font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.distPct||30}%</td>
+      <td style="text-align:center;font-family:'DM Mono';font-size:12px;color:var(--teal)">${r.sold||0}</td>
       <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editInv(${ii})' title='수정'>✎</button><button class='act-btn del' onclick='deleteInv(${ii})' title='삭제'>✕</button></div></td></tr>`;
   }).join('');
 
@@ -2348,7 +2350,7 @@ window.editInv=function(idx){const r=invData[idx];openEdit('재고/판매 수정
 window.deleteInv=function(idx){openConfirm(`<b>${invData[idx].name}</b> 삭제?`,()=>{invData.splice(idx,1);renderInv(window._iv||'all');if(window.fbSave)fbSave('invData');});};
 function openAddInvModal(){document.getElementById('modal-add-inv').classList.add('open');}
 function closeAddInvModal(){document.getElementById('modal-add-inv').classList.remove('open');}
-function submitAddInv(){const name=document.getElementById('ai-name').value.trim();if(!name){alert('굿즈명 입력');return;}invData.unshift({artist:document.getElementById('ai-artist').value,name,prod:+document.getElementById('ai-prod').value,cost:+document.getElementById('ai-cost').value,price:+(document.getElementById('ai-price')?.value||0),stock:+document.getElementById('ai-stock').value,sold:0,distPct:0});renderInv(window._iv||'all');if(window.fbSave)fbSave('invData');closeAddInvModal();document.getElementById('ai-name').value='';}
+function submitAddInv(){const name=document.getElementById('ai-name').value.trim();if(!name){alert('굿즈명 입력');return;}invData.unshift({artist:document.getElementById('ai-artist').value,name,prod:+document.getElementById('ai-prod').value,cost:+document.getElementById('ai-cost').value,price:+(document.getElementById('ai-price')?.value||0),stock:+document.getElementById('ai-stock').value,sold:+(document.getElementById('ai-sold')?.value||0),distPct:+(document.getElementById('ai-dist')?.value||30)});renderInv(window._iv||'all');if(window.fbSave)fbSave('invData');closeAddInvModal();document.getElementById('ai-name').value='';}
 
 // 칸반
 window.editTask=function(id){const t=tasks.find(t=>t.id===id);if(!t)return;openEdit('항목 수정',mfields({l:'작가',id:'a',type:'select',val:t.artist,opts:artistList},{l:'굿즈명',id:'g',val:t.goods},{l:'멤버',id:'m',val:t.member},{l:'장르',id:'ge',type:'select',val:t.genre,opts:GENRES},{l:'사이트',id:'s',val:t.site},{l:'상태',id:'st',type:'select',val:t.status,opts:['대기','제작중','재생산','완료']},{l:'비고',id:'n',val:t.note||''}),()=>{Object.assign(t,{artist:gv('a'),goods:gv('g'),member:gv('m'),genre:gv('ge'),site:gv('s'),status:gv('st'),note:gv('n')});closeEdit();renderBoard();if(window.fbSave)fbSave('tasks');});};
@@ -3112,10 +3114,10 @@ function salesRow(r, i, eventKey, artist) {
     <td style="text-align:center"><input type="number" value="${gift}" min="0"
       style="width:50px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;text-align:center;color:var(--text);font-size:12px;font-family:'DM Mono'"
       oninput="updateSalesField('${eventKey}','${artist}',${i},'gift',this.value)"></td>
-    <td style="text-align:center;font-family:'DM Mono';font-weight:700;color:var(--amber)">${sold}</td>
-    <td style="text-align:center;font-family:'DM Mono';${stockColor}">${remain}</td>
-    <td style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--blue)">₩${rev.toLocaleString()}</td>
-    <td style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--teal)">₩${dist.toLocaleString()}</td>
+    <td id="sc-sold-${i}" style="text-align:center;font-family:'DM Mono';font-weight:700;color:var(--amber)">${sold}</td>
+    <td id="sc-rem-${i}" style="text-align:center;font-family:'DM Mono';${stockColor}">${remain}</td>
+    <td id="sc-rev-${i}" style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--blue)">₩${rev.toLocaleString()}</td>
+    <td id="sc-dist-${i}" style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--teal)">₩${dist.toLocaleString()}</td>
     <td style="text-align:center;font-family:'DM Mono';font-size:11px;color:var(--blue)">₩${(+r.price||0).toLocaleString()}</td>
     <td style="text-align:center"><input type="number" value="${+r.distPct||30}" min="0" max="100"
       style="width:46px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;text-align:center;color:var(--text);font-size:11px;font-family:'DM Mono'"
@@ -3686,16 +3688,15 @@ window.addEventListener('beforeunload', () => {
     const rev    = sold2 * (+item.price||0);
     const dist   = calcDist(item, sold2);
 
-    const cells = row.querySelectorAll('td');
-    // [0]굿즈명 [1]생산 [2]샘플 [3]선입금 [4]본행사 [5]사은품
-    // [6]판매계 [7]남은재고 [8]매출금액 [9]정산금 [10]판매가 [11]배분% [12]비고 [13]삭제
-    if (cells[6]) cells[6].textContent = sold;
-    if (cells[7]) {
-      cells[7].textContent = remain;
-      cells[7].style.color = remain < 0 ? 'var(--coral)' : remain === 0 ? 'var(--text3)' : 'var(--blue)';
-    }
-    if (cells[8]) cells[8].textContent = '₩' + rev.toLocaleString();
-    if (cells[9]) cells[9].textContent = '₩' + dist.toLocaleString();
+    // id로 직접 접근 (cells 인덱스 오류 방지)
+    const soldEl = document.getElementById('sc-sold-'+idx);
+    const remEl  = document.getElementById('sc-rem-' +idx);
+    const revEl  = document.getElementById('sc-rev-' +idx);
+    const distEl = document.getElementById('sc-dist-'+idx);
+    if (soldEl) soldEl.textContent = sold;
+    if (remEl)  { remEl.textContent = remain; remEl.style.color = remain < 0 ? 'var(--coral)' : remain === 0 ? 'var(--text3)' : 'var(--blue)'; }
+    if (revEl)  revEl.textContent  = '₩' + rev.toLocaleString();
+    if (distEl) distEl.textContent = '₩' + dist.toLocaleString();
   }
   updateSalesFooter(eventKey, artist);
 }function updateSalesFooter(eventKey, artist) {
