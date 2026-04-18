@@ -1274,10 +1274,10 @@ PAGES['orders'] = `<div class="main-header">
 </div>
 
 <div class="kpi-grid">
-  <div class="kpi-card amber"><div class="kpi-label">총 의뢰 건수</div><div class="kpi-value">21<span style="font-family:'Noto Sans KR';font-size:16px">건</span></div><div class="kpi-change neutral">이번 행사</div></div>
-  <div class="kpi-card blue"><div class="kpi-label">포장 포함</div><div class="kpi-value">5<span style="font-family:'Noto Sans KR';font-size:16px">건</span></div><div class="kpi-change neutral">포장 O</div></div>
-  <div class="kpi-card teal"><div class="kpi-label">미츄</div><div class="kpi-value">12<span style="font-family:'Noto Sans KR';font-size:16px">건</span></div><div class="kpi-change neutral">장르별</div></div>
-  <div class="kpi-card coral"><div class="kpi-label">스텔라이브</div><div class="kpi-value">9<span style="font-family:'Noto Sans KR';font-size:16px">건</span></div><div class="kpi-change neutral">장르별</div></div>
+  <div class="kpi-card amber"><div class="kpi-label">총 의뢰 건수</div><div class="kpi-value" id="order-kpi-total">21<span style="font-family:'Noto Sans KR';font-size:16px">건</span></div><div class="kpi-change neutral">이번 행사</div></div>
+  <div class="kpi-card blue"><div class="kpi-label">포장 포함</div><div class="kpi-value" id="order-kpi-pkg">5<span style="font-family:'Noto Sans KR';font-size:16px">건</span></div><div class="kpi-change neutral">포장 O</div></div>
+  <div class="kpi-card teal"><div class="kpi-label">미츄</div><div class="kpi-value" id="order-kpi-michu">12<span style="font-family:'Noto Sans KR';font-size:16px">건</span></div><div class="kpi-change neutral">장르별</div></div>
+  <div class="kpi-card coral"><div class="kpi-label">스텔라이브</div><div class="kpi-value" id="order-kpi-stellive">9<span style="font-family:'Noto Sans KR';font-size:16px">건</span></div><div class="kpi-change neutral">장르별</div></div>
 </div>
 
 <div class="panel">
@@ -2279,6 +2279,21 @@ function renderOrders(filter){
       <td style="font-size:11px;color:var(--text3);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.spec}</td>
       <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editOrder(${ri})' title='수정'>✎</button><button class='act-btn del' onclick='deleteOrder(${ri})' title='삭제'>✕</button></div></td></tr>`;
   }).join('');
+
+  const totalCount = orderData.length;
+  const packagedCount = orderData.filter(r => r.pkg === 'O').length;
+  const michuCount = orderData.filter(r => r.genre === '미츄').length;
+  const stelliveCount = orderData.filter(r => r.genre === '스텔라이브').length;
+  const countSuffix = '<span style="font-family:\'Noto Sans KR\';font-size:16px">건</span>';
+
+  const totalEl = document.getElementById('order-kpi-total');
+  if(totalEl) totalEl.innerHTML = `${totalCount}${countSuffix}`;
+  const pkgEl = document.getElementById('order-kpi-pkg');
+  if(pkgEl) pkgEl.innerHTML = `${packagedCount}${countSuffix}`;
+  const michuEl = document.getElementById('order-kpi-michu');
+  if(michuEl) michuEl.innerHTML = `${michuCount}${countSuffix}`;
+  const stelliveEl = document.getElementById('order-kpi-stellive');
+  if(stelliveEl) stelliveEl.innerHTML = `${stelliveCount}${countSuffix}`;
 }
 function filterOrder(f,btn){
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
