@@ -3769,19 +3769,258 @@ function renderSettlement() {
 }
 
 function printSettlement() {
-  const area = document.getElementById('settle-print-area');
-  if (!area) { alert('먼저 행사와 작가를 선택해주세요'); return; }
+  const eventKey = document.getElementById('settle-event-select')?.value;
+  const artist   = document.getElementById('settle-artist-select')?.value;
+  if (!eventKey || !artist) { alert('먼저 행사와 작가를 선택해주세요'); return; }
+
+  const event = salesData[eventKey];
+  const items = event.artists[artist] || [];
+  const totalRev  = items.reduce((s,r) => s+(getSalesCoeff(r)*(+r.price||0)), 0);
+  const totalDist = items.reduce((s,r) => s+calcDist(r,getSalesCoeff(r)), 0);
+
+  const rows = items.map(r => {
+    const sold    = getSalesCoeff(r);
+    const remain  = getSalesRemain(r, artist);
+    const rev     = sold*(+r.price||0);
+    const dist    = calcDist(r, sold);
+    const settled = getSalesSettledQty(r, artist);
+    return `<tr>
+      <td class="left">${r.name}</td>
+      <td class="center">${r.prod||0}</td>
+      <td class="center">${sold}</td>
+      <td class="center">${remain}</td>
+      <td class="right">₩${rev.toLocaleString()}</td>
+      <td class="right">₩${dist.toLocaleString()}</td>
+      <td class="center">${settled}</td>
+      <td class="center">${r.note||''}</td>
+    </tr>`;
+  }).join('');
+
   const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>정산내역서</title>
-    <style>
-      body{font-family:'Noto Sans KR',sans-serif;background:#fff;color:#111;padding:32px}
-      table{width:100%;border-collapse:collapse}
-      th,td{border:1px solid #ddd;padding:8px 12px;font-size:12px}
-      th{background:#f5f5f5;font-weight:600}
-      @media print{body{padding:0}}
-    </style></head><body>${area.outerHTML}</body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<title>정산내역서</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #fff;
+    color: #111;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 12mm 14mm 10mm;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 제목 */
+  .doc-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    margin-bottom: 4px;
+  }
+  .doc-date {
+    text-align: center;
+    font-size: 10px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  /* 행사/작가 정보 박스 */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .info-box {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+  .info-label {
+    font-size: 9px;
+    color: #888;
+    margin-bottom: 3px;
+  }
+  .info-value {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .info-sub {
+    font-size: 10px;
+    color: #555;
+    margin-top: 2px;
+  }
+
+  /* 테이블 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+  }
+  thead tr {
+    background: #f0f0f0;
+  }
+  th {
+    padding: 6px 5px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #333;
+    border: 1px solid #bbb;
+  }
+  td {
+    padding: 5px 5px;
+    font-size: 10px;
+    border: 1px solid #ddd;
+    color: #222;
+  }
+  tfoot tr {
+    background: #f7f7f7;
+    font-weight: 700;
+  }
+  tfoot td {
+    padding: 6px 5px;
+    border: 1px solid #bbb;
+    font-size: 10px;
+  }
+  .center { text-align: center; }
+  .right  { text-align: right; }
+  .left   { text-align: left; }
+
+  /* 서명란 */
+  .sign-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 10px;
+    border-top: 1px solid #ccc;
+    padding-top: 8px;
+  }
+  .sign-box {
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+  }
+  .sign-role {
+    font-size: 9px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .sign-name {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .sign-line {
+    margin-top: 20px;
+    border-top: 1px solid #bbb;
+    font-size: 9px;
+    color: #aaa;
+    padding-top: 3px;
+  }
+
+  /* 총액 박스 */
+  .total-box {
+    border: 1.5px solid #c8a030;
+    border-radius: 4px;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fffbf0;
+    margin-top: auto;
+  }
+  .total-label {
+    font-size: 11px;
+    color: #666;
+    font-weight: 500;
+  }
+  .total-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #b8860b;
+  }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { margin: 0; padding: 10mm 12mm 8mm; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="doc-title">정 산 내 역 서</div>
+  <div class="doc-date">${event.date||''}</div>
+
+  <div class="info-grid">
+    <div class="info-box">
+      <div class="info-label">행사 정보</div>
+      <div class="info-value">${event.name}</div>
+      <div class="info-sub">담당: ${event.manager||'감찬'}</div>
+    </div>
+    <div class="info-box">
+      <div class="info-label">작가 정보</div>
+      <div class="info-value">${artist} 작가</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="left"  style="width:22%">항목</th>
+        <th class="center" style="width:7%">생산</th>
+        <th class="center" style="width:7%">판매</th>
+        <th class="center" style="width:7%">재고</th>
+        <th class="right"  style="width:14%">판매매출액</th>
+        <th class="right"  style="width:14%">배분금액</th>
+        <th class="center" style="width:11%">정산완료수량</th>
+        <th class="center" style="width:18%">비고</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr>
+        <td class="left">합 계</td>
+        <td></td>
+        <td class="center">${items.reduce((s,r)=>s+getSalesCoeff(r),0)}</td>
+        <td></td>
+        <td class="right">₩${totalRev.toLocaleString()}</td>
+        <td class="right">₩${totalDist.toLocaleString()}</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="sign-grid">
+    <div class="sign-box">
+      <div class="sign-role">스탠드업 정산 담당자</div>
+      <div class="sign-name">${event.manager||'감찬'}</div>
+      <div class="sign-line">서명</div>
+    </div>
+    <div class="sign-box">
+      <div class="sign-role">일러스트 작가</div>
+      <div class="sign-name">${artist}</div>
+      <div class="sign-line">서명</div>
+    </div>
+  </div>
+
+  <div class="total-box">
+    <span class="total-label">총 정산금액</span>
+    <span class="total-value">₩${totalDist.toLocaleString()}</span>
+  </div>
+</div>
+<script>window.onload=function(){window.print();}</script>
+</body></html>`);
   w.document.close();
-  w.print();
 }
 
 // ══ 백업 / 복원 / 초기화 ═══════════════════════════════════════════
