@@ -579,8 +579,8 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 @media (max-width: 768px) {
 
   /* 회계 테이블 */
-  .tx-table thead { display: none; }
-  .tx-table tr {
+  .tx-table:not(#estat-table) thead { display: none; }
+  .tx-table:not(#estat-table) tr {
     display: flex;
     flex-wrap: wrap;
     padding: 12px 14px;
@@ -588,7 +588,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     gap: 4px;
     position: relative;
   }
-  .tx-table td {
+  .tx-table:not(#estat-table) td {
     display: inline;
     border: none;
     padding: 0;
@@ -596,8 +596,11 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     white-space: normal;
     word-break: keep-all;
   }
+  /* 행사 통계 테이블은 가로 스크롤 유지 */
+  #estat-table { min-width: 600px; }
+  #estat-table td, #estat-table th { white-space: nowrap; }
   /* 날짜 */
-  .tx-table td:nth-child(1) {
+  .tx-table:not(#estat-table) td:nth-child(1) {
     display: block;
     width: 100%;
     font-size: 11px;
@@ -606,7 +609,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     margin-bottom: 2px;
   }
   /* 내용 */
-  .tx-table td:nth-child(2) {
+  .tx-table:not(#estat-table) td:nth-child(2) {
     display: block;
     width: 100%;
     font-weight: 600;
@@ -615,7 +618,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     margin-bottom: 0;
   }
   /* 참고 */
-  .tx-table td:nth-child(3) {
+  .tx-table:not(#estat-table) td:nth-child(3) {
     display: block;
     font-size: 14px;
     color: var(--text);
@@ -623,19 +626,19 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     margin-bottom: 2px;
   }
   /* 입금 */
-  .tx-table td:nth-child(4) {
+  .tx-table:not(#estat-table) td:nth-child(4) {
     font-family: 'DM Mono', monospace;
     font-weight: 700;
     font-size: 14px;
   }
   /* 지출 */
-  .tx-table td:nth-child(5) {
+  .tx-table:not(#estat-table) td:nth-child(5) {
     font-family: 'DM Mono', monospace;
     font-weight: 700;
     font-size: 14px;
   }
   /* 잔고 */
-  .tx-table td:nth-child(6) {
+  .tx-table:not(#estat-table) td:nth-child(6) {
     display: block;
     width: 100%;
     text-align: right;
@@ -647,14 +650,14 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     right: 60px;
   }
   /* 수정/삭제 버튼 */
-  .tx-table td.act-col {
+  .tx-table:not(#estat-table) td.act-col {
     position: absolute;
     top: 10px;
     right: 10px;
     width: auto;
     padding: 0;
   }
-  .tx-table { min-width: unset !important; width: 100%; }
+  .tx-table:not(#estat-table) { min-width: unset !important; width: 100%; }
 
   /* 원가 테이블 → 카드형 */
   .cost-table { min-width: unset !important; width: 100%; }
@@ -1869,12 +1872,12 @@ function estatRenderTable() {
   if(empty) empty.style.display = 'none';
   tbody.innerHTML = sorted.map((d,i) => `
     <tr>
-      <td style="font-weight:600">${d.name||'-'}</td>
-      <td style="color:var(--text3);font-family:'DM Mono',monospace">${d.date||'-'}</td>
-      <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">₩${(d.rev||0).toLocaleString()}</td>
-      <td style="text-align:right;font-family:'DM Mono',monospace">${(d.tx||0)}건</td>
-      <td style="text-align:right;font-family:'DM Mono',monospace">₩${(d.atv||0).toLocaleString()}</td>
-      <td style="text-align:right;font-family:'DM Mono',monospace">${(d.qty||0)}개</td>
+      <td style="font-weight:600;white-space:nowrap">${d.name||'-'}</td>
+      <td style="color:var(--text3);font-family:'DM Mono',monospace;white-space:nowrap">${d.date||'-'}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--amber);white-space:nowrap">₩${(d.rev||0).toLocaleString()}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;white-space:nowrap">${(d.tx||0)}건</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;white-space:nowrap">₩${(d.atv||0).toLocaleString()}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;white-space:nowrap">${(d.qty||0)}개</td>
       <td class="act-col"><div class="row-actions"><button class="act-btn del" onclick="estatDelete(${estatData.indexOf(d)})">✕</button></div></td>
     </tr>
   `).join('');
