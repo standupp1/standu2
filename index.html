@@ -824,6 +824,10 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M5 6h6M5 9h6M5 12h3"/></svg>
       정산내역서
     </div>
+    <div class="nav-item" onclick="setNav(this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,13 5,7 8,10 11,5 15,3"/><circle cx="15" cy="3" r="1.5" fill="currentColor" stroke="none"/></svg>
+      행사 통계
+    </div>
   <div class="sidebar-section">
     <div class="sidebar-label">관리</div>
     <div class="nav-item" onclick="setNav(this)">
@@ -1693,8 +1697,520 @@ PAGES['settlement'] = `<div class="main-header">
 </div>`;
 PAGE_INITS['settlement'] = function(){ initSettlementPage(); };
 
+/* ═══════════════════════════════════════════
+   행사 통계 페이지
+═══════════════════════════════════════════ */
+PAGES['event-stats'] = `<div class="main-header">
+  <div>
+    <div class="page-title">📈 행사 통계</div>
+    <div class="page-sub">행사별 매출 추이 · PDF 업로드로 자동 집계</div>
+  </div>
+  <div class="header-right">
+    <label class="btn" style="cursor:pointer;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3"/><rect x="2" y="11" width="12" height="3" rx="1"/></svg>
+      PDF 업로드
+      <input type="file" id="estat-pdf-input" accept=".pdf" style="display:none" onchange="estatParsePdf(this)">
+    </label>
+    <button class="btn" onclick="estatOpenManualModal()">+ 직접 입력</button>
+    <button class="btn" onclick="estatResetAll()" style="color:var(--coral);border-color:rgba(240,96,96,.3);font-size:11px">초기화</button>
+  </div>
+</div>
+
+<!-- PDF 파싱 상태 -->
+<div id="estat-pdf-status" style="display:none;background:var(--teal-dim);border:1px solid rgba(62,207,170,.25);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-size:13px;color:var(--teal);display:flex;align-items:center;gap:10px"></div>
+
+<!-- KPI 요약 -->
+<div class="kpi-grid" style="margin-bottom:20px">
+  <div class="kpi-card amber">
+    <div class="kpi-label">총 행사 수</div>
+    <div class="kpi-value" id="estat-kpi-count">0<span style="font-family:'Noto Sans KR';font-size:16px">회</span></div>
+    <div class="kpi-change neutral">누적</div>
+  </div>
+  <div class="kpi-card teal">
+    <div class="kpi-label">평균 총매출</div>
+    <div class="kpi-value"><span>₩</span><span id="estat-kpi-avg-rev">0</span></div>
+    <div class="kpi-change neutral">행사당</div>
+  </div>
+  <div class="kpi-card blue">
+    <div class="kpi-label">평균 거래 건수</div>
+    <div class="kpi-value" id="estat-kpi-avg-tx">0<span style="font-family:'Noto Sans KR';font-size:16px">건</span></div>
+    <div class="kpi-change neutral">행사당</div>
+  </div>
+  <div class="kpi-card coral">
+    <div class="kpi-label">평균 객단가</div>
+    <div class="kpi-value"><span>₩</span><span id="estat-kpi-avg-atv">0</span></div>
+    <div class="kpi-change neutral">행사당</div>
+  </div>
+</div>
+
+<!-- 선그래프 + 보조지표 -->
+<div class="grid-2col" style="margin-bottom:16px">
+  <div class="panel" style="grid-column:1/3">
+    <div class="panel-header">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>행사별 총매출 추이</div>
+      <div style="display:flex;gap:6px">
+        <button class="filter-btn on" id="estat-metric-rev" onclick="estatSetMetric('rev',this)">총매출</button>
+        <button class="filter-btn" id="estat-metric-tx" onclick="estatSetMetric('tx',this)">거래건수</button>
+        <button class="filter-btn" id="estat-metric-atv" onclick="estatSetMetric('atv',this)">객단가</button>
+        <button class="filter-btn" id="estat-metric-qty" onclick="estatSetMetric('qty',this)">판매량</button>
+      </div>
+    </div>
+    <div class="panel-body" style="padding:20px">
+      <div id="estat-chart-wrap" style="position:relative;height:220px">
+        <canvas id="estat-canvas" style="width:100%;height:100%"></canvas>
+        <div id="estat-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px">
+          아직 데이터가 없어요. PDF를 업로드하거나 직접 입력해주세요.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 행사별 상세 테이블 -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title"><div class="panel-title-dot" style="background:var(--blue)"></div>행사별 상세 현황</div>
+  </div>
+  <div class="panel-body" style="padding:0">
+    <table class="tx-table" id="estat-table" style="min-width:700px">
+      <thead><tr>
+        <th style="width:130px">행사명</th>
+        <th style="width:100px">날짜</th>
+        <th style="text-align:right">총매출</th>
+        <th style="text-align:right;width:90px">거래건수</th>
+        <th style="text-align:right;width:110px">평균거래액</th>
+        <th style="text-align:right;width:90px">판매량</th>
+        <th style="width:70px"></th>
+      </tr></thead>
+      <tbody id="estat-tbody"></tbody>
+    </table>
+    <div id="estat-table-empty" style="padding:40px;text-align:center;color:var(--text3);font-size:13px;display:none">
+      데이터가 없습니다
+    </div>
+  </div>
+</div>
+
+<!-- 직접 입력 모달 -->
+<div class="modal-overlay" id="estat-manual-modal" onclick="if(event.target===this)estatCloseManualModal()">
+  <div class="mbox">
+    <div class="mhead"><div class="mtitle">행사 데이터 입력</div><button class="mclose" onclick="estatCloseManualModal()">✕</button></div>
+    <div class="mf"><label>행사명</label><input id="em-name" placeholder="예: 서코 26/5"></div>
+    <div class="mf-row">
+      <div class="mf"><label>날짜</label><input type="date" id="em-date"></div>
+      <div class="mf"><label>총매출 (₩)</label><input type="number" id="em-rev" placeholder="1488000"></div>
+    </div>
+    <div class="mf-row">
+      <div class="mf"><label>총 거래 건수</label><input type="number" id="em-tx" placeholder="94"></div>
+      <div class="mf"><label>평균 거래액 (₩)</label><input type="number" id="em-atv" placeholder="15829"></div>
+    </div>
+    <div class="mf"><label>총 판매량 (개)</label><input type="number" id="em-qty" placeholder="201"></div>
+    <div class="mfoot">
+      <button class="btn" onclick="estatCloseManualModal()">취소</button>
+      <button class="btn btn-primary" onclick="estatSubmitManual()">저장</button>
+    </div>
+  </div>
+</div>
+`;
+
+PAGE_INITS['event-stats'] = function() { initEstatPage(); };
+
+/* ── 행사 통계 데이터 & 로직 ── */
+let estatData = JSON.parse(localStorage.getItem('estatData') || '[]');
+let estatMetric = 'rev';
+
+function estatSave() {
+  localStorage.setItem('estatData', JSON.stringify(estatData));
+}
+
+function initEstatPage() {
+  estatRenderAll();
+}
+
+function estatSetMetric(m, el) {
+  estatMetric = m;
+  document.querySelectorAll('#estat-metric-rev,#estat-metric-tx,#estat-metric-atv,#estat-metric-qty').forEach(b => b.classList.remove('on'));
+  if(el) el.classList.add('on');
+  estatDrawChart();
+}
+
+function estatRenderAll() {
+  estatUpdateKpi();
+  estatRenderTable();
+  estatDrawChart();
+}
+
+function estatUpdateKpi() {
+  const n = estatData.length;
+  document.getElementById('estat-kpi-count').innerHTML = n + '<span style="font-family:\'Noto Sans KR\';font-size:16px">회</span>';
+  if (n === 0) {
+    document.getElementById('estat-kpi-avg-rev').textContent = '0';
+    document.getElementById('estat-kpi-avg-tx').innerHTML = '0<span style="font-family:\'Noto Sans KR\';font-size:16px">건</span>';
+    document.getElementById('estat-kpi-avg-atv').textContent = '0';
+    return;
+  }
+  const avgRev = Math.round(estatData.reduce((s,d)=>s+(d.rev||0),0)/n);
+  const avgTx  = Math.round(estatData.reduce((s,d)=>s+(d.tx||0),0)/n);
+  const avgAtv = Math.round(estatData.reduce((s,d)=>s+(d.atv||0),0)/n);
+  document.getElementById('estat-kpi-avg-rev').textContent = avgRev.toLocaleString();
+  document.getElementById('estat-kpi-avg-tx').innerHTML = avgTx + '<span style="font-family:\'Noto Sans KR\';font-size:16px">건</span>';
+  document.getElementById('estat-kpi-avg-atv').textContent = avgAtv.toLocaleString();
+}
+
+function estatRenderTable() {
+  const tbody = document.getElementById('estat-tbody');
+  const empty = document.getElementById('estat-table-empty');
+  if (!tbody) return;
+  const sorted = [...estatData].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  if (sorted.length === 0) {
+    tbody.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+  tbody.innerHTML = sorted.map((d,i) => `
+    <tr>
+      <td style="font-weight:600">${d.name||'-'}</td>
+      <td style="color:var(--text3);font-family:'DM Mono',monospace">${d.date||'-'}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">₩${(d.rev||0).toLocaleString()}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace">${(d.tx||0)}건</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace">₩${(d.atv||0).toLocaleString()}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace">${(d.qty||0)}개</td>
+      <td class="act-col"><div class="row-actions"><button class="act-btn del" onclick="estatDelete(${estatData.indexOf(d)})">✕</button></div></td>
+    </tr>
+  `).join('');
+}
+
+function estatDelete(idx) {
+  estatData.splice(idx, 1);
+  estatSave();
+  estatRenderAll();
+}
+
+function estatResetAll() {
+  if (!confirm('모든 행사 통계 데이터를 삭제할까요?')) return;
+  estatData = [];
+  estatSave();
+  estatRenderAll();
+}
+
+function estatDrawChart() {
+  const canvas = document.getElementById('estat-canvas');
+  const emptyEl = document.getElementById('estat-empty');
+  if (!canvas) return;
+  const sorted = [...estatData].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  if (sorted.length === 0) {
+    canvas.style.display = 'none';
+    if(emptyEl) emptyEl.style.display = 'flex';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display = 'none';
+  canvas.style.display = 'block';
+
+  const labels = sorted.map(d => d.name || d.date || '?');
+  const METRIC_KEY = { rev:'rev', tx:'tx', atv:'atv', qty:'qty' };
+  const vals = sorted.map(d => d[METRIC_KEY[estatMetric]] || 0);
+  const METRIC_LABEL = { rev:'총매출 (₩)', tx:'거래건수 (건)', atv:'객단가 (₩)', qty:'판매량 (개)' };
+
+  const wrap = document.getElementById('estat-chart-wrap');
+  canvas.width = wrap.offsetWidth || 600;
+  canvas.height = 220;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const pad = { top:20, right:20, bottom:50, left:70 };
+  const W = canvas.width - pad.left - pad.right;
+  const H = canvas.height - pad.top - pad.bottom;
+  const maxVal = Math.max(...vals, 1);
+  const minVal = 0;
+
+  // grid lines
+  const gridN = 4;
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= gridN; i++) {
+    const y = pad.top + H - (i / gridN) * H;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + W, y); ctx.stroke();
+    const val = Math.round((i / gridN) * maxVal);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '10px "DM Mono", monospace';
+    ctx.textAlign = 'right';
+    const label = estatMetric === 'rev' || estatMetric === 'atv' ? '₩'+val.toLocaleString() : val.toLocaleString();
+    ctx.fillText(label, pad.left - 6, y + 4);
+  }
+
+  if (vals.length < 2) {
+    // single point — draw a dot
+    const x = pad.left + W/2;
+    const y = pad.top + H - ((vals[0] - minVal) / (maxVal - minVal)) * H;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#f0a830';
+    ctx.fill();
+  } else {
+    // gradient fill
+    const gradFill = ctx.createLinearGradient(0, pad.top, 0, pad.top + H);
+    gradFill.addColorStop(0, 'rgba(240,168,48,0.25)');
+    gradFill.addColorStop(1, 'rgba(240,168,48,0.00)');
+
+    const pts = vals.map((v,i) => ({
+      x: pad.left + (i / (vals.length - 1)) * W,
+      y: pad.top + H - ((v - minVal) / (maxVal - minVal)) * H
+    }));
+
+    // fill area
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pad.top + H);
+    pts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(pts[pts.length-1].x, pad.top + H);
+    ctx.closePath();
+    ctx.fillStyle = gradFill;
+    ctx.fill();
+
+    // line
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i=1; i<pts.length; i++) {
+      const cp1x = (pts[i-1].x + pts[i].x) / 2;
+      ctx.bezierCurveTo(cp1x, pts[i-1].y, cp1x, pts[i].y, pts[i].x, pts[i].y);
+    }
+    ctx.strokeStyle = '#f0a830';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // dots & values
+    pts.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+      ctx.fillStyle = '#f0a830';
+      ctx.fill();
+      ctx.strokeStyle = '#161719';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // value label
+      const dispVal = estatMetric === 'rev' || estatMetric === 'atv'
+        ? '₩'+(vals[i]/10000).toFixed(1)+'만'
+        : vals[i].toLocaleString();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = '10px "DM Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(dispVal, p.x, p.y - 10);
+    });
+  }
+
+  // X axis labels
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '10px "Noto Sans KR", sans-serif';
+  ctx.textAlign = 'center';
+  const n = vals.length;
+  labels.forEach((lbl, i) => {
+    const x = n === 1 ? pad.left + W/2 : pad.left + (i / (n-1)) * W;
+    const y = pad.top + H + 16;
+    // truncate long labels
+    const short = lbl.length > 7 ? lbl.slice(0,6)+'…' : lbl;
+    ctx.fillText(short, x, y);
+  });
+}
+
+/* ── PDF 파싱 ── */
+async function estatParsePdf(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  const statusEl = document.getElementById('estat-pdf-status');
+  statusEl.style.display = 'flex';
+  statusEl.textContent = '⏳ PDF 분석 중...';
+
+  try {
+    const text = await estatExtractPdfText(file);
+    const parsed = estatParseReportText(text, file.name);
+
+    if (!parsed) {
+      statusEl.style.background = 'var(--coral-dim)';
+      statusEl.style.borderColor = 'rgba(240,96,96,.25)';
+      statusEl.style.color = 'var(--coral)';
+      statusEl.textContent = '❌ PDF에서 통계 데이터를 찾지 못했어요. 바라부스 리포트 파일인지 확인해주세요.';
+      return;
+    }
+
+    // 중복 체크 (같은 이름+날짜)
+    const dup = estatData.find(d => d.name === parsed.name && d.date === parsed.date);
+    if (dup) {
+      Object.assign(dup, parsed);
+    } else {
+      estatData.push(parsed);
+    }
+    estatSave();
+    estatRenderAll();
+
+    statusEl.style.background = 'var(--teal-dim)';
+    statusEl.style.borderColor = 'rgba(62,207,170,.25)';
+    statusEl.style.color = 'var(--teal)';
+    statusEl.textContent = `✅ "${parsed.name}" 데이터 추가 완료 — 총매출 ₩${(parsed.rev||0).toLocaleString()}, 거래 ${parsed.tx}건, 판매량 ${parsed.qty}개`;
+    setTimeout(() => { statusEl.style.display = 'none'; }, 5000);
+  } catch(e) {
+    statusEl.style.background = 'var(--coral-dim)';
+    statusEl.style.color = 'var(--coral)';
+    statusEl.textContent = '❌ PDF 파싱 오류: ' + e.message;
+    console.error(e);
+  }
+}
+
+function estatExtractPdfText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const typedArr = new Uint8Array(e.target.result);
+        // Simple PDF text extraction without external lib
+        const str = new TextDecoder('utf-8', {fatal:false}).decode(typedArr);
+        // Extract text streams from PDF
+        let text = '';
+        const streamRe = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+        let m;
+        while ((m = streamRe.exec(str)) !== null) {
+          text += ' ' + m[1];
+        }
+        // Also try to extract raw text patterns
+        const textRe = /\(([^)]{1,200})\)/g;
+        let tm;
+        while ((tm = textRe.exec(str)) !== null) {
+          const s = tm[1].replace(/\\n/g,' ').replace(/\\\\/g,'\\').replace(/\\r/g,' ');
+          text += ' ' + s;
+        }
+        // BT...ET blocks
+        const btRe = /BT([\s\S]*?)ET/g;
+        while ((m = btRe.exec(str)) !== null) {
+          text += ' ' + m[1];
+        }
+        resolve(text + '\n' + str.slice(0, 50000));
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function estatParseReportText(text, filename) {
+  // 숫자 추출 헬퍼
+  function extractNum(patterns, src) {
+    for (const pat of patterns) {
+      const m = pat.exec(src);
+      if (m) return parseInt(m[1].replace(/,/g,''), 10);
+    }
+    return null;
+  }
+
+  // 행사명 추출 (파일명 우선)
+  let name = '';
+  const fnMatch = filename.match(/바라부스매니저_\d+_(.+?)_(\d{4}-\d{2}-\d{2})\.pdf/);
+  let dateStr = '';
+  if (fnMatch) {
+    name = fnMatch[1];
+    dateStr = fnMatch[2];
+  }
+  if (!name) {
+    const nm = /행사[:：\s]+([^\n\r]+)/.exec(text) || /행사\s*:\s*([^\n\r]+)/.exec(text);
+    if (nm) name = nm[1].trim();
+  }
+  if (!name) name = filename.replace(/\.pdf$/i,'');
+
+  // 날짜 추출
+  if (!dateStr) {
+    const dm = /생성일[:：\s]+(\d{4}-\d{2}-\d{2})/.exec(text) || /(\d{4}-\d{2}-\d{2})/.exec(text);
+    if (dm) dateStr = dm[1];
+  }
+
+  // 총매출
+  const rev = extractNum([
+    /총\s*매출\s*[\s\S]{0,40}?([\d,]{4,12})/,
+    /총매출\s+([\d,]+)/,
+    /1[,，]?[\d]{3}[,，]?[\d]{3}/
+  ], text);
+
+  // 총거래건수
+  const tx = extractNum([
+    /총\s*거래\s*건수\s*([\d,]+)/,
+    /거래\s*건수\s*([\d,]+)/,
+    /총\s*거래[\s\S]{0,10}?([\d]{1,5})건/
+  ], text);
+
+  // 평균거래액
+  const atv = extractNum([
+    /평균\s*거래액\s*([\d,]+)/,
+    /평균거래액\s+([\d,]+)/,
+    /객단가\s+([\d,]+)/
+  ], text);
+
+  // 총판매량
+  const qty = extractNum([
+    /총\s*판매량\s*([\d,]+)/,
+    /판매량\s+([\d,]+)/,
+    /총\s*판매[\s\S]{0,10}?([\d]{1,6})개/
+  ], text);
+
+  // 바라부스 리포트 특유 패턴: 숫자가 나란히 나오는 경우
+  // PDF에서 텍스트가 깨질 수 있으므로 숫자만 긁어모아서 추측
+  let fallbackRev = null, fallbackTx = null, fallbackAtv = null, fallbackQty = null;
+  const nums = [];
+  const numRe = /\b(\d{1,3}(?:,\d{3})*|\d+)\b/g;
+  let nm2;
+  while ((nm2 = numRe.exec(text)) !== null) {
+    const v = parseInt(nm2[1].replace(/,/g,''), 10);
+    nums.push(v);
+  }
+
+  // 총매출은 보통 가장 큰 수 (100만 이상)
+  if (!rev) {
+    const big = nums.filter(v=>v>=100000).sort((a,b)=>b-a);
+    if(big.length) fallbackRev = big[0];
+  }
+  if (!tx) {
+    const med = nums.filter(v=>v>=10&&v<=9999).sort((a,b)=>b-a);
+    if(med.length) fallbackTx = med[0];
+  }
+
+  const result = {
+    name,
+    date: dateStr,
+    rev: rev || fallbackRev || 0,
+    tx: tx || fallbackTx || 0,
+    atv: atv || 0,
+    qty: qty || fallbackQty || 0,
+  };
+
+  // 최소한 이름과 매출이 있어야 유효
+  if (!result.name) return null;
+  return result;
+}
+
+/* ── 직접 입력 모달 ── */
+function estatOpenManualModal() {
+  const modal = document.getElementById('estat-manual-modal');
+  if(modal) { modal.classList.add('open'); document.getElementById('em-name').focus(); }
+}
+function estatCloseManualModal() {
+  const modal = document.getElementById('estat-manual-modal');
+  if(modal) modal.classList.remove('open');
+}
+function estatSubmitManual() {
+  const name = document.getElementById('em-name').value.trim();
+  const date = document.getElementById('em-date').value;
+  const rev  = parseInt(document.getElementById('em-rev').value)||0;
+  const tx   = parseInt(document.getElementById('em-tx').value)||0;
+  const atv  = parseInt(document.getElementById('em-atv').value)||(tx?Math.round(rev/tx):0);
+  const qty  = parseInt(document.getElementById('em-qty').value)||0;
+  if (!name) { alert('행사명을 입력해주세요'); return; }
+  const dup = estatData.find(d=>d.name===name&&d.date===date);
+  if(dup) Object.assign(dup,{rev,tx,atv,qty});
+  else estatData.push({name,date,rev,tx,atv,qty});
+  estatSave();
+  estatCloseManualModal();
+  estatRenderAll();
+}
+
 let currentPage = null;
-const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','settings':'설정','sales':'매출 입력','settlement':'정산내역서'};
+const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
 
 function navigate(pageKey) {
   const main = document.getElementById('main-content');
@@ -4444,6 +4960,13 @@ function updateSalesFooter(eventKey, artist) {
 }
 window.updateSalesField = updateSalesField;
 window.saveSalesData = saveSalesData;
+
+// 행사 통계 차트 반응형
+window.addEventListener('resize', () => {
+  if (window.currentPage === 'event-stats') {
+    if (typeof estatDrawChart === 'function') estatDrawChart();
+  }
+});
 
 </script>
 
