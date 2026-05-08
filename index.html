@@ -1780,6 +1780,7 @@ PAGES['event-stats'] = `<div class="main-header">
         <th style="width:130px">행사명</th>
         <th style="width:100px">날짜</th>
         <th style="text-align:right">총매출</th>
+        <th style="text-align:right">총선입금</th>
         <th style="text-align:right;width:90px">거래건수</th>
         <th style="text-align:right;width:110px">평균거래액</th>
         <th style="text-align:right;width:90px">판매량</th>
@@ -1806,7 +1807,10 @@ PAGES['event-stats'] = `<div class="main-header">
       <div class="mf"><label>총 거래 건수</label><input type="number" id="em-tx" placeholder="94"></div>
       <div class="mf"><label>평균 거래액 (₩)</label><input type="number" id="em-atv" placeholder="15829"></div>
     </div>
-    <div class="mf"><label>총 판매량 (개)</label><input type="number" id="em-qty" placeholder="201"></div>
+    <div class="mf-row">
+      <div class="mf"><label>총 판매량 (개)</label><input type="number" id="em-qty" placeholder="201"></div>
+      <div class="mf"><label>총선입금 (₩)</label><input type="number" id="em-pre" placeholder="0"></div>
+    </div>
     <div class="mfoot">
       <button class="btn" onclick="estatCloseManualModal()">취소</button>
       <button class="btn btn-primary" onclick="estatSubmitManual()">저장</button>
@@ -1851,7 +1855,7 @@ function estatUpdateKpi() {
     document.getElementById('estat-kpi-avg-atv').textContent = '0';
     return;
   }
-  const avgRev = Math.round(estatData.reduce((s,d)=>s+(d.rev||0),0)/n);
+  const avgRev = Math.round(estatData.reduce((s,d)=>s+(d.rev||0)+(d.pre||0),0)/n);
   const avgTx  = Math.round(estatData.reduce((s,d)=>s+(d.tx||0),0)/n);
   const avgAtv = Math.round(estatData.reduce((s,d)=>s+(d.atv||0),0)/n);
   document.getElementById('estat-kpi-avg-rev').textContent = avgRev.toLocaleString();
@@ -1875,10 +1879,11 @@ function estatRenderTable() {
       <td style="font-weight:600;white-space:nowrap">${d.name||'-'}</td>
       <td style="color:var(--text3);font-family:'DM Mono',monospace;white-space:nowrap">${d.date||'-'}</td>
       <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--amber);white-space:nowrap">₩${(d.rev||0).toLocaleString()}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--teal);white-space:nowrap">₩${(d.pre||0).toLocaleString()}</td>
       <td style="text-align:right;font-family:'DM Mono',monospace;white-space:nowrap">${(d.tx||0)}건</td>
       <td style="text-align:right;font-family:'DM Mono',monospace;white-space:nowrap">₩${(d.atv||0).toLocaleString()}</td>
       <td style="text-align:right;font-family:'DM Mono',monospace;white-space:nowrap">${(d.qty||0)}개</td>
-      <td class="act-col"><div class="row-actions"><button class="act-btn del" onclick="estatDelete(${estatData.indexOf(d)})">✕</button></div></td>
+      <td class="act-col"><div class="row-actions"><button class="act-btn edit" onclick="estatEdit(${estatData.indexOf(d)})">✎</button><button class="act-btn del" onclick="estatDelete(${estatData.indexOf(d)})">✕</button></div></td>
     </tr>
   `).join('');
 }
@@ -1911,7 +1916,10 @@ function estatDrawChart() {
 
   const labels = sorted.map(d => d.name || d.date || '?');
   const METRIC_KEY = { rev:'rev', tx:'tx', atv:'atv', qty:'qty' };
-  const vals = sorted.map(d => d[METRIC_KEY[estatMetric]] || 0);
+  const vals = sorted.map(d => {
+    if (estatMetric === 'rev') return (d.rev||0) + (d.pre||0);
+    return d[METRIC_KEY[estatMetric]] || 0;
+  });
   const METRIC_LABEL = { rev:'총매출 (₩)', tx:'거래건수 (건)', atv:'객단가 (₩)', qty:'판매량 (개)' };
 
   const wrap = document.getElementById('estat-chart-wrap');
@@ -2189,6 +2197,23 @@ function estatParseReportText(text, filename) {
 
 /* ── 직접 입력 모달 ── */
 function estatOpenManualModal() {
+  window._estatEditIdx = -1;
+  ['em-name','em-date','em-rev','em-pre','em-tx','em-atv','em-qty'].forEach(id => {
+    if(document.getElementById(id)) document.getElementById(id).value = '';
+  });
+  const modal = document.getElementById('estat-manual-modal');
+  if(modal) { modal.classList.add('open'); document.getElementById('em-name').focus(); }
+}
+function estatEdit(idx) {
+  window._estatEditIdx = idx;
+  const d = estatData[idx];
+  if(document.getElementById('em-name')) document.getElementById('em-name').value = d.name||'';
+  if(document.getElementById('em-date')) document.getElementById('em-date').value = d.date||'';
+  if(document.getElementById('em-rev')) document.getElementById('em-rev').value = d.rev||'';
+  if(document.getElementById('em-pre')) document.getElementById('em-pre').value = d.pre||'';
+  if(document.getElementById('em-tx')) document.getElementById('em-tx').value = d.tx||'';
+  if(document.getElementById('em-atv')) document.getElementById('em-atv').value = d.atv||'';
+  if(document.getElementById('em-qty')) document.getElementById('em-qty').value = d.qty||'';
   const modal = document.getElementById('estat-manual-modal');
   if(modal) { modal.classList.add('open'); document.getElementById('em-name').focus(); }
 }
@@ -2200,13 +2225,19 @@ function estatSubmitManual() {
   const name = document.getElementById('em-name').value.trim();
   const date = document.getElementById('em-date').value;
   const rev  = parseInt(document.getElementById('em-rev').value)||0;
+  const pre  = parseInt(document.getElementById('em-pre').value)||0;
   const tx   = parseInt(document.getElementById('em-tx').value)||0;
   const atv  = parseInt(document.getElementById('em-atv').value)||(tx?Math.round(rev/tx):0);
   const qty  = parseInt(document.getElementById('em-qty').value)||0;
   if (!name) { alert('행사명을 입력해주세요'); return; }
-  const dup = estatData.find(d=>d.name===name&&d.date===date);
-  if(dup) Object.assign(dup,{rev,tx,atv,qty});
-  else estatData.push({name,date,rev,tx,atv,qty});
+
+  if (window._estatEditIdx >= 0) {
+    Object.assign(estatData[window._estatEditIdx], {name,date,rev,pre,tx,atv,qty});
+  } else {
+    const dup = estatData.find(d=>d.name===name&&d.date===date);
+    if(dup) Object.assign(dup,{rev,pre,tx,atv,qty});
+    else estatData.push({name,date,rev,pre,tx,atv,qty});
+  }
   estatSave();
   estatCloseManualModal();
   estatRenderAll();
