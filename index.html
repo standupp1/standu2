@@ -3346,7 +3346,7 @@ const EXPENSE_CATEGORIES = ['소프트웨어','행사비','제작/원재료','�
 const EXPENSE_STATUSES = ['미검토','확인완료','제외'];
 const EXPENSE_LOCAL_KEY = 'standup_expense_data_v1';
 var expenseData = [];
-window._expenseFilter = window._expenseFilter || {year:'all',month:'all',category:'all',status:'all'};
+window._expenseFilter = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
 
 function parseWon(value){
   return Number(String(value||'').replace(/[^\d.-]/g,'')) || 0;
@@ -3380,7 +3380,8 @@ function expenseSelectOptions(values, selected, allLabel){
   return `<option value="all" ${selected==='all'?'selected':''}>${allLabel}</option>` + values.map(v=>`<option value="${v}" ${selected===v?'selected':''}>${v}</option>`).join('');
 }
 function getFilteredExpenses(){
-  const f = window._expenseFilter || {year:'all',month:'all',category:'all',status:'all'};
+  const f = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
+  if(f.year === 'none' || f.month === 'none') return [];
   return expenseData.filter(r =>
     (f.year==='all' || String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)===f.year) &&
     (f.month==='all' || String(r.yearMonth||getExpenseYearMonth(r.date)).slice(5,7)===f.month) &&
@@ -3411,7 +3412,7 @@ function renderExpenses(){
   if(!expenseData || !expenseData.length) loadExpenseLocal();
   const normalized = normalizeExpenseRows();
   if(normalized) saveExpenseLocal();
-  const f = window._expenseFilter || {year:'all',month:'all',category:'all',status:'all'};
+  const f = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
   const years = [...new Set(expenseData.map(r=>String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)).filter(Boolean))].sort((a,b)=>b.localeCompare(a));
   const months = [...new Set(expenseData
     .filter(r=>f.year==='all' || String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)===f.year)
@@ -3420,13 +3421,15 @@ function renderExpenses(){
   const monthSel = document.getElementById('expense-filter-month');
   const catSel = document.getElementById('expense-filter-category');
   const statusSel = document.getElementById('expense-filter-status');
-  if(yearSel) yearSel.innerHTML = expenseSelectOptions(years, f.year, '연도 전체');
-  if(monthSel) monthSel.innerHTML = expenseSelectOptions(months, f.month, '월 전체');
+  if(yearSel) yearSel.innerHTML = `<option value="none" ${f.year==='none'?'selected':''}>연도 선택</option>` + expenseSelectOptions(years, f.year, '연도 전체');
+  if(monthSel) monthSel.innerHTML = `<option value="none" ${f.month==='none'?'selected':''}>월 선택</option>` + expenseSelectOptions(months, f.month, '월 전체');
   if(catSel) catSel.innerHTML = expenseSelectOptions(EXPENSE_CATEGORIES, f.category, '분류 전체');
   if(statusSel) statusSel.value = f.status;
 
   const rows = getFilteredExpenses().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-  tbody.innerHTML = rows.length ? rows.map(r=>`
+  tbody.innerHTML = (f.year === 'none' || f.month === 'none')
+    ? `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">연도와 월을 선택하면 해당 월 경비 내역이 표시됩니다.</td></tr>`
+    : rows.length ? rows.map(r=>`
     <tr>
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.date||'-'}</td>
       <td style="font-weight:600">${r.merchant||'-'}<div style="font-size:11px;color:var(--text3);font-weight:400">${r.memo||''}</div></td>
@@ -3438,7 +3441,7 @@ function renderExpenses(){
       <td>${r.receiptDataUrl?`<button class="btn" onclick="openExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px">보기</button>`:''}<button class="btn" onclick="attachExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px;margin-left:4px">첨부</button><div style="font-size:10px;color:var(--text3);margin-top:3px">${r.receiptName||''}</div></td>
       <td class='act-col'><div class='row-actions' style='opacity:1'><button class='act-btn edit' onclick='editExpense(${r.id})' title='수정'>✎</button><button class='act-btn del' onclick='deleteExpense(${r.id})' title='삭제'>✕</button></div></td>
     </tr>
-  `).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">등록된 경비가 없습니다. 카드매출전표 PDF를 업로드해보세요.</td></tr>`;
+  `).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">선택한 월에 등록된 경비가 없습니다.</td></tr>`;
 
   const activeRows = expenseData.filter(r=>r.status!=='제외');
   const total = activeRows.reduce((s,r)=>s+(Number(r.total)||0),0);
@@ -3451,13 +3454,13 @@ function renderExpenses(){
   setHtml('expense-pending', String(pendingCount));
 }
 window.setExpenseFilter = function(key, value){
-  window._expenseFilter = window._expenseFilter || {year:'all',month:'all',category:'all',status:'all'};
+  window._expenseFilter = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
   window._expenseFilter[key] = value;
-  if(key === 'year') window._expenseFilter.month = 'all';
+  if(key === 'year') window._expenseFilter.month = 'none';
   renderExpenses();
 };
 window.resetExpenseFilters = function(){
-  window._expenseFilter = {year:'all',month:'all',category:'all',status:'all'};
+  window._expenseFilter = {year:'none',month:'none',category:'all',status:'all'};
   if((!expenseData || !expenseData.length) && Array.isArray(window.expenseData) && window.expenseData.length) expenseData = window.expenseData;
   if(!expenseData || !expenseData.length) loadExpenseLocal();
   renderExpenses();
@@ -3551,7 +3554,13 @@ window.importExpensePdf = async function(){
     expenseData = [...fresh, ...expenseData];
     window.expenseData = expenseData;
     saveExpenseLocal();
-    window._expenseFilter = {category:'all',status:'all'};
+    const importedYm = fresh[0]?.yearMonth || parsed[0]?.yearMonth || '';
+    window._expenseFilter = {
+      year: importedYm ? importedYm.slice(0,4) : 'none',
+      month: importedYm ? importedYm.slice(5,7) : 'none',
+      category:'all',
+      status:'all'
+    };
     renderExpenses();
     if(fresh.length && window.fbSave) fbSave('expenseData');
     if(status) status.textContent = `${parsed.length}건 추출 · ${fresh.length}건 추가됨${fresh.length ? '' : ' · 기존 내역 표시'}`;
