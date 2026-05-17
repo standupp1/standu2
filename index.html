@@ -824,6 +824,10 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
   <div class="sidebar-section">
     <div class="sidebar-label">행사 관리</div>
     <div class="nav-item" onclick="setNav(this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10v12H3z"/><path d="M5 5h6M5 8h6M5 11h3"/></svg>
+      경비처리
+    </div>
+    <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/><path d="M5 4V2h6v2M6 8h4M6 11h2"/></svg>
       매출 입력
     </div>
@@ -1363,6 +1367,58 @@ PAGES['kanban'] = `<div class="main-header">
 </div>
 
 <div class="kanban-board" id="kanban-board"></div>`;
+PAGES['expenses'] = `<div class="main-header">
+  <div>
+    <div class="page-title">경비처리</div>
+    <div class="page-sub">카드매출전표 PDF 자동 입력 · 영수증 첨부 · 종소세 대비 정리</div>
+  </div>
+  <div class="header-right">
+    <button class="btn" onclick="exportExpenseCsv()">CSV</button>
+    <button class="btn btn-primary" onclick="addExpenseManual()">+ 직접 추가</button>
+  </div>
+</div>
+
+<div class="panel" style="margin-bottom:16px">
+  <div class="panel-header">
+    <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>카드매출전표 PDF 업로드</div>
+    <span id="expense-import-status" style="font-size:12px;color:var(--text3)">토스뱅크 카드매출전표 양식 지원</span>
+  </div>
+  <div class="panel-body">
+    <div style="display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:12px;align-items:center">
+      <input class="input-field" type="file" accept="application/pdf" id="expense-pdf-input">
+      <button class="btn btn-primary" onclick="importExpensePdf()">PDF 자동입력</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">Drive 연동 전까지 원본 PDF는 업로드하지 않고, 추출된 경비 데이터만 저장합니다. 영수증 첨부는 작은 파일만 임시 저장됩니다.</div>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card amber"><div class="kpi-label">총 경비</div><div class="kpi-value" id="expense-total"><span>₩</span>0</div><div class="kpi-change neutral">합계 기준</div></div>
+  <div class="kpi-card teal"><div class="kpi-label">건수</div><div class="kpi-value" id="expense-count">0</div><div class="kpi-change neutral">등록 내역</div></div>
+  <div class="kpi-card blue"><div class="kpi-label">영수증 첨부</div><div class="kpi-value" id="expense-receipts">0</div><div class="kpi-change neutral">증빙 있음</div></div>
+  <div class="kpi-card coral"><div class="kpi-label">미검토</div><div class="kpi-value" id="expense-pending">0</div><div class="kpi-change neutral">확인 필요</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-header" style="gap:12px;flex-wrap:wrap">
+    <div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>경비 내역</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <select class="form-select" id="expense-filter-category" onchange="setExpenseFilter('category',this.value)" style="width:130px"></select>
+      <select class="form-select" id="expense-filter-status" onchange="setExpenseFilter('status',this.value)" style="width:120px">
+        <option value="all">상태 전체</option><option value="미검토">미검토</option><option value="확인완료">확인완료</option><option value="제외">제외</option>
+      </select>
+      <button class="btn" onclick="resetExpenseFilters()" style="font-size:11px;padding:5px 12px">전체 조회</button>
+    </div>
+  </div>
+  <div class="panel-body" style="padding:0;overflow-x:auto">
+    <table class="order-table">
+      <thead><tr>
+        <th>일시</th><th>상호명</th><th>분류</th><th style="text-align:right">합계</th><th>승인번호</th><th>사업자번호</th><th>상태</th><th>영수증</th><th style="width:70px"></th>
+      </tr></thead>
+      <tbody id="expense-tbody"></tbody>
+    </table>
+  </div>
+</div>`;
 PAGES['illust'] = `<div class="main-header">
   <div>
     <div class="page-title">일러작업현황</div>
@@ -1534,6 +1590,9 @@ PAGE_INITS['inventory'] = function(){
 PAGE_INITS['kanban'] = function(){
 renderBoard();
 };
+PAGE_INITS['expenses'] = function(){
+renderExpenses();
+};
 PAGE_INITS['illust'] = function(){
 renderIllustStatus();
 };
@@ -1671,6 +1730,10 @@ PAGES['settings'] = `<div class="main-header">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="reset-kanban" style="width:16px;height:16px;accent-color:var(--coral)">
         굿즈제작 작업현황 (칸반)
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="reset-expenses" style="width:16px;height:16px;accent-color:var(--coral)">
+        경비처리 데이터
       </label>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="reset-artists" style="width:16px;height:16px;accent-color:var(--coral)">
@@ -2288,7 +2351,7 @@ function estatSubmitManual() {
 }
 
 let currentPage = null;
-const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
+const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','expenses':'경비처리','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
 
 function navigate(pageKey) {
   const main = document.getElementById('main-content');
@@ -3276,6 +3339,253 @@ function openKanbanAddModal(){document.getElementById('modal-kanban').classList.
 function closeKanbanModal(){document.getElementById('modal-kanban').classList.remove('open');}
 function submitKanbanModal(){const goods=document.getElementById('kb-goods').value.trim(),member=document.getElementById('kb-member').value.trim();if(!goods||!member){alert('굿즈명과 멤버 입력');return;}const newId=tasks.length?Math.max(...tasks.map(t=>t.id))+1:1;tasks.push({id:newId,artist:document.getElementById('kb-artist').value,goods,member,genre:document.getElementById('kb-genre').value,site:document.getElementById('kb-site').value,status:document.getElementById('kb-status').value,note:document.getElementById('kb-note').value});renderBoard();if(window.fbSave)fbSave('tasks');closeKanbanModal();['kb-goods','kb-member','kb-site','kb-note'].forEach(id=>{document.getElementById(id).value='';});}
 
+// 경비처리
+const EXPENSE_CATEGORIES = ['소프트웨어','행사비','제작/원재료','사무/비품','배송/운송','식비/접대','수수료','기타'];
+const EXPENSE_STATUSES = ['미검토','확인완료','제외'];
+var expenseData = [];
+window._expenseFilter = window._expenseFilter || {category:'all',status:'all'};
+
+function parseWon(value){
+  return Number(String(value||'').replace(/[^\d.-]/g,'')) || 0;
+}
+function formatWonValue(value){
+  return '₩' + (Number(value)||0).toLocaleString();
+}
+function inferExpenseCategory(merchant=''){
+  const name = String(merchant).toLowerCase();
+  if(name.includes('adobe')) return '소프트웨어';
+  if(name.includes('코믹월드') || name.includes('스타라이크')) return '행사비';
+  if(name.includes('쿠팡') || name.includes('네이버페이')) return '사무/비품';
+  if(name.includes('렌탈') || name.includes('워시스왓')) return '배송/운송';
+  return '기타';
+}
+function expenseSelectOptions(values, selected, allLabel){
+  return `<option value="all" ${selected==='all'?'selected':''}>${allLabel}</option>` + values.map(v=>`<option value="${v}" ${selected===v?'selected':''}>${v}</option>`).join('');
+}
+function getFilteredExpenses(){
+  const f = window._expenseFilter || {category:'all',status:'all'};
+  return expenseData.filter(r =>
+    (f.category==='all' || r.category===f.category) &&
+    (f.status==='all' || r.status===f.status)
+  );
+}
+function renderExpenses(){
+  const tbody = document.getElementById('expense-tbody');
+  if(!tbody) return;
+  const f = window._expenseFilter || {category:'all',status:'all'};
+  const catSel = document.getElementById('expense-filter-category');
+  const statusSel = document.getElementById('expense-filter-status');
+  if(catSel) catSel.innerHTML = expenseSelectOptions(EXPENSE_CATEGORIES, f.category, '분류 전체');
+  if(statusSel) statusSel.value = f.status;
+
+  const rows = getFilteredExpenses().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  tbody.innerHTML = rows.length ? rows.map(r=>`
+    <tr>
+      <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.date||'-'}</td>
+      <td style="font-weight:600">${r.merchant||'-'}<div style="font-size:11px;color:var(--text3);font-weight:400">${r.memo||''}</div></td>
+      <td><select class="form-select" style="width:120px;padding:5px 8px;font-size:12px" onchange="updateExpenseField(${r.id},'category',this.value)">${EXPENSE_CATEGORIES.map(c=>`<option value="${c}" ${r.category===c?'selected':''}>${c}</option>`).join('')}</select></td>
+      <td style="text-align:right;font-family:'DM Mono';font-weight:700;color:${r.status==='제외'?'var(--text3)':'var(--amber)'}">${formatWonValue(r.total)}</td>
+      <td style="font-family:'DM Mono';font-size:12px;color:var(--text2)">${r.approvalNo||'-'}</td>
+      <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.businessNo||'-'}</td>
+      <td><select class="form-select" style="width:104px;padding:5px 8px;font-size:12px" onchange="updateExpenseField(${r.id},'status',this.value)">${EXPENSE_STATUSES.map(s=>`<option value="${s}" ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+      <td>${r.receiptDataUrl?`<button class="btn" onclick="openExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px">보기</button>`:''}<button class="btn" onclick="attachExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px;margin-left:4px">첨부</button><div style="font-size:10px;color:var(--text3);margin-top:3px">${r.receiptName||''}</div></td>
+      <td class='act-col'><div class='row-actions' style='opacity:1'><button class='act-btn edit' onclick='editExpense(${r.id})' title='수정'>✎</button><button class='act-btn del' onclick='deleteExpense(${r.id})' title='삭제'>✕</button></div></td>
+    </tr>
+  `).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">등록된 경비가 없습니다. 카드매출전표 PDF를 업로드해보세요.</td></tr>`;
+
+  const activeRows = expenseData.filter(r=>r.status!=='제외');
+  const total = activeRows.reduce((s,r)=>s+(Number(r.total)||0),0);
+  const receiptCount = expenseData.filter(r=>r.receiptDataUrl).length;
+  const pendingCount = expenseData.filter(r=>r.status==='미검토').length;
+  const setHtml = (id, html) => { const el=document.getElementById(id); if(el) el.innerHTML=html; };
+  setHtml('expense-total', `<span>₩</span>${total.toLocaleString()}`);
+  setHtml('expense-count', String(expenseData.length));
+  setHtml('expense-receipts', String(receiptCount));
+  setHtml('expense-pending', String(pendingCount));
+}
+window.setExpenseFilter = function(key, value){
+  window._expenseFilter = window._expenseFilter || {category:'all',status:'all'};
+  window._expenseFilter[key] = value;
+  renderExpenses();
+};
+window.resetExpenseFilters = function(){
+  window._expenseFilter = {category:'all',status:'all'};
+  renderExpenses();
+};
+window.updateExpenseField = function(id, key, value){
+  const row = expenseData.find(r=>r.id===id);
+  if(!row) return;
+  row[key] = value;
+  renderExpenses();
+  if(window.fbSave) fbSave('expenseData');
+};
+async function loadPdfJs(){
+  if(window.pdfjsLib) return window.pdfjsLib;
+  const mod = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
+  mod.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
+  window.pdfjsLib = mod;
+  return mod;
+}
+function extractExpenseValue(text, label){
+  const labels = ['카드종류','카드번호','거래정보','승인번호','결제방법','기존금액','취소금액','금액','세금','봉사료','합계','가맹점정보','상호명','사업자등록번호','가맹점번호','주소','발행처','회사명','법인등록번호','대표자'];
+  const escaped = labels.map(v=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+  const re = new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\\\s+(.+?)(?=\\\\s+(?:' + escaped + ')|$)');
+  const match = String(text||'').match(re);
+  return match ? match[1].trim() : '';
+}
+function parseExpensePdfText(text, sourceFile){
+  const clean = String(text||'').replace(/\s*\d+\s*\/\s*\d+\s*/g,' ');
+  const dateRe = /\d{4}년\s*\d{2}월\s*\d{2}일\s*\d{2}시\s*\d{2}분\s*\d{2}초에 발생한/g;
+  const starts = [];
+  let m;
+  while((m = dateRe.exec(clean))) starts.push(m.index);
+  return starts.map((start, i)=>{
+    const block = clean.slice(start, starts[i+1] || clean.length).replace(/\s+/g,' ');
+    const dm = block.match(/(\d{4})년\s*(\d{2})월\s*(\d{2})일\s*(\d{2})시\s*(\d{2})분\s*(\d{2})초/);
+    const merchant = extractExpenseValue(block, '상호명');
+    const total = parseWon(extractExpenseValue(block, '합계') || extractExpenseValue(block, '금액'));
+    return {
+      id: Date.now() + i,
+      date: dm ? `${dm[1]}-${dm[2]}-${dm[3]} ${dm[4]}:${dm[5]}:${dm[6]}` : '',
+      merchant,
+      category: inferExpenseCategory(merchant),
+      amount: parseWon(extractExpenseValue(block, '금액')),
+      cancelAmount: parseWon(extractExpenseValue(block, '취소금액')),
+      tax: parseWon(extractExpenseValue(block, '세금')),
+      serviceFee: parseWon(extractExpenseValue(block, '봉사료')),
+      total,
+      approvalNo: extractExpenseValue(block, '승인번호'),
+      method: extractExpenseValue(block, '결제방법'),
+      businessNo: extractExpenseValue(block, '사업자등록번호'),
+      merchantNo: extractExpenseValue(block, '가맹점번호'),
+      address: extractExpenseValue(block, '주소'),
+      cardType: extractExpenseValue(block, '카드종류'),
+      cardNo: extractExpenseValue(block, '카드번호'),
+      status: '미검토',
+      memo: '',
+      receiptName: '',
+      receiptDataUrl: '',
+      sourceFile: sourceFile || ''
+    };
+  }).filter(r=>r.date && r.merchant && r.total);
+}
+window.importExpensePdf = async function(){
+  const input = document.getElementById('expense-pdf-input');
+  const status = document.getElementById('expense-import-status');
+  const file = input?.files?.[0];
+  if(!file){ alert('PDF 파일을 선택해주세요.'); return; }
+  if(status) status.textContent = 'PDF 읽는 중...';
+  try{
+    const pdfjs = await loadPdfJs();
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjs.getDocument({data: buffer}).promise;
+    const pages = [];
+    for(let pageNo=1; pageNo<=pdf.numPages; pageNo++){
+      const page = await pdf.getPage(pageNo);
+      const content = await page.getTextContent();
+      pages.push(content.items.map(item=>item.str).join(' '));
+    }
+    const parsed = parseExpensePdfText(pages.join(' '), file.name);
+    const existingKeys = new Set(expenseData.map(r=>`${r.approvalNo}|${r.total}|${r.date}`));
+    const fresh = parsed.filter(r=>!existingKeys.has(`${r.approvalNo}|${r.total}|${r.date}`));
+    expenseData = [...fresh, ...expenseData];
+    window.expenseData = expenseData;
+    renderExpenses();
+    if(window.fbSave) fbSave('expenseData');
+    if(status) status.textContent = `${parsed.length}건 추출 · ${fresh.length}건 추가됨`;
+    if(!fresh.length) alert('새로 추가할 거래가 없습니다. 이미 등록된 승인번호로 보입니다.');
+  }catch(e){
+    console.error(e);
+    if(status) status.textContent = 'PDF 읽기 실패';
+    alert('PDF를 읽지 못했어요. 토스뱅크 카드매출전표 PDF인지 확인해주세요.');
+  }
+};
+window.addExpenseManual = function(){
+  openEdit('경비 직접 추가', mfields(
+    {l:'일시',id:'d',val:new Date().toISOString().slice(0,10)},
+    {l:'상호명',id:'m',val:''},
+    {l:'분류',id:'c',type:'select',val:'기타',opts:EXPENSE_CATEGORIES},
+    {l:'합계(₩)',id:'t',type:'number',val:0},
+    {l:'승인번호',id:'a',val:''},
+    {l:'사업자번호',id:'b',val:''},
+    {l:'상태',id:'s',type:'select',val:'미검토',opts:EXPENSE_STATUSES},
+    {l:'메모',id:'n',val:''}
+  ),()=>{
+    const merchant = gv('m').trim();
+    if(!merchant){ alert('상호명을 입력해주세요.'); return; }
+    const newId = expenseData.length ? Math.max(...expenseData.map(r=>Number(r.id)||0))+1 : 1;
+    expenseData.unshift({id:newId,date:gv('d'),merchant,category:gv('c'),total:gn('t'),amount:gn('t'),tax:0,serviceFee:0,approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n'),receiptName:'',receiptDataUrl:'',sourceFile:'직접입력'});
+    window.expenseData = expenseData;
+    closeEdit();
+    renderExpenses();
+    if(window.fbSave) fbSave('expenseData');
+  });
+};
+window.editExpense = function(id){
+  const r = expenseData.find(x=>x.id===id);
+  if(!r) return;
+  openEdit('경비 수정', mfields(
+    {l:'일시',id:'d',val:r.date||''},
+    {l:'상호명',id:'m',val:r.merchant||''},
+    {l:'분류',id:'c',type:'select',val:r.category||'기타',opts:EXPENSE_CATEGORIES},
+    {l:'합계(₩)',id:'t',type:'number',val:r.total||0},
+    {l:'승인번호',id:'a',val:r.approvalNo||''},
+    {l:'사업자번호',id:'b',val:r.businessNo||''},
+    {l:'상태',id:'s',type:'select',val:r.status||'미검토',opts:EXPENSE_STATUSES},
+    {l:'메모',id:'n',val:r.memo||''}
+  ),()=>{
+    Object.assign(r,{date:gv('d'),merchant:gv('m'),category:gv('c'),total:gn('t'),approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n')});
+    closeEdit();
+    renderExpenses();
+    if(window.fbSave) fbSave('expenseData');
+  });
+};
+window.deleteExpense = function(id){
+  const r = expenseData.find(x=>x.id===id);
+  if(!r) return;
+  openConfirm(`<b>${r.merchant}</b> 경비 내역을 삭제할까요?`,()=>{
+    expenseData.splice(expenseData.findIndex(x=>x.id===id),1);
+    window.expenseData = expenseData;
+    renderExpenses();
+    if(window.fbSave) fbSave('expenseData');
+  });
+};
+window.attachExpenseReceipt = function(id){
+  const row = expenseData.find(r=>r.id===id);
+  if(!row) return;
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,application/pdf';
+  input.onchange = () => {
+    const file = input.files?.[0];
+    if(!file) return;
+    if(file.size > 650 * 1024){
+      alert('Drive 연동 전 임시 첨부는 650KB 이하만 저장할게요. 큰 영수증은 Drive 연동 후 올리는 게 안전합니다.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      row.receiptName = file.name;
+      row.receiptDataUrl = e.target.result;
+      renderExpenses();
+      if(window.fbSave) fbSave('expenseData');
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+};
+window.openExpenseReceipt = function(id){
+  const row = expenseData.find(r=>r.id===id);
+  if(!row?.receiptDataUrl) return;
+  const w = window.open();
+  if(w) w.document.write(row.receiptDataUrl.startsWith('data:application/pdf') ? `<iframe src="${row.receiptDataUrl}" style="border:0;width:100%;height:100vh"></iframe>` : `<img src="${row.receiptDataUrl}" style="max-width:100%">`);
+};
+function exportExpenseCsv(){
+  const headers = ['데이터구분','일시','상호명','분류','합계','금액','세금','취소금액','승인번호','결제방법','사업자번호','가맹점번호','카드종류','카드번호','주소','상태','영수증파일','메모','원본파일'];
+  const rows = (window.expenseData || expenseData || []).map(r=>['경비처리',r.date||'',r.merchant||'',r.category||'',+r.total||0,+r.amount||0,+r.tax||0,+r.cancelAmount||0,r.approvalNo||'',r.method||'',r.businessNo||'',r.merchantNo||'',r.cardType||'',r.cardNo||'',r.address||'',r.status||'',r.receiptName||'',r.memo||'',r.sourceFile||'']);
+  downloadCsv(`standup_expenses_${csvDateStamp()}.csv`, headers, rows);
+}
+
 // 일러작업현황
 const ILLUST_STATUSES = ['작업중','러프','밑채색','작업완료'];
 const ILLUST_STATUS_CLASS = {'작업중':'tag-making','러프':'tag-warn','밑채색':'tag-danger','작업완료':'tag-good'};
@@ -3647,6 +3957,7 @@ const MENU_LIST = [
   { key: 'orders',      label: '제작 의뢰',          icon: '≡' },
   { key: 'inventory',   label: '재고 현황',          icon: '📅' },
   { key: 'kanban',      label: '굿즈제작 작업현황',  icon: '▦' },
+  { key: 'expenses',    label: '경비처리',          icon: '🧾' },
   { key: 'illust',      label: '일러작업현황',      icon: '✎' },
   { key: 'sales',       label: '매출 입력',          icon: '📊' },
   { key: 'settlement',  label: '정산내역서',         icon: '📄' },
@@ -4861,6 +5172,7 @@ function backupData() {
       orderData:   window.orderData   || [],
       invData:     window.invData     || [],
       tasks:       window.tasks       || [],
+      expenseData: window.expenseData || [],
       illustTasks: window.illustTasks || [],
       recruitData: window.recruitData || [],
       vendors:     window.vendors     || [],
@@ -4902,6 +5214,7 @@ function restoreData(input) {
           if (d.orderData)   { window.orderData   = d.orderData;   if(window.fbSave) await fbSave('orderData'); }
           if (d.invData)     { window.invData      = d.invData;     if(window.fbSave) await fbSave('invData'); }
           if (d.tasks)       { window.tasks       = d.tasks;       if(window.fbSave) await fbSave('tasks'); }
+          if (d.expenseData) { expenseData = d.expenseData; window.expenseData = expenseData; if(window.fbSave) await fbSave('expenseData'); }
           if (d.illustTasks) { illustTasks = d.illustTasks; window.illustTasks = illustTasks; if(window.fbSave) await fbSave('illustTasks'); }
           if (d.recruitData) { window.recruitData = d.recruitData; if(window.fbSave) await fbSave('recruitData'); }
           if (d.vendors)     { window.vendors     = d.vendors;     if(window.fbSave) await fbSave('vendors'); }
@@ -4939,6 +5252,7 @@ function confirmReset() {
     { id: 'reset-orders',     key: 'orderData',   label: '제작 의뢰',        empty: [], fbKey: 'orders' },
     { id: 'reset-inventory',  key: 'invData',     label: '재고 현황',        empty: [], fbKey: 'inventory' },
     { id: 'reset-kanban',     key: 'tasks',       label: '칸반',             empty: [], fbKey: 'kanban' },
+    { id: 'reset-expenses',   key: 'expenseData', label: '경비처리',         empty: [], fbKey: 'expenses' },
     { id: 'reset-artists',    key: 'recruitData', label: '작가/모집',        empty: [], fbKey: 'artists' },
     { id: 'reset-vendors',    key: 'vendors',     label: '제작 업체',        empty: [], fbKey: 'vendors' },
     { id: 'reset-events',     key: 'eventList',   label: '행사 일정',        empty: [], fbKey: 'events' },
@@ -4962,9 +5276,11 @@ function confirmReset() {
     async () => {
       for (const t of selected) {
         window[t.key] = t.empty;
+        try { eval(t.key + ' = window[t.key]'); } catch(e) {}
         if (Array.isArray(t.companions)) {
           for (const c of t.companions) {
             window[c.key] = c.empty;
+            try { eval(c.key + ' = window[c.key]'); } catch(e) {}
           }
         }
         // salesData는 fbSave 패턴 다름 - 직접 저장
@@ -4996,6 +5312,7 @@ window.costData    = costData;
 window.orderData   = orderData;
 window.invData     = invData;
 window.tasks       = tasks;
+window.expenseData = expenseData;
 window.illustTasks = illustTasks;
 window.recruitData = recruitData;
 window.vendors     = vendors;
@@ -5040,6 +5357,7 @@ const COLLECTIONS = {
   orderData:   'orders',
   invData:     'inventory',
   tasks:       'kanban',
+  expenseData: 'expenses',
   illustTasks: 'illustrations',
   recruitData: 'artists',
   vendors:     'vendors',
@@ -5156,7 +5474,7 @@ async function initFirebase() {
   }
 
   // 모든 데이터 병렬 로드
-  const keys = ['txData','memberShares','costData','orderData','invData','tasks','illustTasks','recruitData','vendors','eventList'];
+  const keys = ['txData','memberShares','costData','orderData','invData','tasks','expenseData','illustTasks','recruitData','vendors','eventList'];
   await Promise.all(keys.map(k => fbLoad(k)));
 
   // 첫 로드 후 로컬 데이터가 없으면 현재 앱 데이터를 Firebase에 업로드
@@ -5177,6 +5495,7 @@ async function initFirebase() {
     orderData:   () => { if(typeof renderOrders==='function') renderOrders(window._of||'all'); },
     invData:     () => { if(typeof renderInv==='function')   renderInv(window._iv||'all'); },
     tasks:       () => { if(typeof renderBoard==='function') renderBoard(); },
+    expenseData: () => { if(typeof renderExpenses==='function') renderExpenses(); },
     illustTasks: () => { if(typeof renderIllustStatus==='function') renderIllustStatus(); },
     recruitData: () => { if(typeof renderRecruitList==='function') renderRecruitList(); },
     vendors:     () => { if(typeof renderVendors==='function') renderVendors(window._vf||'all'); },
@@ -5188,7 +5507,7 @@ async function initFirebase() {
       // 현재 해당 페이지가 열려있을 때만 리렌더
       const pageMap = {
         txData:'accounting', memberShares:'accounting', costData:'cost', orderData:'orders',
-        invData:'inventory', tasks:'kanban', illustTasks:'illust', recruitData:'artists',
+        invData:'inventory', tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
         vendors:'vendors', eventList:'dashboard'
       };
       if (window.currentPage === pageMap[key] || window.currentPage === 'dashboard') {
