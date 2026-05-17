@@ -3455,19 +3455,23 @@ function extractExpenseValue(text, label){
   return match ? match[1].trim() : '';
 }
 function parseExpensePdfText(text, sourceFile){
-  const clean = String(text||'').replace(/\s*\d+\s*\/\s*\d+\s*/g,' ');
-  const dateRe = /\d{4}년\s*\d{2}월\s*\d{2}일\s*\d{2}시\s*\d{2}분\s*\d{2}초에 발생한/g;
+  const clean = String(text||'')
+    .replace(/\u00a0/g,' ')
+    .replace(/\s*\d+\s*\/\s*\d+\s*/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+  const dateRe = /(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일\s*(\d{1,2})\s*시\s*(\d{1,2})\s*분\s*(\d{1,2})\s*초/g;
   const starts = [];
   let m;
-  while((m = dateRe.exec(clean))) starts.push(m.index);
+  while((m = dateRe.exec(clean))) starts.push({index:m.index, match:m});
   return starts.map((start, i)=>{
-    const block = clean.slice(start, starts[i+1] || clean.length).replace(/\s+/g,' ');
-    const dm = block.match(/(\d{4})년\s*(\d{2})월\s*(\d{2})일\s*(\d{2})시\s*(\d{2})분\s*(\d{2})초/);
+    const block = clean.slice(start.index, starts[i+1]?.index || clean.length).replace(/\s+/g,' ');
+    const dm = start.match;
     const merchant = extractExpenseValue(block, '상호명');
     const total = parseWon(extractExpenseValue(block, '합계') || extractExpenseValue(block, '금액'));
     return {
       id: Date.now() + i,
-      date: dm ? `${dm[1]}-${dm[2]}-${dm[3]} ${dm[4]}:${dm[5]}:${dm[6]}` : '',
+      date: dm ? `${dm[1]}-${String(dm[2]).padStart(2,'0')}-${String(dm[3]).padStart(2,'0')} ${String(dm[4]).padStart(2,'0')}:${String(dm[5]).padStart(2,'0')}:${String(dm[6]).padStart(2,'0')}` : '',
       merchant,
       category: inferExpenseCategory(merchant),
       amount: parseWon(extractExpenseValue(block, '금액')),
@@ -3506,7 +3510,8 @@ window.importExpensePdf = async function(){
       const content = await page.getTextContent();
       pages.push(content.items.map(item=>item.str).join(' '));
     }
-    const parsed = parseExpensePdfText(pages.join(' '), file.name);
+    const rawText = pages.join(' ');
+    const parsed = parseExpensePdfText(rawText, file.name);
     const existingKeys = new Set(expenseData.map(r=>`${r.approvalNo}|${r.total}|${r.date}`));
     let fresh = parsed.filter(r=>!existingKeys.has(`${r.approvalNo}|${r.total}|${r.date}`));
     if(!fresh.length && parsed.length && !expenseData.length) fresh = parsed;
@@ -3517,7 +3522,10 @@ window.importExpensePdf = async function(){
     renderExpenses();
     if(fresh.length && window.fbSave) fbSave('expenseData');
     if(status) status.textContent = `${parsed.length}건 추출 · ${fresh.length}건 추가됨${fresh.length ? '' : ' · 기존 내역 표시'}`;
-    if(!parsed.length) alert('PDF에서 거래를 찾지 못했어요. 토스뱅크 카드매출전표 PDF인지 확인해주세요.');
+    if(!parsed.length) {
+      console.warn('PDF text preview:', rawText.slice(0, 1000));
+      alert('PDF에서 거래를 찾지 못했어요. 새로고침 후 다시 시도해보고, 계속 안 되면 콘솔의 PDF text preview를 알려주세요.');
+    }
     else if(!fresh.length) alert('이 PDF의 거래는 이미 등록되어 있어요. 기존 경비 내역을 전체 조회로 보여드릴게요.');
   }catch(e){
     console.error(e);
