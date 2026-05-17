@@ -816,10 +816,6 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="3" height="12" rx="1"/><rect x="6" y="5" width="3" height="9" rx="1"/><rect x="11" y="8" width="3" height="6" rx="1"/></svg>
       굿즈제작 작업현황
     </div>
-    <div class="nav-item" onclick="setNav(this)">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13l2.5-.6L13 4.9 11.1 3 3.6 10.5 3 13z"/><path d="M10 4l2 2"/></svg>
-      일러작업현황
-    </div>
   </div>
   <div class="sidebar-section">
     <div class="sidebar-label">행사 관리</div>
@@ -1194,7 +1190,7 @@ PAGES['pnl'] = `<div class="main-header">
     <div class="page-sub">행사별 매출 · 원가 · 최종 손익 분석</div>
   </div>
   <div class="header-right">
-    <button class="btn" onclick="exportPnlCsv()" style="font-size:11px;padding:5px 10px">CSV 내보내기</button><button class="btn" onclick="openAddEventPnlModal()" style="font-size:11px;padding:5px 10px">+ 행사 추가</button><div class="event-badge"><div class="dot-live"></div>최근: 코믹월드 26/3</div>
+    <button class="btn" onclick="openAddEventPnlModal()" style="font-size:11px;padding:5px 10px">+ 행사 추가</button><div class="event-badge"><div class="dot-live"></div>최근: 코믹월드 26/3</div>
   </div>
 </div>
 
@@ -1262,7 +1258,7 @@ PAGES['cost'] = `<div class="main-header">
       <button class="filter-btn on" onclick="filterCost('all',this)">전체</button>
       <button class="filter-btn" onclick="filterCost('danger',this)">⚠ 위험</button>
       <button class="filter-btn" onclick="filterCost('good',this)">● 좋음</button>
-      <button class="btn" onclick="exportCostCsv()" style="font-size:11px;padding:5px 12px;margin-left:6px">CSV</button><button class="btn btn-primary" onclick="openAddCostModal()" style="font-size:11px;padding:5px 12px">+ 추가</button>
+      <button class="btn btn-primary" onclick="openAddCostModal()" style="font-size:11px;padding:5px 12px;margin-left:6px">+ 추가</button>
     </div>
   </div>
   <div class="panel-body" style="padding:0">
@@ -1328,7 +1324,7 @@ PAGES['inventory'] = `<div class="main-header">
     <div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>재고 현황 상세</div>
     <div style="display:flex;gap:6px">
       <div id="inv-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-      <button class="btn" onclick="exportInventoryCsv()" style="font-size:11px;padding:5px 12px;margin-left:6px">CSV</button><button class="btn btn-primary" onclick="openAddInvModal()" style="font-size:11px;padding:5px 12px">+ 추가</button>
+      <button class="btn btn-primary" onclick="openAddInvModal()" style="font-size:11px;padding:5px 12px;margin-left:6px">+ 추가</button>
     </div>
   </div>
   <div class="panel-body" style="padding:0">
@@ -1363,43 +1359,6 @@ PAGES['kanban'] = `<div class="main-header">
 </div>
 
 <div class="kanban-board" id="kanban-board"></div>`;
-PAGES['illust'] = `<div class="main-header">
-  <div>
-    <div class="page-title">일러작업현황</div>
-    <div class="page-sub">작가별 · 굿즈별 · 장르별 · 상태별 일러스트 진행 관리</div>
-  </div>
-  <div class="header-right">
-    <button class="btn btn-primary" onclick="addIllustTask()">+ 일러 추가</button>
-  </div>
-</div>
-
-<div class="kpi-grid">
-  <div class="kpi-card blue"><div class="kpi-label">작업중</div><div class="kpi-value" id="illust-cnt-working">0</div><div class="kpi-change neutral">진행 대기/작업</div></div>
-  <div class="kpi-card amber"><div class="kpi-label">러프</div><div class="kpi-value" id="illust-cnt-rough">0</div><div class="kpi-change neutral">러프 확인</div></div>
-  <div class="kpi-card coral"><div class="kpi-label">밑채색</div><div class="kpi-value" id="illust-cnt-base">0</div><div class="kpi-change neutral">채색 진행</div></div>
-  <div class="kpi-card teal"><div class="kpi-label">작업완료</div><div class="kpi-value" id="illust-cnt-done">0</div><div class="kpi-change up">완료</div></div>
-</div>
-
-<div class="panel">
-  <div class="panel-header" style="align-items:flex-end;gap:12px;flex-wrap:wrap">
-    <div class="panel-title"><div class="panel-title-dot" style="background:var(--purple)"></div>일러 작업 목록</div>
-    <div style="display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px;flex:1;max-width:760px">
-      <select class="form-select" id="illust-filter-artist" onchange="setIllustFilter('artist',this.value)"></select>
-      <select class="form-select" id="illust-filter-goods" onchange="setIllustFilter('goods',this.value)"></select>
-      <select class="form-select" id="illust-filter-genre" onchange="setIllustFilter('genre',this.value)"></select>
-      <select class="form-select" id="illust-filter-status" onchange="setIllustFilter('status',this.value)"></select>
-    </div>
-    <button class="btn" onclick="resetIllustFilters()" style="font-size:11px;padding:5px 12px">전체 조회</button>
-  </div>
-  <div class="panel-body" style="padding:0">
-    <table class="order-table">
-      <thead><tr>
-        <th>작가</th><th>굿즈</th><th>장르</th><th>대상/멤버</th><th>상태</th><th>마감/메모</th><th style="width:70px"></th>
-      </tr></thead>
-      <tbody id="illust-tbody"></tbody>
-    </table>
-  </div>
-</div>`;
 PAGES['artists'] = `<div class="main-header">
   <div>
     <div class="page-title">작가 / 모집</div>
@@ -1533,9 +1492,6 @@ PAGE_INITS['inventory'] = function(){
 };
 PAGE_INITS['kanban'] = function(){
 renderBoard();
-};
-PAGE_INITS['illust'] = function(){
-renderIllustStatus();
 };
 PAGE_INITS['artists'] = function(){
 renderRecruitList();
@@ -1710,7 +1666,7 @@ PAGES['sales'] = `<div class="main-header">
       <option value="">행사 선택</option>
     </select>
     <button class="btn" onclick="addSalesEvent()">+ 행사 추가</button>
-    <button class="btn" onclick="exportSalesCsv('current')">현재 행사 CSV</button><button class="btn" onclick="exportSalesCsv('all')">전체 CSV</button><button class="btn btn-primary" id="sales-save-btn" onclick="saveSalesData()">💾 저장</button>
+    <button class="btn btn-primary" id="sales-save-btn" onclick="saveSalesData()">💾 저장</button>
     <button class="btn" onclick="deleteCurrentSalesEvent()" style="color:var(--coral);border-color:rgba(255,107,107,.35)">🗑 삭제</button>
   </div>
 </div>
@@ -1758,7 +1714,7 @@ PAGES['event-stats'] = `<div class="main-header">
       PDF 업로드
       <input type="file" id="estat-pdf-input" accept=".pdf" style="display:none" onchange="estatParsePdf(this)">
     </label>
-    <button class="btn" onclick="exportEventStatsCsv()">CSV 내보내기</button><button class="btn" onclick="estatOpenManualModal()">+ 직접 입력</button>
+    <button class="btn" onclick="estatOpenManualModal()">+ 직접 입력</button>
     <button class="btn" onclick="estatResetAll()" style="color:var(--coral);border-color:rgba(240,96,96,.3);font-size:11px">초기화</button>
   </div>
 </div>
@@ -2288,7 +2244,7 @@ function estatSubmitManual() {
 }
 
 let currentPage = null;
-const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
+const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
 
 function navigate(pageKey) {
   const main = document.getElementById('main-content');
@@ -2301,7 +2257,6 @@ function navigate(pageKey) {
   });
   if (PAGE_INITS[pageKey]) { try { PAGE_INITS[pageKey](); } catch(e) { console.error('Init error', pageKey, e); } }
   currentPage = pageKey;
-  window.currentPage = pageKey;
   main.scrollTop = 0;
 }
 function setNav(el) {
@@ -3276,132 +3231,6 @@ function openKanbanAddModal(){document.getElementById('modal-kanban').classList.
 function closeKanbanModal(){document.getElementById('modal-kanban').classList.remove('open');}
 function submitKanbanModal(){const goods=document.getElementById('kb-goods').value.trim(),member=document.getElementById('kb-member').value.trim();if(!goods||!member){alert('굿즈명과 멤버 입력');return;}const newId=tasks.length?Math.max(...tasks.map(t=>t.id))+1:1;tasks.push({id:newId,artist:document.getElementById('kb-artist').value,goods,member,genre:document.getElementById('kb-genre').value,site:document.getElementById('kb-site').value,status:document.getElementById('kb-status').value,note:document.getElementById('kb-note').value});renderBoard();if(window.fbSave)fbSave('tasks');closeKanbanModal();['kb-goods','kb-member','kb-site','kb-note'].forEach(id=>{document.getElementById(id).value='';});}
 
-// 일러작업현황
-const ILLUST_STATUSES = ['작업중','러프','밑채색','작업완료'];
-const ILLUST_STATUS_CLASS = {'작업중':'tag-making','러프':'tag-warn','밑채색':'tag-danger','작업완료':'tag-good'};
-var illustTasks = [
-  {id:1,artist:'닐마',goods:'키링',member:'마젯',genre:'미츄',status:'작업중',due:'',note:'신규 일러'},
-  {id:2,artist:'맹이',goods:'LD아크릴 스탠드',member:'이오몽',genre:'미츄',status:'러프',due:'',note:'러프 확인 필요'},
-  {id:3,artist:'양초',goods:'장패드',member:'온천 단체',genre:'스텔라이브',status:'밑채색',due:'',note:''},
-  {id:4,artist:'하쿠야',goods:'포토카드',member:'미녕이',genre:'미츄',status:'작업완료',due:'',note:'입고용 전달 완료'}
-];
-window._illustFilter = window._illustFilter || {artist:'all',goods:'all',genre:'all',status:'all'};
-function illustOptions(values, selected, allLabel){
-  return `<option value="all" ${selected==='all'?'selected':''}>${allLabel}</option>` + values.map(v=>`<option value="${v}" ${selected===v?'selected':''}>${v}</option>`).join('');
-}
-function filteredIllustTasks(){
-  const f = window._illustFilter || {artist:'all',goods:'all',genre:'all',status:'all'};
-  return illustTasks.filter(t =>
-    (f.artist==='all' || t.artist===f.artist) &&
-    (f.goods==='all' || t.goods===f.goods) &&
-    (f.genre==='all' || t.genre===f.genre) &&
-    (f.status==='all' || t.status===f.status)
-  );
-}
-function renderIllustStatus(){
-  const tbody = document.getElementById('illust-tbody');
-  if(!tbody) return;
-  const f = window._illustFilter || {artist:'all',goods:'all',genre:'all',status:'all'};
-  const artists = [...new Set(illustTasks.map(t=>t.artist).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
-  const goods = [...new Set(illustTasks.map(t=>t.goods).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
-  const genres = [...new Set(illustTasks.map(t=>t.genre).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
-  const artistSel = document.getElementById('illust-filter-artist');
-  const goodsSel = document.getElementById('illust-filter-goods');
-  const genreSel = document.getElementById('illust-filter-genre');
-  const statusSel = document.getElementById('illust-filter-status');
-  if(artistSel) artistSel.innerHTML = illustOptions(artists, f.artist, '작가 전체');
-  if(goodsSel) goodsSel.innerHTML = illustOptions(goods, f.goods, '굿즈 전체');
-  if(genreSel) genreSel.innerHTML = illustOptions(genres, f.genre, '장르 전체');
-  if(statusSel) statusSel.innerHTML = illustOptions(ILLUST_STATUSES, f.status, '상태 전체');
-
-  const rows = filteredIllustTasks();
-  tbody.innerHTML = rows.length ? rows.map(t=>`
-    <tr>
-      <td><span style="font-weight:600;color:${artistColor[t.artist]||acKanban[t.artist]||'var(--text)'}">${t.artist}</span></td>
-      <td style="font-weight:500">${t.goods}</td>
-      <td><span class="status-tag ${t.genre==='미츄'?'tag-warn':'tag-making'}" style="margin:0">${t.genre||'-'}</span></td>
-      <td>${t.member||'-'}</td>
-      <td>
-        <select class="form-select" style="min-width:110px;padding:5px 8px;font-size:12px" onchange="updateIllustStatus(${t.id},this.value)">
-          ${ILLUST_STATUSES.map(s=>`<option value="${s}" ${t.status===s?'selected':''}>${s}</option>`).join('')}
-        </select>
-        <span class="status-tag ${ILLUST_STATUS_CLASS[t.status]||'tag-making'}" style="margin-left:6px">${t.status}</span>
-      </td>
-      <td style="font-size:12px;color:var(--text2);max-width:240px;white-space:normal;word-break:break-word">${t.due?`${t.due} · `:''}${t.note||'-'}</td>
-      <td class='act-col'><div class='row-actions' style='opacity:1'><button class='act-btn edit' onclick='editIllustTask(${t.id})' title='수정'>✎</button><button class='act-btn del' onclick='deleteIllustTask(${t.id})' title='삭제'>✕</button></div></td>
-    </tr>
-  `).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">조회된 일러 작업이 없습니다.</td></tr>`;
-
-  const count = status => illustTasks.filter(t=>t.status===status).length;
-  const setCount = (id, value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
-  setCount('illust-cnt-working', count('작업중'));
-  setCount('illust-cnt-rough', count('러프'));
-  setCount('illust-cnt-base', count('밑채색'));
-  setCount('illust-cnt-done', count('작업완료'));
-}
-window.setIllustFilter = function(key, value){
-  window._illustFilter = window._illustFilter || {artist:'all',goods:'all',genre:'all',status:'all'};
-  window._illustFilter[key] = value;
-  renderIllustStatus();
-};
-window.resetIllustFilters = function(){
-  window._illustFilter = {artist:'all',goods:'all',genre:'all',status:'all'};
-  renderIllustStatus();
-};
-window.updateIllustStatus = function(id, status){
-  const item = illustTasks.find(t=>t.id===id);
-  if(!item) return;
-  item.status = status;
-  renderIllustStatus();
-  if(window.fbSave) fbSave('illustTasks');
-};
-window.addIllustTask = function(){
-  openEdit('일러 작업 추가', mfields(
-    {l:'작가',id:'a',type:'select',val:artistList[0]||'',opts:artistList},
-    {l:'굿즈',id:'g',val:''},
-    {l:'장르',id:'ge',type:'select',val:'미츄',opts:GENRES},
-    {l:'대상/멤버',id:'m',val:''},
-    {l:'상태',id:'st',type:'select',val:'작업중',opts:ILLUST_STATUSES},
-    {l:'마감일',id:'d',type:'date',val:''},
-    {l:'메모',id:'n',val:''}
-  ),()=>{
-    const goods = gv('g').trim();
-    if(!goods){ alert('굿즈명을 입력해주세요.'); return; }
-    const newId = illustTasks.length ? Math.max(...illustTasks.map(t=>Number(t.id)||0))+1 : 1;
-    illustTasks.unshift({id:newId,artist:gv('a'),goods,genre:gv('ge'),member:gv('m'),status:gv('st'),due:gv('d'),note:gv('n')});
-    closeEdit();
-    renderIllustStatus();
-    if(window.fbSave) fbSave('illustTasks');
-  });
-};
-window.editIllustTask = function(id){
-  const item = illustTasks.find(t=>t.id===id);
-  if(!item) return;
-  openEdit('일러 작업 수정', mfields(
-    {l:'작가',id:'a',type:'select',val:item.artist,opts:artistList},
-    {l:'굿즈',id:'g',val:item.goods},
-    {l:'장르',id:'ge',type:'select',val:item.genre,opts:GENRES},
-    {l:'대상/멤버',id:'m',val:item.member||''},
-    {l:'상태',id:'st',type:'select',val:item.status,opts:ILLUST_STATUSES},
-    {l:'마감일',id:'d',type:'date',val:item.due||''},
-    {l:'메모',id:'n',val:item.note||''}
-  ),()=>{
-    Object.assign(item,{artist:gv('a'),goods:gv('g'),genre:gv('ge'),member:gv('m'),status:gv('st'),due:gv('d'),note:gv('n')});
-    closeEdit();
-    renderIllustStatus();
-    if(window.fbSave) fbSave('illustTasks');
-  });
-};
-window.deleteIllustTask = function(id){
-  const item = illustTasks.find(t=>t.id===id);
-  if(!item) return;
-  openConfirm(`<b>${item.artist} — ${item.goods}</b> 일러 작업을 삭제할까요?`,()=>{
-    illustTasks.splice(illustTasks.findIndex(t=>t.id===id),1);
-    renderIllustStatus();
-    if(window.fbSave) fbSave('illustTasks');
-  });
-};
-
 // 모집 신청자
 window.editRecruit=function(idx){const r=recruitData[idx];openEdit('신청자 수정',mfields({l:'날짜',id:'d',val:r.date},{l:'행사명',id:'e',val:r.event},{l:'이름',id:'n',val:r.name},{l:'역할',id:'r',type:'select',val:r.role,opts:['작가','제작업체','스태프']},{l:'디스코드',id:'dc',val:r.discord||''},{l:'트위터',id:'tw',val:r.twitter||''},{l:'상태',id:'st',type:'select',val:r.status,opts:['검토','계약완','활동중','재계약','계약만료','미계약']},{l:'비고',id:'no',val:r.note||''}),()=>{recruitData[idx]={...r,date:gv('d'),event:gv('e'),name:gv('n'),role:gv('r'),discord:gv('dc'),twitter:gv('tw'),status:gv('st'),note:gv('no')};closeEdit();renderRecruitList();if(window.fbSave)fbSave('recruitData');});};
 window.deleteRecruit=function(idx){openConfirm(`<b>${recruitData[idx].name}</b> 삭제?`,()=>{recruitData.splice(idx,1);renderRecruitList();if(window.fbSave)fbSave('recruitData');});};
@@ -3647,7 +3476,6 @@ const MENU_LIST = [
   { key: 'orders',      label: '제작 의뢰',          icon: '≡' },
   { key: 'inventory',   label: '재고 현황',          icon: '📅' },
   { key: 'kanban',      label: '굿즈제작 작업현황',  icon: '▦' },
-  { key: 'illust',      label: '일러작업현황',      icon: '✎' },
   { key: 'sales',       label: '매출 입력',          icon: '📊' },
   { key: 'settlement',  label: '정산내역서',         icon: '📄' },
   { key: 'artists',     label: '작가 / 모집',        icon: '👤' },
@@ -4745,109 +4573,6 @@ function printSettlement() {
   w.document.close();
 }
 
-// CSV export helpers for AI production/restock analysis
-function csvCell(value) {
-  const text = value === undefined || value === null ? '' : String(value);
-  return '"' + text.replace(/"/g, '""') + '"';
-}
-function buildCsv(headers, rows) {
-  return [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
-}
-function downloadCsv(filename, headers, rows) {
-  const csv = '\ufeff' + buildCsv(headers, rows);
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-function csvDateStamp() {
-  return new Date().toISOString().slice(0,10).replace(/-/g, '');
-}
-function toPercent(value) {
-  if (!Number.isFinite(value)) return '';
-  return Math.round(value * 1000) / 10 + '%';
-}
-function exportCostCsv() {
-  const headers = ['데이터구분','굿즈명','종류/멤버','제작수량','개당원가','판매가','판매수량','예상재고','총원가','매출','예상이익','원가율','상태'];
-  const rows = (window.costData || []).map(r => {
-    const qty = +r.qty || 0;
-    const sold = +r.sold || 0;
-    const cost = +r.cost || 0;
-    const price = +r.price || 0;
-    const totalCost = qty * cost;
-    const revenue = sold * price;
-    return ['원가관리', r.name, r.type || '', qty, cost, price, sold, qty - sold, totalCost, revenue, revenue - (sold * cost), price ? toPercent(cost / price) : '', r.status || ''];
-  });
-  downloadCsv(`standup_cost_${csvDateStamp()}.csv`, headers, rows);
-}
-function exportInventoryCsv() {
-  const headers = ['데이터구분','작가','굿즈명','생산수량','생산단가','판매가','실재고','정산완료수량','재고금액_원가','예상매출','배분율'];
-  const rows = (window.invData || []).map(r => {
-    const stock = +r.stock || 0;
-    const cost = +r.cost || 0;
-    const price = +r.price || 0;
-    return ['재고현황', r.artist || '', r.name || '', +r.prod || 0, cost, price, stock, +r.sold || 0, stock * cost, stock * price, r.distPct || 0];
-  });
-  downloadCsv(`standup_inventory_${csvDateStamp()}.csv`, headers, rows);
-}
-function exportPnlCsv() {
-  const headers = ['데이터구분','행사키','행사명','행사일','부스','총매출','선입금','현장매출','온라인매출','할인','서비스','총제작원가','작가정산','고정비합계','최종손익','결과','고정비상세'];
-  const rows = Object.entries(typeof events !== 'undefined' ? events : {}).map(([key, e]) => {
-    const fixed = e.fixed || {};
-    const fixedTotal = Object.values(fixed).reduce((s, v) => s + (+v || 0), 0);
-    const finalPnl = (+e.revenue || 0) - (+e.cogs || 0) - (+e.authorFee || 0) - fixedTotal;
-    const fixedText = Object.entries(fixed).map(([k, v]) => `${k}:${v}`).join(' / ');
-    return ['행사손익', key, e.name || '', e.date || '', e.booth || '', +e.revenue || 0, +e.presale || 0, +e.spot || 0, +e.online || 0, +e.discount || 0, +e.service || 0, +e.cogs || 0, +e.authorFee || 0, fixedTotal, finalPnl, e.result || '', fixedText];
-  });
-  downloadCsv(`standup_pnl_${csvDateStamp()}.csv`, headers, rows);
-}
-function exportEventStatsCsv() {
-  const headers = ['데이터구분','행사명','행사일','총매출','선입금','거래건수','평균거래액','판매량'];
-  const rows = (window.estatData || estatData || []).map(e => ['행사통계', e.name || '', e.date || '', +e.rev || 0, +e.pre || 0, +e.tx || 0, +e.atv || 0, +e.qty || 0]);
-  downloadCsv(`standup_event_stats_${csvDateStamp()}.csv`, headers, rows);
-}
-function collectSalesRows(scope) {
-  if (typeof saveSalesTableInput === 'function') saveSalesTableInput();
-  const source = window.salesData || salesData || {};
-  const eventKeys = scope === 'current' && currentSalesEvent ? [currentSalesEvent] : Object.keys(source);
-  const rows = [];
-  eventKeys.forEach(eventKey => {
-    const event = source[eventKey];
-    if (!event || !event.artists) return;
-    Object.entries(event.artists).forEach(([artist, items]) => {
-      (items || []).forEach(r => {
-        const prod = +r.prod || 0;
-        const sample = +r.sample || 0;
-        const presale = +r.presale || 0;
-        const onsite = +r.onsite || 0;
-        const gift = +r.gift || 0;
-        const soldCoeff = sample + presale + onsite + gift;
-        const settled = typeof getSalesSettledQty === 'function' ? getSalesSettledQty(r, artist) : (+r.settledQty || 0);
-        const remain = prod - settled - soldCoeff;
-        const price = +r.price || 0;
-        const cost = typeof getSalesCost === 'function' ? getSalesCost(r) : (+r.cost || 0);
-        const revenue = soldCoeff * price;
-        const dist = typeof calcDist === 'function' ? calcDist(r, soldCoeff) : 0;
-        rows.push(['매출입력', eventKey, event.name || '', event.date || '', event.manager || '', artist, r.name || '', prod, sample, presale, onsite, gift, soldCoeff, remain, settled, price, cost, revenue, soldCoeff * cost, revenue - (soldCoeff * cost), r.distPct || 0, dist, r.note || '']);
-      });
-    });
-  });
-  return rows;
-}
-function exportSalesCsv(scope = 'all') {
-  if (scope === 'current' && (!currentSalesEvent || !salesData[currentSalesEvent])) {
-    alert('먼저 내보낼 행사를 선택해주세요.');
-    return;
-  }
-  const headers = ['데이터구분','행사키','행사명','행사일','담당자','작가','굿즈명','생산수량','샘플','선입금','현장판매','증정','판매계수','잔여재고','정산완료수량','판매가','원가','매출','판매원가','예상이익','배분율','작가정산','비고'];
-  const rows = collectSalesRows(scope);
-  downloadCsv(`standup_sales_${scope}_${csvDateStamp()}.csv`, headers, rows);
-}
 // ══ 백업 / 복원 / 초기화 ═══════════════════════════════════════════
 
 function backupData() {
@@ -4861,7 +4586,6 @@ function backupData() {
       orderData:   window.orderData   || [],
       invData:     window.invData     || [],
       tasks:       window.tasks       || [],
-      illustTasks: window.illustTasks || [],
       recruitData: window.recruitData || [],
       vendors:     window.vendors     || [],
       eventList:   window.eventList   || [],
@@ -4902,7 +4626,6 @@ function restoreData(input) {
           if (d.orderData)   { window.orderData   = d.orderData;   if(window.fbSave) await fbSave('orderData'); }
           if (d.invData)     { window.invData      = d.invData;     if(window.fbSave) await fbSave('invData'); }
           if (d.tasks)       { window.tasks       = d.tasks;       if(window.fbSave) await fbSave('tasks'); }
-          if (d.illustTasks) { illustTasks = d.illustTasks; window.illustTasks = illustTasks; if(window.fbSave) await fbSave('illustTasks'); }
           if (d.recruitData) { window.recruitData = d.recruitData; if(window.fbSave) await fbSave('recruitData'); }
           if (d.vendors)     { window.vendors     = d.vendors;     if(window.fbSave) await fbSave('vendors'); }
           if (d.eventList)   { window.eventList   = d.eventList;   if(window.fbSave) await fbSave('eventList'); }
@@ -4996,7 +4719,6 @@ window.costData    = costData;
 window.orderData   = orderData;
 window.invData     = invData;
 window.tasks       = tasks;
-window.illustTasks = illustTasks;
 window.recruitData = recruitData;
 window.vendors     = vendors;
 // eventList, artistList 는 이미 let으로 전역 선언됨
@@ -5040,7 +4762,6 @@ const COLLECTIONS = {
   orderData:   'orders',
   invData:     'inventory',
   tasks:       'kanban',
-  illustTasks: 'illustrations',
   recruitData: 'artists',
   vendors:     'vendors',
   eventList:   'events',
@@ -5156,7 +4877,7 @@ async function initFirebase() {
   }
 
   // 모든 데이터 병렬 로드
-  const keys = ['txData','memberShares','costData','orderData','invData','tasks','illustTasks','recruitData','vendors','eventList'];
+  const keys = ['txData','memberShares','costData','orderData','invData','tasks','recruitData','vendors','eventList'];
   await Promise.all(keys.map(k => fbLoad(k)));
 
   // 첫 로드 후 로컬 데이터가 없으면 현재 앱 데이터를 Firebase에 업로드
@@ -5177,7 +4898,6 @@ async function initFirebase() {
     orderData:   () => { if(typeof renderOrders==='function') renderOrders(window._of||'all'); },
     invData:     () => { if(typeof renderInv==='function')   renderInv(window._iv||'all'); },
     tasks:       () => { if(typeof renderBoard==='function') renderBoard(); },
-    illustTasks: () => { if(typeof renderIllustStatus==='function') renderIllustStatus(); },
     recruitData: () => { if(typeof renderRecruitList==='function') renderRecruitList(); },
     vendors:     () => { if(typeof renderVendors==='function') renderVendors(window._vf||'all'); },
     eventList:   () => { if(typeof renderEventListPanel==='function') renderEventListPanel(); },
@@ -5188,7 +4908,7 @@ async function initFirebase() {
       // 현재 해당 페이지가 열려있을 때만 리렌더
       const pageMap = {
         txData:'accounting', memberShares:'accounting', costData:'cost', orderData:'orders',
-        invData:'inventory', tasks:'kanban', illustTasks:'illust', recruitData:'artists',
+        invData:'inventory', tasks:'kanban', recruitData:'artists',
         vendors:'vendors', eventList:'dashboard'
       };
       if (window.currentPage === pageMap[key] || window.currentPage === 'dashboard') {
