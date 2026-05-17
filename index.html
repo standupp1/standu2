@@ -3342,6 +3342,7 @@ function submitKanbanModal(){const goods=document.getElementById('kb-goods').val
 // 경비처리
 const EXPENSE_CATEGORIES = ['소프트웨어','행사비','제작/원재료','사무/비품','배송/운송','식비/접대','수수료','기타'];
 const EXPENSE_STATUSES = ['미검토','확인완료','제외'];
+const EXPENSE_LOCAL_KEY = 'standup_expense_data_v1';
 var expenseData = [];
 window._expenseFilter = window._expenseFilter || {category:'all',status:'all'};
 
@@ -3369,9 +3370,26 @@ function getFilteredExpenses(){
     (f.status==='all' || r.status===f.status)
   );
 }
+function loadExpenseLocal(){
+  try{
+    const raw = localStorage.getItem(EXPENSE_LOCAL_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if(Array.isArray(parsed)) {
+      expenseData = parsed;
+      window.expenseData = expenseData;
+    }
+  }catch(e){}
+}
+function saveExpenseLocal(){
+  try{ localStorage.setItem(EXPENSE_LOCAL_KEY, JSON.stringify(expenseData)); }catch(e){}
+}
 function renderExpenses(){
   const tbody = document.getElementById('expense-tbody');
   if(!tbody) return;
+  if((!expenseData || !expenseData.length) && Array.isArray(window.expenseData) && window.expenseData.length) {
+    expenseData = window.expenseData;
+  }
+  if(!expenseData || !expenseData.length) loadExpenseLocal();
   const f = window._expenseFilter || {category:'all',status:'all'};
   const catSel = document.getElementById('expense-filter-category');
   const statusSel = document.getElementById('expense-filter-status');
@@ -3410,12 +3428,15 @@ window.setExpenseFilter = function(key, value){
 };
 window.resetExpenseFilters = function(){
   window._expenseFilter = {category:'all',status:'all'};
+  if((!expenseData || !expenseData.length) && Array.isArray(window.expenseData) && window.expenseData.length) expenseData = window.expenseData;
+  if(!expenseData || !expenseData.length) loadExpenseLocal();
   renderExpenses();
 };
 window.updateExpenseField = function(id, key, value){
   const row = expenseData.find(r=>r.id===id);
   if(!row) return;
   row[key] = value;
+  saveExpenseLocal();
   renderExpenses();
   if(window.fbSave) fbSave('expenseData');
 };
@@ -3487,13 +3508,17 @@ window.importExpensePdf = async function(){
     }
     const parsed = parseExpensePdfText(pages.join(' '), file.name);
     const existingKeys = new Set(expenseData.map(r=>`${r.approvalNo}|${r.total}|${r.date}`));
-    const fresh = parsed.filter(r=>!existingKeys.has(`${r.approvalNo}|${r.total}|${r.date}`));
+    let fresh = parsed.filter(r=>!existingKeys.has(`${r.approvalNo}|${r.total}|${r.date}`));
+    if(!fresh.length && parsed.length && !expenseData.length) fresh = parsed;
     expenseData = [...fresh, ...expenseData];
     window.expenseData = expenseData;
+    saveExpenseLocal();
+    window._expenseFilter = {category:'all',status:'all'};
     renderExpenses();
-    if(window.fbSave) fbSave('expenseData');
-    if(status) status.textContent = `${parsed.length}건 추출 · ${fresh.length}건 추가됨`;
-    if(!fresh.length) alert('새로 추가할 거래가 없습니다. 이미 등록된 승인번호로 보입니다.');
+    if(fresh.length && window.fbSave) fbSave('expenseData');
+    if(status) status.textContent = `${parsed.length}건 추출 · ${fresh.length}건 추가됨${fresh.length ? '' : ' · 기존 내역 표시'}`;
+    if(!parsed.length) alert('PDF에서 거래를 찾지 못했어요. 토스뱅크 카드매출전표 PDF인지 확인해주세요.');
+    else if(!fresh.length) alert('이 PDF의 거래는 이미 등록되어 있어요. 기존 경비 내역을 전체 조회로 보여드릴게요.');
   }catch(e){
     console.error(e);
     if(status) status.textContent = 'PDF 읽기 실패';
@@ -3516,6 +3541,7 @@ window.addExpenseManual = function(){
     const newId = expenseData.length ? Math.max(...expenseData.map(r=>Number(r.id)||0))+1 : 1;
     expenseData.unshift({id:newId,date:gv('d'),merchant,category:gv('c'),total:gn('t'),amount:gn('t'),tax:0,serviceFee:0,approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n'),receiptName:'',receiptDataUrl:'',sourceFile:'직접입력'});
     window.expenseData = expenseData;
+    saveExpenseLocal();
     closeEdit();
     renderExpenses();
     if(window.fbSave) fbSave('expenseData');
@@ -3535,6 +3561,7 @@ window.editExpense = function(id){
     {l:'메모',id:'n',val:r.memo||''}
   ),()=>{
     Object.assign(r,{date:gv('d'),merchant:gv('m'),category:gv('c'),total:gn('t'),approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n')});
+    saveExpenseLocal();
     closeEdit();
     renderExpenses();
     if(window.fbSave) fbSave('expenseData');
@@ -3546,6 +3573,7 @@ window.deleteExpense = function(id){
   openConfirm(`<b>${r.merchant}</b> 경비 내역을 삭제할까요?`,()=>{
     expenseData.splice(expenseData.findIndex(x=>x.id===id),1);
     window.expenseData = expenseData;
+    saveExpenseLocal();
     renderExpenses();
     if(window.fbSave) fbSave('expenseData');
   });
@@ -3567,6 +3595,7 @@ window.attachExpenseReceipt = function(id){
     reader.onload = e => {
       row.receiptName = file.name;
       row.receiptDataUrl = e.target.result;
+      saveExpenseLocal();
       renderExpenses();
       if(window.fbSave) fbSave('expenseData');
     };
@@ -5277,6 +5306,9 @@ function confirmReset() {
       for (const t of selected) {
         window[t.key] = t.empty;
         try { eval(t.key + ' = window[t.key]'); } catch(e) {}
+        if (t.key === 'expenseData') {
+          try { localStorage.removeItem(EXPENSE_LOCAL_KEY); } catch(e) {}
+        }
         if (Array.isArray(t.companions)) {
           for (const c of t.companions) {
             window[c.key] = c.empty;
@@ -5313,6 +5345,7 @@ window.orderData   = orderData;
 window.invData     = invData;
 window.tasks       = tasks;
 window.expenseData = expenseData;
+loadExpenseLocal();
 window.illustTasks = illustTasks;
 window.recruitData = recruitData;
 window.vendors     = vendors;
