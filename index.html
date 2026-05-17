@@ -1403,6 +1403,8 @@ PAGES['expenses'] = `<div class="main-header">
   <div class="panel-header" style="gap:12px;flex-wrap:wrap">
     <div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>경비 내역</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <select class="form-select" id="expense-filter-year" onchange="setExpenseFilter('year',this.value)" style="width:110px"></select>
+      <select class="form-select" id="expense-filter-month" onchange="setExpenseFilter('month',this.value)" style="width:100px"></select>
       <select class="form-select" id="expense-filter-category" onchange="setExpenseFilter('category',this.value)" style="width:130px"></select>
       <select class="form-select" id="expense-filter-status" onchange="setExpenseFilter('status',this.value)" style="width:120px">
         <option value="all">상태 전체</option><option value="미검토">미검토</option><option value="확인완료">확인완료</option><option value="제외">제외</option>
@@ -3344,7 +3346,7 @@ const EXPENSE_CATEGORIES = ['소프트웨어','행사비','제작/원재료','�
 const EXPENSE_STATUSES = ['미검토','확인완료','제외'];
 const EXPENSE_LOCAL_KEY = 'standup_expense_data_v1';
 var expenseData = [];
-window._expenseFilter = window._expenseFilter || {category:'all',status:'all'};
+window._expenseFilter = window._expenseFilter || {year:'all',month:'all',category:'all',status:'all'};
 
 function parseWon(value){
   return Number(String(value||'').replace(/[^\d.-]/g,'')) || 0;
@@ -3360,12 +3362,28 @@ function inferExpenseCategory(merchant=''){
   if(name.includes('렌탈') || name.includes('워시스왓')) return '배송/운송';
   return '기타';
 }
+function getExpenseYearMonth(dateValue=''){
+  const match = String(dateValue||'').match(/(\d{4})-(\d{2})/);
+  return match ? `${match[1]}-${match[2]}` : '';
+}
+function normalizeExpenseRows(){
+  let changed = false;
+  expenseData.forEach(r=>{
+    const ym = r.yearMonth || getExpenseYearMonth(r.date);
+    if(r.yearMonth !== ym){ r.yearMonth = ym; changed = true; }
+    if(!r.status){ r.status = '미검토'; changed = true; }
+    if(!r.category){ r.category = inferExpenseCategory(r.merchant); changed = true; }
+  });
+  return changed;
+}
 function expenseSelectOptions(values, selected, allLabel){
   return `<option value="all" ${selected==='all'?'selected':''}>${allLabel}</option>` + values.map(v=>`<option value="${v}" ${selected===v?'selected':''}>${v}</option>`).join('');
 }
 function getFilteredExpenses(){
-  const f = window._expenseFilter || {category:'all',status:'all'};
+  const f = window._expenseFilter || {year:'all',month:'all',category:'all',status:'all'};
   return expenseData.filter(r =>
+    (f.year==='all' || String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)===f.year) &&
+    (f.month==='all' || String(r.yearMonth||getExpenseYearMonth(r.date)).slice(5,7)===f.month) &&
     (f.category==='all' || r.category===f.category) &&
     (f.status==='all' || r.status===f.status)
   );
@@ -3377,6 +3395,7 @@ function loadExpenseLocal(){
     if(Array.isArray(parsed)) {
       expenseData = parsed;
       window.expenseData = expenseData;
+      normalizeExpenseRows();
     }
   }catch(e){}
 }
@@ -3390,9 +3409,19 @@ function renderExpenses(){
     expenseData = window.expenseData;
   }
   if(!expenseData || !expenseData.length) loadExpenseLocal();
-  const f = window._expenseFilter || {category:'all',status:'all'};
+  const normalized = normalizeExpenseRows();
+  if(normalized) saveExpenseLocal();
+  const f = window._expenseFilter || {year:'all',month:'all',category:'all',status:'all'};
+  const years = [...new Set(expenseData.map(r=>String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)).filter(Boolean))].sort((a,b)=>b.localeCompare(a));
+  const months = [...new Set(expenseData
+    .filter(r=>f.year==='all' || String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)===f.year)
+    .map(r=>String(r.yearMonth||getExpenseYearMonth(r.date)).slice(5,7)).filter(Boolean))].sort();
+  const yearSel = document.getElementById('expense-filter-year');
+  const monthSel = document.getElementById('expense-filter-month');
   const catSel = document.getElementById('expense-filter-category');
   const statusSel = document.getElementById('expense-filter-status');
+  if(yearSel) yearSel.innerHTML = expenseSelectOptions(years, f.year, '연도 전체');
+  if(monthSel) monthSel.innerHTML = expenseSelectOptions(months, f.month, '월 전체');
   if(catSel) catSel.innerHTML = expenseSelectOptions(EXPENSE_CATEGORIES, f.category, '분류 전체');
   if(statusSel) statusSel.value = f.status;
 
@@ -3422,12 +3451,13 @@ function renderExpenses(){
   setHtml('expense-pending', String(pendingCount));
 }
 window.setExpenseFilter = function(key, value){
-  window._expenseFilter = window._expenseFilter || {category:'all',status:'all'};
+  window._expenseFilter = window._expenseFilter || {year:'all',month:'all',category:'all',status:'all'};
   window._expenseFilter[key] = value;
+  if(key === 'year') window._expenseFilter.month = 'all';
   renderExpenses();
 };
 window.resetExpenseFilters = function(){
-  window._expenseFilter = {category:'all',status:'all'};
+  window._expenseFilter = {year:'all',month:'all',category:'all',status:'all'};
   if((!expenseData || !expenseData.length) && Array.isArray(window.expenseData) && window.expenseData.length) expenseData = window.expenseData;
   if(!expenseData || !expenseData.length) loadExpenseLocal();
   renderExpenses();
@@ -3474,6 +3504,7 @@ function parseExpensePdfText(text, sourceFile){
     return {
       id: Date.now() + i,
       date: dm ? `${dm[1]}-${String(dm[2]).padStart(2,'0')}-${String(dm[3]).padStart(2,'0')} ${String(dm[4]).padStart(2,'0')}:${String(dm[5]).padStart(2,'0')}:${String(dm[6]).padStart(2,'0')}` : '',
+      yearMonth: dm ? `${dm[1]}-${String(dm[2]).padStart(2,'0')}` : '',
       merchant,
       category: inferExpenseCategory(merchant),
       amount: parseWon(extractExpenseValue(block, '금액')),
@@ -3551,7 +3582,8 @@ window.addExpenseManual = function(){
     const merchant = gv('m').trim();
     if(!merchant){ alert('상호명을 입력해주세요.'); return; }
     const newId = expenseData.length ? Math.max(...expenseData.map(r=>Number(r.id)||0))+1 : 1;
-    expenseData.unshift({id:newId,date:gv('d'),merchant,category:gv('c'),total:gn('t'),amount:gn('t'),tax:0,serviceFee:0,approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n'),receiptName:'',receiptDataUrl:'',sourceFile:'직접입력'});
+    const date = gv('d');
+    expenseData.unshift({id:newId,date,yearMonth:getExpenseYearMonth(date),merchant,category:gv('c'),total:gn('t'),amount:gn('t'),tax:0,serviceFee:0,approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n'),receiptName:'',receiptDataUrl:'',sourceFile:'직접입력'});
     window.expenseData = expenseData;
     saveExpenseLocal();
     closeEdit();
@@ -3572,7 +3604,8 @@ window.editExpense = function(id){
     {l:'상태',id:'s',type:'select',val:r.status||'미검토',opts:EXPENSE_STATUSES},
     {l:'메모',id:'n',val:r.memo||''}
   ),()=>{
-    Object.assign(r,{date:gv('d'),merchant:gv('m'),category:gv('c'),total:gn('t'),approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n')});
+    const date = gv('d');
+    Object.assign(r,{date,yearMonth:getExpenseYearMonth(date),merchant:gv('m'),category:gv('c'),total:gn('t'),approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n')});
     saveExpenseLocal();
     closeEdit();
     renderExpenses();
@@ -3622,8 +3655,8 @@ window.openExpenseReceipt = function(id){
   if(w) w.document.write(row.receiptDataUrl.startsWith('data:application/pdf') ? `<iframe src="${row.receiptDataUrl}" style="border:0;width:100%;height:100vh"></iframe>` : `<img src="${row.receiptDataUrl}" style="max-width:100%">`);
 };
 function exportExpenseCsv(){
-  const headers = ['데이터구분','일시','상호명','분류','합계','금액','세금','취소금액','승인번호','결제방법','사업자번호','가맹점번호','카드종류','카드번호','주소','상태','영수증파일','메모','원본파일'];
-  const rows = (window.expenseData || expenseData || []).map(r=>['경비처리',r.date||'',r.merchant||'',r.category||'',+r.total||0,+r.amount||0,+r.tax||0,+r.cancelAmount||0,r.approvalNo||'',r.method||'',r.businessNo||'',r.merchantNo||'',r.cardType||'',r.cardNo||'',r.address||'',r.status||'',r.receiptName||'',r.memo||'',r.sourceFile||'']);
+  const headers = ['데이터구분','귀속월','일시','상호명','분류','합계','금액','세금','취소금액','승인번호','결제방법','사업자번호','가맹점번호','카드종류','카드번호','주소','상태','영수증파일','메모','원본파일'];
+  const rows = (window.expenseData || expenseData || []).map(r=>['경비처리',r.yearMonth||getExpenseYearMonth(r.date),r.date||'',r.merchant||'',r.category||'',+r.total||0,+r.amount||0,+r.tax||0,+r.cancelAmount||0,r.approvalNo||'',r.method||'',r.businessNo||'',r.merchantNo||'',r.cardType||'',r.cardNo||'',r.address||'',r.status||'',r.receiptName||'',r.memo||'',r.sourceFile||'']);
   downloadCsv(`standup_expenses_${csvDateStamp()}.csv`, headers, rows);
 }
 
