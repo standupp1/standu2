@@ -355,6 +355,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
   border-radius: 16px; padding: 24px 20px;
   cursor: pointer; transition: all .2s; text-align: center;
   position: relative; overflow: hidden;
+  user-select: none; -webkit-user-select: none;
 }
 .member-card::before {
   content: ''; position: absolute;
@@ -3472,7 +3473,6 @@ function renderExpenses(_forceRender){
   const renderHash = JSON.stringify({data: expenseData.map(r=>({id:r.id,category:r.category,status:r.status,receiptName:r.receiptName,driveLink:r.driveLink})), f});
   if(!_forceRender && tbody._lastHash === renderHash) return;
   tbody._lastHash = renderHash;
-  const f = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
   const years = [...new Set(expenseData.map(r=>String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)).filter(Boolean))].sort((a,b)=>b.localeCompare(a));
   const months = [...new Set(expenseData
     .filter(r=>f.year==='all' || String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)===f.year)
