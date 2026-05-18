@@ -1702,6 +1702,28 @@ PAGES['settings'] = `<div class="main-header">
   </div>
 </div>
 
+<!-- 경비 분류 관리 -->
+<div class="panel" style="margin-bottom:16px">
+  <div class="panel-header">
+    <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>🏷️ 경비 분류 관리</div>
+    <span style="font-size:11px;color:var(--text3)">경비처리 탭의 분류 목록을 관리합니다</span>
+  </div>
+  <div class="panel-body">
+    <div id="expense-category-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="new-category-name" placeholder="새 분류 이름 입력"
+        style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+               padding:9px 12px;color:var(--text);font-size:13px;outline:none;
+               font-family:'Noto Sans KR',sans-serif"
+        onkeydown="if(event.key==='Enter')addExpenseCategory()">
+      <button class="btn btn-primary" onclick="addExpenseCategory()">+ 추가</button>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px">
+      <button class="btn" onclick="resetExpenseCategories()" style="font-size:12px;color:var(--coral)">기본값으로 초기화</button>
+    </div>
+  </div>
+</div>
+
 <!-- Google Drive 연동 -->
 <div class="panel" style="margin-bottom:16px">
   <div class="panel-header">
@@ -1784,7 +1806,7 @@ PAGES['settings'] = `<div class="main-header">
     </div>
   </div>
 </div>`;
-PAGE_INITS['settings'] = function() { renderArtistMgmt(); renderGdriveFolderStatus(); };
+PAGE_INITS['settings'] = function() { renderArtistMgmt(); renderGdriveFolderStatus(); renderExpenseCategoryMgmt(); };
 
 PAGES['sales'] = `<div class="main-header">
   <div>
@@ -3363,7 +3385,18 @@ function closeKanbanModal(){document.getElementById('modal-kanban').classList.re
 function submitKanbanModal(){const goods=document.getElementById('kb-goods').value.trim(),member=document.getElementById('kb-member').value.trim();if(!goods||!member){alert('굿즈명과 멤버 입력');return;}const newId=tasks.length?Math.max(...tasks.map(t=>t.id))+1:1;tasks.push({id:newId,artist:document.getElementById('kb-artist').value,goods,member,genre:document.getElementById('kb-genre').value,site:document.getElementById('kb-site').value,status:document.getElementById('kb-status').value,note:document.getElementById('kb-note').value});renderBoard();if(window.fbSave)fbSave('tasks');closeKanbanModal();['kb-goods','kb-member','kb-site','kb-note'].forEach(id=>{document.getElementById(id).value='';});}
 
 // 경비처리
-const EXPENSE_CATEGORIES = ['소프트웨어','행사비','제작/원재료','사무/비품','배송/운송','식비/접대','수수료','기타'];
+const EXPENSE_CATEGORIES_DEFAULT = ['소프트웨어','행사비','제작/원재료','사무/비품','배송/운송','식비/접대','수수료','기타'];
+const EXPENSE_CATEGORIES_KEY = 'standup_expense_categories_v1';
+function getExpenseCategories(){
+  try {
+    const raw = localStorage.getItem(EXPENSE_CATEGORIES_KEY);
+    if(raw){ const arr = JSON.parse(raw); if(Array.isArray(arr) && arr.length) return arr; }
+  } catch(e){}
+  return [...EXPENSE_CATEGORIES_DEFAULT];
+}
+function saveExpenseCategories(arr){ try{ localStorage.setItem(EXPENSE_CATEGORIES_KEY, JSON.stringify(arr)); }catch(e){} }
+// EXPENSE_CATEGORIES는 getter로 항상 최신 반영
+Object.defineProperty(window, 'EXPENSE_CATEGORIES', { get: getExpenseCategories, configurable: true });
 const EXPENSE_STATUSES = ['미검토','확인완료','제외'];
 const EXPENSE_LOCAL_KEY = 'standup_expense_data_v1';
 var expenseData = [];
@@ -3653,6 +3686,53 @@ window.deleteExpense = function(id){
     if(window.fbSave) fbSave('expenseData');
   });
 };
+// ── 경비 분류 관리 ────────────────────────────────────────────────
+window.renderExpenseCategoryMgmt = function(){
+  const container = document.getElementById('expense-category-list');
+  if(!container) return;
+  const cats = getExpenseCategories();
+  container.innerHTML = cats.map((cat, i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+      <span style="flex:1;font-size:13px;color:var(--text)">${cat}</span>
+      <button onclick="moveExpenseCategory(${i},-1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 5px" title="위로">↑</button>
+      <button onclick="moveExpenseCategory(${i},1)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 5px" title="아래로">↓</button>
+      <button onclick="deleteExpenseCategory(${i})" style="background:none;border:none;color:var(--coral);cursor:pointer;font-size:14px;padding:2px 6px" title="삭제">×</button>
+    </div>
+  `).join('');
+};
+window.addExpenseCategory = function(){
+  const inp = document.getElementById('new-category-name');
+  const name = (inp?.value || '').trim();
+  if(!name){ alert('분류 이름을 입력해주세요.'); return; }
+  const cats = getExpenseCategories();
+  if(cats.includes(name)){ alert('이미 존재하는 분류입니다.'); return; }
+  cats.push(name);
+  saveExpenseCategories(cats);
+  if(inp) inp.value = '';
+  renderExpenseCategoryMgmt();
+};
+window.deleteExpenseCategory = function(idx){
+  const cats = getExpenseCategories();
+  if(cats.length <= 1){ alert('분류는 최소 1개 이상 있어야 합니다.'); return; }
+  if(!confirm(`"${cats[idx]}" 분류를 삭제할까요?\n기존 경비 항목의 분류는 변경되지 않습니다.`)) return;
+  cats.splice(idx, 1);
+  saveExpenseCategories(cats);
+  renderExpenseCategoryMgmt();
+};
+window.moveExpenseCategory = function(idx, dir){
+  const cats = getExpenseCategories();
+  const newIdx = idx + dir;
+  if(newIdx < 0 || newIdx >= cats.length) return;
+  [cats[idx], cats[newIdx]] = [cats[newIdx], cats[idx]];
+  saveExpenseCategories(cats);
+  renderExpenseCategoryMgmt();
+};
+window.resetExpenseCategories = function(){
+  if(!confirm('분류 목록을 기본값으로 초기화할까요?')) return;
+  localStorage.removeItem(EXPENSE_CATEGORIES_KEY);
+  renderExpenseCategoryMgmt();
+};
+
 // ── Google Drive 폴더 설정 ───────────────────────────────────────
 const GDRIVE_FOLDER_KEY = 'standup_gdrive_receipt_folder_v1';
 function getGdriveFolderId(){ return localStorage.getItem(GDRIVE_FOLDER_KEY) || ''; }
