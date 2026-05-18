@@ -1389,7 +1389,7 @@ PAGES['expenses'] = `<div class="main-header">
       <input class="input-field" type="file" accept="application/pdf" id="expense-pdf-input">
       <button class="btn btn-primary" onclick="importExpensePdf()">PDF 자동입력</button>
     </div>
-    <div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">설정에서 Google Drive 폴더 ID를 등록하면 영수증이 자동으로 Drive에 업로드됩니다. 미연동 시 650KB 이하 파일만 임시 저장됩니다.</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">영수증은 Firebase Storage에 자동 업로드됩니다. 이미지·PDF 모두 지원하며 파일 크기 제한이 없습니다.</div>
   </div>
 </div>
 
@@ -1725,24 +1725,17 @@ PAGES['settings'] = `<div class="main-header">
   </div>
 </div>
 
-<!-- Google Drive 연동 -->
+<!-- Firebase Storage 영수증 -->
 <div class="panel" style="margin-bottom:16px">
   <div class="panel-header">
-    <div class="panel-title"><div class="panel-title-dot" style="background:var(--blue)"></div>📁 Google Drive 영수증 폴더 연동</div>
+    <div class="panel-title"><div class="panel-title-dot" style="background:var(--blue)"></div>☁️ 영수증 저장소 (Google Drive 연동)</div>
   </div>
   <div class="panel-body">
-    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.7">
-      경비처리 영수증 첨부 시 자동으로 업로드될 Google Drive 폴더 ID를 입력하세요.<br>
-      폴더 URL의 <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;font-family:'DM Mono',monospace">folders/<b style="color:var(--amber)">여기</b></code> 부분이 폴더 ID입니다.
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.7">
+      영수증은 Google Apps Script를 통해 Drive 폴더에 자동 업로드됩니다.<br>
+      이미지·PDF 모두 지원하며 파일 크기 제한이 없습니다.
     </p>
-    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <input type="text" id="gdrive-folder-id-input" placeholder="예: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs"
-        style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
-               padding:9px 12px;color:var(--text);font-size:13px;outline:none;font-family:'DM Mono',monospace"
-        onkeydown="if(event.key==='Enter')saveGdriveFolderId()">
-      <button class="btn btn-primary" onclick="saveGdriveFolderId()">저장</button>
-    </div>
-    <div id="gdrive-folder-status" style="font-size:12px;color:var(--text3)">저장된 폴더 없음</div>
+    <div id="storage-status" style="font-size:12px;color:var(--text3);margin-top:4px">● 상태 확인 중…</div>
   </div>
 </div>
 
@@ -1807,7 +1800,7 @@ PAGES['settings'] = `<div class="main-header">
     </div>
   </div>
 </div>`;
-PAGE_INITS['settings'] = function() { renderArtistMgmt(); renderGdriveFolderStatus(); renderExpenseCategoryMgmt(); };
+PAGE_INITS['settings'] = function() { renderArtistMgmt(); renderExpenseCategoryMgmt(); checkStorageStatus(); };
 
 PAGES['sales'] = `<div class="main-header">
   <div>
@@ -3498,14 +3491,14 @@ function renderExpenses(_forceRender){
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text2)">${r.approvalNo||'-'}</td>
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.businessNo||'-'}</td>
       <td><select class="form-select" style="width:104px;padding:5px 8px;font-size:12px" onchange="updateExpenseField(${r.id},'status',this.value)">${EXPENSE_STATUSES.map(s=>`<option value="${s}" ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
-      <td>${r.driveLink?`<a href="${r.driveLink}" target="_blank" class="btn" style="font-size:11px;padding:5px 9px;color:var(--teal);border-color:rgba(62,207,170,.3)">☁ Drive</a>`:r.receiptDataUrl?`<button class="btn" onclick="openExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px">보기</button>`:''}<button class="btn" onclick="attachExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px;margin-left:4px">${r.driveLink||r.receiptDataUrl?'재첨부':'첨부'}</button><div style="font-size:10px;color:var(--text3);margin-top:3px">${r.receiptName||''}</div></td>
+      <td>${r.storageUrl?`<a href="${r.storageUrl}" target="_blank" class="btn" style="font-size:11px;padding:5px 9px;color:var(--teal);border-color:rgba(62,207,170,.3)">☁ 보기</a>`:r.receiptDataUrl?`<button class="btn" onclick="openExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px">보기</button>`:''}<button class="btn" onclick="attachExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px;margin-left:4px">${r.storageUrl||r.receiptDataUrl?'재첨부':'첨부'}</button><div style="font-size:10px;color:var(--text3);margin-top:3px">${r.receiptName||''}</div></td>
       <td class='act-col'><div class='row-actions' style='opacity:1'><button class='act-btn edit' onclick='editExpense(${r.id})' title='수정'>✎</button><button class='act-btn del' onclick='deleteExpense(${r.id})' title='삭제'>✕</button></div></td>
     </tr>
   `).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">선택한 월에 등록된 경비가 없습니다.</td></tr>`;
 
   const activeRows = expenseData.filter(r=>r.status!=='제외');
   const total = activeRows.reduce((s,r)=>s+(Number(r.total)||0),0);
-  const receiptCount = expenseData.filter(r=>r.receiptDataUrl).length;
+  const receiptCount = expenseData.filter(r=>r.receiptDataUrl||r.storageUrl).length;
   const pendingCount = expenseData.filter(r=>r.status==='미검토').length;
   const setHtml = (id, html) => { const el=document.getElementById(id); if(el) el.innerHTML=html; };
   setHtml('expense-total', `<span>₩</span>${total.toLocaleString()}`);
@@ -3755,34 +3748,38 @@ window.resetExpenseCategories = function(){
   renderExpenseCategoryMgmt();
 };
 
-// ── Google Drive 폴더 설정 ───────────────────────────────────────
-const GDRIVE_FOLDER_KEY = 'standup_gdrive_receipt_folder_v1';
-function getGdriveFolderId(){ return localStorage.getItem(GDRIVE_FOLDER_KEY) || ''; }
-window.saveGdriveFolderId = function(){
-  const val = (document.getElementById('gdrive-folder-id-input')?.value || '').trim();
-  if(!val){ alert('폴더 ID를 입력해주세요.'); return; }
-  localStorage.setItem(GDRIVE_FOLDER_KEY, val);
-  renderGdriveFolderStatus();
-  alert('✅ 폴더 ID가 저장되었습니다.\n이제 영수증 첨부 시 Drive에 자동 업로드됩니다.');
+// ── Google Apps Script 영수증 업로드 ─────────────────────────────
+const GAS_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbxKiyb1UfZaS0CVXAwMonzZxQ9vTzoX8FxFDg5a5b3pVBArjKxNha7FOjhzrT4facErJw/exec';
+window.gasUploadReceipt = async function(file, fileName) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const base64 = e.target.result.split(',')[1];
+        const res = await fetch(GAS_UPLOAD_URL, {
+          method: 'POST',
+          body: JSON.stringify({ name: fileName, data: base64, mimeType: file.type })
+        });
+        const json = await res.json();
+        if(json.ok) resolve(json.url);
+        else reject(new Error(json.error || '업로드 실패'));
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.readAsDataURL(file);
+  });
 };
-window.renderGdriveFolderStatus = function(){
-  const id = getGdriveFolderId();
-  const inp = document.getElementById('gdrive-folder-id-input');
-  const status = document.getElementById('gdrive-folder-status');
-  if(inp && id) inp.value = id;
-  if(status){
-    if(id){
-      status.innerHTML = `✅ 연동됨 — <code style="font-family:'DM Mono',monospace;color:var(--amber)">${id}</code>
-        <button onclick="clearGdriveFolderId()" style="margin-left:10px;background:none;border:none;color:var(--coral);cursor:pointer;font-size:12px">해제</button>`;
-    } else {
-      status.innerHTML = '저장된 폴더 없음 — 폴더 ID 입력 후 영수증을 Drive에 자동 업로드하세요.';
-    }
+
+// ── Firebase Storage 상태 확인 ────────────────────────────────────
+window.checkStorageStatus = function(){
+  const el = document.getElementById('storage-status');
+  if(!el) return;
+  if(window.gasUploadReceipt){
+    el.innerHTML = '<span style="color:var(--green)">● Google Drive 연결됨 — 영수증 업로드 준비 완료</span>';
+  } else {
+    el.innerHTML = '<span style="color:var(--amber)">● 초기화 중…</span>';
+    setTimeout(checkStorageStatus, 800);
   }
-};
-window.clearGdriveFolderId = function(){
-  if(!confirm('Drive 폴더 연동을 해제할까요?')) return;
-  localStorage.removeItem(GDRIVE_FOLDER_KEY);
-  renderGdriveFolderStatus();
 };
 
 // ── Google Drive API 업로드 (MCP 경유) ──────────────────────────
@@ -3842,57 +3839,35 @@ window.attachExpenseReceipt = function(id){
     const file = input.files?.[0];
     if(!file) return;
 
-    const folderId = getGdriveFolderId();
+    const dateStr = (row.date||'').replace(/[^0-9]/g,'').slice(0,8);
+    const safeMerchant = (row.merchant||'영수증').replace(/[/\\:*?"<>|]/g,'');
+    const uploadName = `${dateStr}_${safeMerchant}_${file.name}`;
 
-    // Drive 연동 있으면 크기 제한 없이 업로드
-    if(folderId){
-      // 업로드 상태 표시
-      const statusEl = document.querySelector(`tr[data-id="${id}"] .receipt-status`) || null;
-      const dateStr = (row.date||'').replace(/[^0-9]/g,'').slice(0,8);
-      const safemerchant = (row.merchant||'영수증').replace(/[/\\:*?"<>|]/g,'');
-      const uploadName = `${dateStr}_${safemerchant}_${file.name}`;
-
-      // 로컬에도 미리보기용 소본 저장 (2MB 이하만)
-      if(file.size <= 2 * 1024 * 1024){
-        const reader2 = new FileReader();
-        reader2.onload = e2 => {
-          row.receiptDataUrl = e2.target.result;
-          row.receiptName = uploadName;
-        };
-        reader2.readAsDataURL(file);
-      } else {
-        row.receiptName = uploadName;
-      }
-
-      // Drive 업로드
+    if(window.gasUploadReceipt||window.fbUploadReceipt){
       try {
-        alert(`📤 Google Drive에 영수증을 업로드 중입니다...\n파일: ${uploadName}`);
-        const result = await uploadReceiptToDrive(file, uploadName, folderId);
-        if(result?.fileId){
-          row.driveFileId = result.fileId;
-          row.driveLink = result.webViewLink || `https://drive.google.com/file/d/${result.fileId}/view`;
-          row.receiptName = uploadName;
-          saveExpenseLocal();
-          renderExpenses(true);
-          if(window.fbSave) fbSave('expenseData');
-          alert(`✅ Drive 업로드 완료!\n파일: ${uploadName}\n\n${row.driveLink}`);
-        } else {
-          // 업로드 실패 시 로컬 저장으로 fallback
-          alert('⚠️ Drive 업로드에 실패했습니다. 로컬에 임시 저장합니다.');
-          saveExpenseLocal();
-          renderExpenses(true);
+        row.receiptName = uploadName + ' (업로드 중…)';
+        renderExpenses(true);
+        const uploadFn = window.gasUploadReceipt || window.fbUploadReceipt;
+        const downloadUrl = await uploadFn(file, uploadName);
+        row.receiptName = uploadName;
+        row.storageUrl = downloadUrl;
+        if(file.size <= 2 * 1024 * 1024){
+          const reader2 = new FileReader();
+          reader2.onload = e2 => { row.receiptDataUrl = e2.target.result; };
+          reader2.readAsDataURL(file);
         }
-      } catch(err){
-        console.error('Drive upload error:', err);
-        alert('⚠️ Drive 업로드 오류: ' + err.message + '\n로컬에 임시 저장합니다.');
         saveExpenseLocal();
+        renderExpenses(true);
+        if(window.fbSave) fbSave('expenseData');
+      } catch(err){
+        console.error('Storage upload error:', err);
+        alert('⚠️ 업로드 오류: ' + err.message + '\n\nFirebase Storage 보안 규칙에서 읽기/쓰기를 허용했는지 확인해주세요.');
+        row.receiptName = '';
         renderExpenses(true);
       }
     } else {
-      // Drive 미연동: 기존 방식 (650KB 제한)
       if(file.size > 650 * 1024){
-        if(!confirm(`파일 크기가 ${(file.size/1024).toFixed(0)}KB로 크네요.\n설정에서 Google Drive 폴더를 연동하면 용량 제한 없이 업로드할 수 있어요.\n\n지금은 로컬 임시 저장(650KB 이하)만 지원합니다.\n설정으로 이동할까요?`)) return;
-        if(typeof navigate === 'function') navigate('settings');
+        alert('업로드 함수 초기화 중입니다. 잠시 후 다시 시도해주세요.');
         return;
       }
       const reader = new FileReader();
@@ -5672,6 +5647,7 @@ setTimeout(() => {
 // ══ Firebase 초기화 ══════════════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDd85t65S0F5sZSsiYCwQMSnmw0Jt3HlEg",
@@ -5685,6 +5661,15 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
+const storage = getStorage(app);
+
+// Firebase Storage 영수증 업로드
+window.fbUploadReceipt = async function(file, fileName) {
+  const storageRef = ref(storage, `receipts/${fileName}`);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
+  return url;
+};
 
 // ── Firestore 컬렉션 키 매핑 ──────────────────────────────────────
 const COL = 'standup_app';  // 최상위 문서
