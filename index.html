@@ -781,6 +781,37 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
   .member-alert-action{width:100%;justify-content:center;margin-top:4px}
 }
 
+
+
+/* ── 회계 거래내역 사용자 컬럼 ── */
+.tx-user-cell{
+  font-size:12px;
+  color:var(--text2);
+  font-weight:500;
+  white-space:nowrap;
+}
+.tx-user-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:2px 8px;
+  border-radius:10px;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  color:var(--text2);
+  font-size:11px;
+}
+@media (max-width:768px){
+  .tx-table:not(#estat-table) td:nth-child(1){display:block;width:100%;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:2px;}
+  .tx-table:not(#estat-table) td:nth-child(2){display:inline-flex;width:auto;margin-right:6px;margin-bottom:2px;}
+  .tx-table:not(#estat-table) td:nth-child(3){display:block;width:100%;font-weight:600;font-size:14px;color:var(--text);margin-bottom:0;}
+  .tx-table:not(#estat-table) td:nth-child(4){display:block;font-size:13px;color:var(--text);width:100%;margin-bottom:2px;}
+  .tx-table:not(#estat-table) td:nth-child(5){font-family:'DM Mono',monospace;font-weight:700;font-size:14px;}
+  .tx-table:not(#estat-table) td:nth-child(6){font-family:'DM Mono',monospace;font-weight:700;font-size:14px;}
+  .tx-table:not(#estat-table) td:nth-child(7){display:block;width:100%;text-align:right;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;position:absolute;top:12px;right:60px;}
+  .tx-table:not(#estat-table) td.act-col{position:absolute;top:10px;right:10px;width:auto;padding:0;}
+}
+
 </style>
 </head>
 <body>
@@ -1212,6 +1243,7 @@ PAGES['accounting'] = `<div class="main-header">
     <table class="tx-table" id="tx-table">
       <thead><tr>
         <th style="width:110px">날짜</th>
+        <th style="width:90px">사용자</th>
         <th>내용</th>
         <th style="width:220px">참고</th>
         <th style="width:110px;text-align:right">입금</th>
@@ -1232,6 +1264,7 @@ PAGES['accounting'] = `<div class="main-header">
       <div class="form-field"><label>날짜</label><input type="date" id="m-date"></div>
       <div class="form-field"><label>유형</label><select id="m-type"><option value="out">지출</option><option value="in">입금</option></select></div>
     </div>
+    <div class="form-field"><label>사용자</label><input type="text" id="m-user" placeholder="예: 감찬"></div>
     <div class="form-field"><label>내용</label><input type="text" id="m-desc" placeholder="예: 굿즈 제작비용"></div>
     <div class="form-row">
       <div class="form-field"><label>금액 (₩)</label><input type="number" id="m-amount" placeholder="0"></div>
@@ -2767,6 +2800,7 @@ function renderTable(filter){
   return `
     <tr data-type="${r.type}">
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.date}</td>
+      <td class="tx-user-cell"><span class="tx-user-chip">${r.user || '-'}</span></td>
       <td style="font-weight:500">${r.desc}</td>
       <td style="font-size:13px;color:var(--text);font-weight:500;min-width:220px;max-width:320px;white-space:normal;word-break:break-word;line-height:1.3">${r.note||'-'}</td>
       <td style="text-align:right;font-family:'DM Mono';color:var(--teal)">${r.type==='in'?'₩'+r.amount.toLocaleString():''}</td>
@@ -2787,20 +2821,24 @@ function filterTx(type, btn){
 function openModal(){
   document.getElementById('modal').classList.add('open');
   document.getElementById('m-date').value = new Date().toISOString().split('T')[0];
+  const userEl = document.getElementById('m-user');
+  if(userEl && !userEl.value) userEl.value = currentMember || '';
 }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 
 function submitTx(){
   const date = document.getElementById('m-date').value;
   const type = document.getElementById('m-type').value;
+  const user = document.getElementById('m-user').value.trim();
   const desc = document.getElementById('m-desc').value.trim();
   const amount = parseInt(document.getElementById('m-amount').value)||0;
   const note = document.getElementById('m-note').value.trim();
   if(!desc||!amount){alert('내용과 금액을 입력해주세요.');return;}
-  txData.unshift({date,desc,note,type,amount,balance:0});
+  txData.unshift({date,user,desc,note,type,amount,balance:0});
   renderTable(window._tf||'all');
   if(window.fbSave)fbSave('txData');
   closeModal();
+  document.getElementById('m-user').value=currentMember || '';
   document.getElementById('m-desc').value='';
   document.getElementById('m-amount').value='';
   document.getElementById('m-note').value='';
@@ -3357,11 +3395,12 @@ function toggleForm() {
 function addTransaction() {
   const date = document.getElementById('tx-date').value;
   const type = document.getElementById('tx-type').value;
+  const user = currentMember || '';
   const desc = document.getElementById('tx-desc').value.trim();
   const amount = parseInt(document.getElementById('tx-amount').value) || 0;
   const note = document.getElementById('tx-note').value.trim();
   if (!desc || !amount) { alert('내용과 금액을 입력해주세요.'); return; }
-  txData.unshift({date,type,desc,note,amount,balance:0});
+  txData.unshift({date,type,user,desc,note,amount,balance:0});
   recalcTxBalances();
   renderDashboardAccounting();
   if(window.currentPage==='accounting') renderTable(window._tf||'all');
@@ -3406,7 +3445,7 @@ function _f(f){
 const GENRES=['미츄','스텔라이브','기타'];
 
 // 회계
-window.editTx=function(idx){const r=txData[idx];openEdit('거래 수정',mfields({l:'날짜',id:'d',type:'date',val:r.date},{l:'유형',id:'t',type:'select',val:r.type,opts:[{v:'out',l:'지출'},{v:'in',l:'입금'}]},{l:'내용',id:'c',val:r.desc,ph:'내용'},{l:'금액',id:'a',type:'number',val:r.amount},{l:'참고',id:'n',val:r.note||'',ph:'비고'}),()=>{txData[idx]={...r,date:gv('d'),type:gv('t'),desc:gv('c'),amount:gn('a'),note:gv('n')};closeEdit();renderTable(window._tf||'all');if(window.fbSave)fbSave('txData');});};
+window.editTx=function(idx){const r=txData[idx];openEdit('거래 수정',mfields({l:'날짜',id:'d',type:'date',val:r.date},{l:'유형',id:'t',type:'select',val:r.type,opts:[{v:'out',l:'지출'},{v:'in',l:'입금'}]},{l:'사용자',id:'u',val:r.user||'',ph:'예: 감찬'},{l:'내용',id:'c',val:r.desc,ph:'내용'},{l:'금액',id:'a',type:'number',val:r.amount},{l:'참고',id:'n',val:r.note||'',ph:'비고'}),()=>{txData[idx]={...r,date:gv('d'),type:gv('t'),user:gv('u'),desc:gv('c'),amount:gn('a'),note:gv('n')};closeEdit();renderTable(window._tf||'all');if(window.fbSave)fbSave('txData');});};
 window.deleteTx=function(idx){openConfirm(`<b>${txData[idx].desc}</b> 거래를 삭제할까요?`,()=>{txData.splice(idx,1);renderTable(window._tf||'all');if(window.fbSave)fbSave('txData');});};
 
 // 원가
