@@ -1287,14 +1287,7 @@ PAGES['pnl'] = `<div class="main-header">
 </div>
 
 <!-- 행사 선택 -->
-<div class="event-select-row">
-  <div class="event-chip on" onclick="selectEvent('26/3',this)">코믹월드 26/3</div>
-  <div class="event-chip" onclick="selectEvent('26/2',this)">일페 26/2</div>
-  <div class="event-chip" onclick="selectEvent('25/12',this)">서코 25/12</div>
-  <div class="event-chip" onclick="selectEvent('25/11',this)">서코 25/11</div>
-  <div class="event-chip" onclick="selectEvent('25/10',this)">서코 25/10</div>
-  <div class="event-chip" onclick="selectEvent('25/9',this)">서코 25/9</div>
-</div>
+<div class="event-select-row" id="pnl-event-row"></div>
 
 <div id="pnl-content"></div>`;
 PAGES['cost'] = `<div class="main-header">
@@ -1659,7 +1652,7 @@ renderTable('all');
 document.getElementById('modal')?.addEventListener('click',function(e){if(e.target===this)closeModal();});
 };
 PAGE_INITS['pnl'] = function(){
-selectEvent('26/3', document.querySelector('.event-chip.on'));
+  renderPnlChips(window.currentPnlKey || '26/3');
 };
 PAGE_INITS['cost'] = function(){
 renderCost('all'); calcSim();
@@ -2903,18 +2896,60 @@ const events = {
     result:'적자'},
 };
 
+// ── 행사 손익 데이터 저장/불러오기 ─────────────────────────────
+const PNL_EVENTS_STORAGE_KEY = 'standup_pnl_events_v1';
+function loadPnlEvents(){
+  try{
+    const saved = localStorage.getItem(PNL_EVENTS_STORAGE_KEY);
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(parsed && typeof parsed === 'object') Object.assign(events, parsed);
+    }
+  }catch(e){ console.warn('행사 손익 불러오기 실패', e); }
+}
+function savePnlEvents(){
+  try{ localStorage.setItem(PNL_EVENTS_STORAGE_KEY, JSON.stringify(events)); }
+  catch(e){ console.warn('행사 손익 저장 실패', e); }
+}
+function getPnlEventKeys(){
+  return Object.keys(events).sort((a,b)=>String(events[b]?.date||'').localeCompare(String(events[a]?.date||'')));
+}
+function renderPnlChips(selectedKey){
+  const row = document.getElementById('pnl-event-row');
+  if(!row) return;
+  const keys = getPnlEventKeys();
+  const pick = selectedKey && events[selectedKey] ? selectedKey : (keys[0] || '');
+  row.innerHTML = keys.map(k=>`<div class="event-chip ${k===pick?'on':''}" onclick='selectEvent(${JSON.stringify(k)},this)'>${events[k].name || k}</div>`).join('');
+  if(pick) selectEvent(pick, row.querySelector('.event-chip.on') || row.querySelector('.event-chip'));
+}
+loadPnlEvents();
+
 function won(n){return '₩'+Math.abs(n).toLocaleString();}
 function colorClass(n){return n>=0?'style="color:var(--teal)"':'style="color:var(--coral)"';}
 
 function selectEvent(key, el){
+  if(!events[key]) return;
+  window.currentPnlKey = key;
   document.querySelectorAll('.event-chip').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');
+  if(el) el.classList.add('on');
   const e = events[key];
   const fixedTotal = Object.values(e.fixed).reduce((a,b)=>a+b,0);
   const grossProfit = e.revenue - e.cogs;
   const finalPnl = e.revenue - e.cogs - e.authorFee - fixedTotal;
   const isProfit = finalPnl >= 0;
   document.getElementById('pnl-content').innerHTML = `
+  <div class="panel" style="margin-bottom:16px;border-color:rgba(240,168,48,.22)">
+    <div class="panel-body" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">${e.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${e.date || '-'} · ${e.booth || '-'}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick='editPnlEvent(${JSON.stringify(key)})'>행사 수정</button>
+        <button class="btn" style="color:var(--coral);border-color:rgba(240,96,96,.35)" onclick='deletePnlEvent(${JSON.stringify(key)})'>삭제</button>
+      </div>
+    </div>
+  </div>
   <div class="kpi-grid" style="margin-bottom:16px">
     <div class="kpi-card amber">
       <div class="kpi-label">총매출</div>
@@ -4209,7 +4244,101 @@ window.deleteEvent=function(idx){openConfirm(`<b>${eventList[idx].name}</b> 일�
 // 행사 손익 추가
 function openAddEventPnlModal(){document.getElementById('modal-pnl-event').classList.add('open');}
 function closePnlEventModal(){document.getElementById('modal-pnl-event').classList.remove('open');}
-function submitPnlEventModal(){const key=document.getElementById('pnl-key').value.trim(),name=document.getElementById('pnl-name').value.trim();if(!key||!name){alert('행사 키와 이름 입력');return;}events[key]={name,date:document.getElementById('pnl-date').value,booth:document.getElementById('pnl-booth').value,revenue:+document.getElementById('pnl-rev').value,presale:+document.getElementById('pnl-pre').value,spot:+document.getElementById('pnl-spot').value,online:0,discount:0,service:0,cogs:+document.getElementById('pnl-cogs').value,authorFee:0,standupShare:0,fixed:{부스비:+document.getElementById('pnl-fb').value,'교통/식비':+document.getElementById('pnl-ft').value,자재비:+document.getElementById('pnl-fm').value,기타비용:+document.getElementById('pnl-fe').value},result:''};const row=document.querySelector('.event-select-row');if(row){const chip=document.createElement('div');chip.className='event-chip';chip.textContent=name;chip.onclick=function(){selectEvent(key,this);};row.appendChild(chip);}closePnlEventModal();setTimeout(()=>selectEvent(key,document.querySelector('.event-select-row .event-chip:last-child')),50);['pnl-key','pnl-name','pnl-date','pnl-booth','pnl-rev','pnl-pre','pnl-spot','pnl-cogs','pnl-fb','pnl-ft','pnl-fm','pnl-fe'].forEach(id=>{document.getElementById(id).value='';});}
+
+function submitPnlEventModal(){
+  const key=document.getElementById('pnl-key').value.trim(), name=document.getElementById('pnl-name').value.trim();
+  if(!key||!name){alert('행사 키와 이름 입력');return;}
+  if(events[key] && !confirm('이미 같은 행사 키가 있습니다. 덮어쓸까요?')) return;
+  events[key]={
+    name,
+    date:document.getElementById('pnl-date').value,
+    booth:document.getElementById('pnl-booth').value,
+    revenue:+document.getElementById('pnl-rev').value||0,
+    presale:+document.getElementById('pnl-pre').value||0,
+    spot:+document.getElementById('pnl-spot').value||0,
+    online:0, discount:0, service:0,
+    cogs:+document.getElementById('pnl-cogs').value||0,
+    authorFee:0, standupShare:0,
+    fixed:{
+      부스비:+document.getElementById('pnl-fb').value||0,
+      '교통/식비':+document.getElementById('pnl-ft').value||0,
+      자재비:+document.getElementById('pnl-fm').value||0,
+      기타비용:+document.getElementById('pnl-fe').value||0
+    },
+    result:''
+  };
+  savePnlEvents();
+  closePnlEventModal();
+  ['pnl-key','pnl-name','pnl-date','pnl-booth','pnl-rev','pnl-pre','pnl-spot','pnl-cogs','pnl-fb','pnl-ft','pnl-fm','pnl-fe'].forEach(id=>{document.getElementById(id).value='';});
+  renderPnlChips(key);
+}
+
+window.editPnlEvent=function(key){
+  const e=events[key];
+  if(!e) return;
+  const f=e.fixed||{};
+  openEdit('행사 손익 수정',mfields(
+    {l:'행사 키',id:'k',val:key},
+    {l:'행사명',id:'n',val:e.name||''},
+    {l:'날짜',id:'d',val:e.date||''},
+    {l:'부스',id:'b',val:e.booth||''},
+    {l:'총매출 (₩)',id:'r',type:'number',val:e.revenue||0},
+    {l:'선입금 (₩)',id:'pre',type:'number',val:e.presale||0},
+    {l:'현장매출 (₩)',id:'spot',type:'number',val:e.spot||0},
+    {l:'온라인매출 (₩)',id:'on',type:'number',val:e.online||0},
+    {l:'할인금액 (₩)',id:'disc',type:'number',val:e.discount||0},
+    {l:'서비스금액 (₩)',id:'svc',type:'number',val:e.service||0},
+    {l:'총제작원가 (₩)',id:'cogs',type:'number',val:e.cogs||0},
+    {l:'작가 지급액 (₩)',id:'af',type:'number',val:e.authorFee||0},
+    {l:'부스비 (₩)',id:'fb',type:'number',val:f.부스비||0},
+    {l:'교통/식비 (₩)',id:'ft',type:'number',val:f['교통/식비']||0},
+    {l:'자재비 (₩)',id:'fm',type:'number',val:f.자재비||0},
+    {l:'기타비용 (₩)',id:'fe',type:'number',val:f.기타비용||0},
+    {l:'결과',id:'res',type:'select',val:e.result||'흑자',opts:['흑자','적자','검토중']}
+  ),()=>{
+    const newKey=gv('k').trim();
+    const name=gv('n').trim();
+    if(!newKey||!name){alert('행사 키와 행사명을 입력해주세요.');return;}
+    if(newKey!==key && events[newKey] && !confirm('변경할 행사 키가 이미 있습니다. 덮어쓸까요?')) return;
+    const updated={
+      name,
+      date:gv('d'),
+      booth:gv('b'),
+      revenue:gn('r'),
+      presale:gn('pre'),
+      spot:gn('spot'),
+      online:gn('on'),
+      discount:gn('disc'),
+      service:gn('svc'),
+      cogs:gn('cogs'),
+      authorFee:gn('af'),
+      standupShare:e.standupShare||0,
+      fixed:{부스비:gn('fb'),'교통/식비':gn('ft'),자재비:gn('fm'),기타비용:gn('fe')},
+      result:gv('res')
+    };
+    if(newKey!==key) delete events[key];
+    events[newKey]=updated;
+    savePnlEvents();
+    closeEdit();
+    renderPnlChips(newKey);
+  });
+};
+
+window.deletePnlEvent=function(key){
+  const e=events[key];
+  if(!e) return;
+  openConfirm(`<b>${e.name||key}</b> 행사 손익 데이터를 삭제할까요?`,()=>{
+    delete events[key];
+    savePnlEvents();
+    const next=getPnlEventKeys()[0];
+    renderPnlChips(next);
+    if(!next){
+      const content=document.getElementById('pnl-content');
+      if(content) content.innerHTML='<div class="panel"><div class="panel-body" style="color:var(--text3)">등록된 행사 손익 데이터가 없습니다.</div></div>';
+    }
+  });
+};
+
 
 // Filter state
 window.filterTx=function(t,b){window._tf=t;let d=document.querySelectorAll('.filter-btn');d.forEach(x=>x.classList.remove('on'));b.classList.add('on');renderTable(t);};
