@@ -1614,6 +1614,10 @@ PAGE_INITS['dashboard'] = function(){
   if(_txd) _txd.value=_now.toISOString().split('T')[0];
   renderDashboardAccounting();
   renderEventListPanel();
+  // 대시보드로 다시 돌아와도 감찬 미검토 경고 배너가 계속 표시되도록 재확인
+  setTimeout(() => {
+    if (typeof updateGamchanPendingAlert === 'function') updateGamchanPendingAlert();
+  }, 0);
 
 };
 PAGE_INITS['accounting'] = function(){
@@ -2452,6 +2456,12 @@ function navigate(pageKey) {
     if (NAV_MAP[pageKey] && (t === NAV_MAP[pageKey] || t.startsWith(NAV_MAP[pageKey]))) n.classList.add('active');
   });
   if (PAGE_INITS[pageKey]) { try { PAGE_INITS[pageKey](); } catch(e) { console.error('Init error', pageKey, e); } }
+  // 페이지 전환 후 대시보드 경고 배너 영역이 있으면 상태를 다시 반영
+  if (pageKey === 'dashboard') {
+    setTimeout(() => {
+      if (typeof updateGamchanPendingAlert === 'function') updateGamchanPendingAlert();
+    }, 0);
+  }
   currentPage = pageKey;
   window.currentPage = pageKey;
   main.scrollTop = 0;
@@ -4346,8 +4356,7 @@ function updateGamchanPendingAlert(){
   if(!summary.length) { box.classList.remove('show'); box.innerHTML = ''; return; }
   const total = summary.reduce((sum, [, count]) => sum + count, 0);
   const body = summary.map(([ym,count]) => `${formatExpenseYmKorean(ym)} 미검토 경비 ${count}건`).join(' · ');
-  box.innerHTML = `<button class="member-alert-close" onclick="document.getElementById('gamchan-pending-alert')?.classList.remove('show')">×</button>
-    <div class="member-alert-icon">!</div>
+  box.innerHTML = `<div class="member-alert-icon">!</div>
     <div class="member-alert-content">
       <div class="member-alert-kicker">감찬 확인 필요</div>
       <div class="member-alert-title">${body} 있습니다.</div>
