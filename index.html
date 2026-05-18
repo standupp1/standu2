@@ -1264,7 +1264,7 @@ PAGES['accounting'] = `<div class="main-header">
       <div class="form-field"><label>날짜</label><input type="date" id="m-date"></div>
       <div class="form-field"><label>유형</label><select id="m-type"><option value="out">지출</option><option value="in">입금</option></select></div>
     </div>
-    <div class="form-field"><label>사용자</label><input type="text" id="m-user" placeholder="예: 감찬"></div>
+    <div class="form-field"><label>사용자</label><select id="m-user"></select></div>
     <div class="form-field"><label>내용</label><input type="text" id="m-desc" placeholder="예: 굿즈 제작비용"></div>
     <div class="form-row">
       <div class="form-field"><label>금액 (₩)</label><input type="number" id="m-amount" placeholder="0"></div>
@@ -1771,6 +1771,25 @@ PAGES['settings'] = `<div class="main-header">
   </div>
 </div>
 
+<!-- 사용자 관리 -->
+<div class="panel" style="margin-bottom:16px">
+  <div class="panel-header">
+    <div class="panel-title"><div class="panel-title-dot" style="background:var(--teal)"></div>사용자 목록 관리</div>
+    <span style="font-size:11px;color:var(--text3)">회계 / 모임통장 거래 입력·수정에서 선택하는 사용자 목록</span>
+  </div>
+  <div class="panel-body">
+    <div id="user-mgmt-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="new-user-name" placeholder="새 사용자 이름 입력"
+        style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+               padding:9px 12px;color:var(--text);font-size:13px;outline:none;
+               font-family:'Noto Sans KR',sans-serif"
+        onkeydown="if(event.key==='Enter')addUser()">
+      <button class="btn btn-primary" onclick="addUser()">+ 추가</button>
+    </div>
+  </div>
+</div>
+
 <!-- 작가 관리 -->
 <div class="panel" style="margin-bottom:16px">
   <div class="panel-header">
@@ -1887,7 +1906,7 @@ PAGES['settings'] = `<div class="main-header">
     </div>
   </div>
 </div>`;
-PAGE_INITS['settings'] = function() { renderArtistMgmt(); renderExpenseCategoryMgmt(); checkStorageStatus(); };
+PAGE_INITS['settings'] = function() { renderUserMgmt(); renderArtistMgmt(); renderExpenseCategoryMgmt(); checkStorageStatus(); };
 
 PAGES['sales'] = `<div class="main-header">
   <div>
@@ -2821,8 +2840,12 @@ function filterTx(type, btn){
 function openModal(){
   document.getElementById('modal').classList.add('open');
   document.getElementById('m-date').value = new Date().toISOString().split('T')[0];
+  updateUserSelects();
   const userEl = document.getElementById('m-user');
-  if(userEl && !userEl.value) userEl.value = currentMember || '';
+  if(userEl){
+    const preferred = (currentMember && userList.includes(currentMember)) ? currentMember : (userList[0] || '');
+    userEl.value = userEl.value || preferred;
+  }
 }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 
@@ -2838,7 +2861,8 @@ function submitTx(){
   renderTable(window._tf||'all');
   if(window.fbSave)fbSave('txData');
   closeModal();
-  document.getElementById('m-user').value=currentMember || '';
+  updateUserSelects();
+  document.getElementById('m-user').value=(currentMember && userList.includes(currentMember)) ? currentMember : (userList[0] || '');
   document.getElementById('m-desc').value='';
   document.getElementById('m-amount').value='';
   document.getElementById('m-note').value='';
@@ -3445,7 +3469,7 @@ function _f(f){
 const GENRES=['미츄','스텔라이브','기타'];
 
 // 회계
-window.editTx=function(idx){const r=txData[idx];openEdit('거래 수정',mfields({l:'날짜',id:'d',type:'date',val:r.date},{l:'유형',id:'t',type:'select',val:r.type,opts:[{v:'out',l:'지출'},{v:'in',l:'입금'}]},{l:'사용자',id:'u',val:r.user||'',ph:'예: 감찬'},{l:'내용',id:'c',val:r.desc,ph:'내용'},{l:'금액',id:'a',type:'number',val:r.amount},{l:'참고',id:'n',val:r.note||'',ph:'비고'}),()=>{txData[idx]={...r,date:gv('d'),type:gv('t'),user:gv('u'),desc:gv('c'),amount:gn('a'),note:gv('n')};closeEdit();renderTable(window._tf||'all');if(window.fbSave)fbSave('txData');});};
+window.editTx=function(idx){const r=txData[idx];const opts=(r.user && !userList.includes(r.user))?[r.user,...userList]:userList;openEdit('거래 수정',mfields({l:'날짜',id:'d',type:'date',val:r.date},{l:'유형',id:'t',type:'select',val:r.type,opts:[{v:'out',l:'지출'},{v:'in',l:'입금'}]},{l:'사용자',id:'u',type:'select',val:r.user||((currentMember && userList.includes(currentMember))?currentMember:(userList[0]||'')),opts},{l:'내용',id:'c',val:r.desc,ph:'내용'},{l:'금액',id:'a',type:'number',val:r.amount},{l:'참고',id:'n',val:r.note||'',ph:'비고'}),()=>{txData[idx]={...r,date:gv('d'),type:gv('t'),user:gv('u'),desc:gv('c'),amount:gn('a'),note:gv('n')};closeEdit();renderTable(window._tf||'all');if(window.fbSave)fbSave('txData');});};
 window.deleteTx=function(idx){openConfirm(`<b>${txData[idx].desc}</b> 거래를 삭제할까요?`,()=>{txData.splice(idx,1);renderTable(window._tf||'all');if(window.fbSave)fbSave('txData');});};
 
 // 원가
@@ -4596,6 +4620,83 @@ window.fbListenPermissions = function(fbListenFn) {
 
 
 
+// ══ 사용자 목록 관리 ════════════════════════════════════════════════
+let userList = ['현지지', '감찬', '안알려줌', '디네'];
+
+function escHtml(v){
+  return String(v ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+}
+
+async function loadUserList() {
+  try {
+    const local = localStorage.getItem('standup_user_list');
+    if (local) userList = JSON.parse(local);
+    if (!window.fbDb) return;
+    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const snap = await getDoc(doc(window.fbDb, 'standup_app', 'user_list'));
+    if (snap.exists()) {
+      userList = JSON.parse(snap.data().data);
+      localStorage.setItem('standup_user_list', JSON.stringify(userList));
+    }
+  } catch(e) {}
+}
+
+async function saveUserList() {
+  try { localStorage.setItem('standup_user_list', JSON.stringify(userList)); } catch(e) {}
+  try {
+    if (!window.fbDb) return;
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await setDoc(doc(window.fbDb, 'standup_app', 'user_list'), { data: JSON.stringify(userList) });
+  } catch(e) {}
+  updateUserSelects();
+}
+
+function getUserOptions(selected) {
+  return userList.map(u => `<option value="${escHtml(u)}" ${u === selected ? 'selected' : ''}>${escHtml(u)}</option>`).join('');
+}
+
+function renderUserMgmt() {
+  const el = document.getElementById('user-mgmt-list');
+  if (!el) return;
+  const colors = ['#f0a830','#3ecfaa','#a78bfa','#f06060','#5b9cf6','#5bcf7e'];
+  el.innerHTML = userList.map((u, i) => {
+    const color = colors[i % colors.length];
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+      <div style="width:32px;height:32px;border-radius:50%;background:${color}22;color:${color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${escHtml(u[0] || '?')}</div>
+      <span style="flex:1;font-size:14px;font-weight:500;color:var(--text)">${escHtml(u)}</span>
+      <button class="act-btn del" onclick="removeUser(${i})" title="삭제" style="opacity:1;width:28px;height:28px">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addUser() {
+  const input = document.getElementById('new-user-name');
+  const name = input?.value.trim();
+  if (!name) { alert('사용자 이름을 입력해주세요.'); return; }
+  if (userList.includes(name)) { alert('이미 있는 사용자예요.'); return; }
+  userList.push(name);
+  saveUserList();
+  renderUserMgmt();
+  if (input) input.value = '';
+}
+
+function removeUser(idx) {
+  const name = userList[idx];
+  openConfirm(`<b>${escHtml(name)}</b> 사용자를 목록에서 삭제할까요?<br><span style="font-size:12px;color:var(--text3)">기존 거래 내역의 사용자명은 유지돼요.</span>`, () => {
+    userList.splice(idx, 1);
+    saveUserList();
+    renderUserMgmt();
+  });
+}
+
+function updateUserSelects() {
+  const el = document.getElementById('m-user');
+  if (!el) return;
+  const current = el.value || currentMember || userList[0] || '';
+  const opts = (current && !userList.includes(current)) ? [current, ...userList] : userList;
+  el.innerHTML = opts.map(u => `<option value="${escHtml(u)}" ${u === current ? 'selected' : ''}>${escHtml(u)}</option>`).join('');
+}
+
 // ══ 작가 목록 관리 ════════════════════════════════════════════════
 let artistList = ['양초', '맹이', '닐마', '하쿠야'];
 
@@ -5628,6 +5729,7 @@ function backupData() {
     data: {
       txData:      window.txData      || [],
       memberShares: window.memberShares || [],
+      userList:     window.userList     || userList || [],
       costData:    window.costData    || [],
       orderData:   window.orderData   || [],
       invData:     window.invData     || [],
@@ -5670,6 +5772,7 @@ function restoreData(input) {
           const d = backup.data;
           if (d.txData)      { window.txData      = d.txData;      if(window.fbSave) await fbSave('txData'); }
           if (Object.prototype.hasOwnProperty.call(d, 'memberShares')) { window.memberShares = d.memberShares; if(window.fbSave) await fbSave('memberShares'); }
+          if (Object.prototype.hasOwnProperty.call(d, 'userList')) { userList = d.userList; window.userList = userList; await saveUserList(); }
           if (d.costData)    { window.costData    = d.costData;    if(window.fbSave) await fbSave('costData'); }
           if (d.orderData)   { window.orderData   = d.orderData;   if(window.fbSave) await fbSave('orderData'); }
           if (d.invData)     { window.invData      = d.invData;     if(window.fbSave) await fbSave('invData'); }
@@ -5771,6 +5874,7 @@ function confirmReset() {
 // ── 데이터 변수를 window에 명시적 등록 (Firebase module에서 접근 가능하도록) ──
 window.txData      = txData;
 window.memberShares = memberShares;
+window.userList = userList;
 window.costData    = costData;
 window.orderData   = orderData;
 window.invData     = invData;
@@ -5827,6 +5931,7 @@ const COL = 'standup_app';  // 최상위 문서
 const COLLECTIONS = {
   txData:      'accounting',
   memberShares:'memberShares',
+  userList:    'userList',
   costData:    'cost',
   orderData:   'orders',
   invData:     'inventory',
@@ -5948,7 +6053,7 @@ async function initFirebase() {
   }
 
   // 모든 데이터 병렬 로드
-  const keys = ['txData','memberShares','costData','orderData','invData','tasks','expenseData','illustTasks','recruitData','vendors','eventList'];
+  const keys = ['txData','memberShares','userList','costData','orderData','invData','tasks','expenseData','illustTasks','recruitData','vendors','eventList'];
   await Promise.all(keys.map(k => fbLoad(k)));
 
   // 첫 로드 후 로컬 데이터가 없으면 현재 앱 데이터를 Firebase에 업로드
@@ -5965,6 +6070,7 @@ async function initFirebase() {
   const renderMap = {
     txData:      () => { if(typeof renderTable==='function') renderTable(window._tf||'all'); },
     memberShares:() => { if(typeof renderMemberShares==='function') renderMemberShares(); },
+    userList:    () => { window.userList = userList; if(typeof renderUserMgmt==='function') renderUserMgmt(); if(typeof updateUserSelects==='function') updateUserSelects(); },
     costData:    () => { if(typeof renderCost==='function')  renderCost(window._cf||'all'); },
     orderData:   () => { if(typeof renderOrders==='function') renderOrders(window._of||'all'); },
     invData:     () => { if(typeof renderInv==='function')   renderInv(window._iv||'all'); },
@@ -5980,7 +6086,7 @@ async function initFirebase() {
     fbListen(key, () => {
       // 현재 해당 페이지가 열려있을 때만 리렌더
       const pageMap = {
-        txData:'accounting', memberShares:'accounting', costData:'cost', orderData:'orders',
+        txData:'accounting', memberShares:'accounting', userList:'settings', costData:'cost', orderData:'orders',
         invData:'inventory', tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
         vendors:'vendors', eventList:'dashboard'
       };
@@ -5990,7 +6096,9 @@ async function initFirebase() {
     });
   });
 
-  // 작가 목록 로드
+  // 사용자/작가 목록 로드
+  await loadUserList();
+  window.userList = userList;
   await loadArtistList();
   // 매출 데이터 로드
   await loadSalesDataFb();
