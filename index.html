@@ -736,19 +736,50 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 
 
 
-/* ── 감찬 전용 미검토 알림 ── */
+/* ── 감찬 전용 미검토 경고 배너 ── */
+.dash-left-stack{display:flex;flex-direction:column;gap:12px;min-width:0}
 .member-alert{
-  position:fixed;right:22px;bottom:22px;z-index:9998;
-  background:var(--amber-dim);border:1px solid rgba(240,168,48,.35);
-  color:var(--text);border-radius:14px;padding:14px 16px;
-  box-shadow:0 14px 38px rgba(0,0,0,.35);max-width:320px;
-  animation:fadeUp .2s ease;font-size:13px;line-height:1.7;
+  display:none;
+  width:100%;
+  min-height:118px;
+  padding:22px 24px;
+  border-radius:14px;
+  background:linear-gradient(135deg, #fff2cf 0%, #ffe2b1 100%);
+  border:2px solid rgba(240,96,96,.88);
+  box-shadow:0 0 0 1px rgba(240,168,48,.2), 0 16px 42px rgba(0,0,0,.38);
+  color:#1b1610;
+  animation:fadeUp .22s ease;
 }
-.member-alert-title{font-size:13px;font-weight:700;color:var(--amber);margin-bottom:4px}
-.member-alert-body{font-size:12px;color:var(--text2)}
-.member-alert-close{position:absolute;top:8px;right:10px;background:transparent;border:0;color:var(--text3);cursor:pointer;font-size:14px}
-.member-alert-close:hover{color:var(--text)}
-@media (max-width:768px){.member-alert{left:14px;right:14px;bottom:78px;max-width:none}}
+.member-alert.show{display:flex;align-items:center;gap:22px}
+.member-alert-icon{
+  width:58px;height:58px;border-radius:16px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#f06060,#d94141);
+  color:#fff;font-size:30px;font-weight:900;
+  box-shadow:0 10px 22px rgba(240,96,96,.28);
+}
+.member-alert-content{flex:1;min-width:0}
+.member-alert-kicker{font-size:12px;font-weight:800;color:#8c3b19;margin-bottom:2px}
+.member-alert-title{font-size:20px;font-weight:900;color:#15110d;letter-spacing:-.6px;line-height:1.28}
+.member-alert-body{font-size:13px;color:#4b3924;margin-top:5px;line-height:1.6;font-weight:600}
+.member-alert-action{
+  flex-shrink:0;align-self:center;border:0;
+  background:linear-gradient(135deg,#d66a3a,#a83b24);
+  color:#fff;border-radius:999px;padding:11px 18px;
+  font-size:13px;font-weight:900;font-family:'Noto Sans KR',sans-serif;
+  cursor:pointer;box-shadow:0 10px 22px rgba(168,59,36,.25);
+}
+.member-alert-action:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.member-alert-close{position:absolute;top:14px;right:16px;background:transparent;border:0;color:#6f5135;cursor:pointer;font-size:18px;line-height:1}
+.member-alert-close:hover{color:#21160c}
+@media (max-width:768px){
+  .dash-left-stack{gap:10px}
+  .member-alert{min-height:auto;padding:16px;position:relative}
+  .member-alert.show{align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .member-alert-icon{width:42px;height:42px;border-radius:12px;font-size:22px}
+  .member-alert-title{font-size:16px}
+  .member-alert-action{width:100%;justify-content:center;margin-top:4px}
+}
 
 </style>
 </head>
@@ -955,6 +986,8 @@ PAGES['dashboard'] = `<div class="main-header">
   </div>
 
   <div class="grid-2col">
+    <div class="dash-left-stack">
+      <div id="gamchan-pending-alert" class="member-alert"></div>
     <div class="panel" id="dash-panel-accounting">
       <div class="panel-header">
         <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>최근 모임통장 내역</div>
@@ -967,6 +1000,7 @@ PAGES['dashboard'] = `<div class="main-header">
         </div>
         <div class="tx-list" id="tx-list"></div>
       </div>
+    </div>
     </div>
 
     <div class="panel" id="dash-panel-pnl">
@@ -4292,22 +4326,37 @@ function getPendingExpenseSummary(){
   }, {});
   return Object.entries(grouped).sort((a,b)=>String(b[0]).localeCompare(String(a[0])));
 }
-function updateGamchanPendingAlert(){
-  const old = document.getElementById('gamchan-pending-alert');
-  if(currentMember !== '감찬') { if(old) old.remove(); return; }
-  const summary = getPendingExpenseSummary();
-  if(!summary.length) { if(old) old.remove(); return; }
-  const body = summary.map(([ym,count]) => `${formatExpenseYmKorean(ym)}에 미검토 ${count}건`).join('<br>');
-  const html = `<button class="member-alert-close" onclick="document.getElementById('gamchan-pending-alert')?.remove()">×</button><div class="member-alert-title">감찬님 확인 필요</div><div class="member-alert-body">${body}</div>`;
-  if(old) old.innerHTML = html;
-  else {
-    const box = document.createElement('div');
-    box.id = 'gamchan-pending-alert';
-    box.className = 'member-alert';
-    box.innerHTML = html;
-    document.body.appendChild(box);
-  }
+function goPendingExpenses(){
+  navigate('expenses');
+  setTimeout(() => {
+    try {
+      if(typeof setExpenseFilter === 'function') setExpenseFilter('status','미검토');
+      const statusSel = document.getElementById('expense-filter-status');
+      if(statusSel) statusSel.value = '미검토';
+    } catch(e) { console.warn(e); }
+  }, 80);
 }
+function updateGamchanPendingAlert(){
+  const oldFloating = document.querySelector('body > .member-alert');
+  if(oldFloating && oldFloating.id === 'gamchan-pending-alert') oldFloating.remove();
+  const box = document.getElementById('gamchan-pending-alert');
+  if(!box) return;
+  if(currentMember !== '감찬') { box.classList.remove('show'); box.innerHTML = ''; return; }
+  const summary = getPendingExpenseSummary();
+  if(!summary.length) { box.classList.remove('show'); box.innerHTML = ''; return; }
+  const total = summary.reduce((sum, [, count]) => sum + count, 0);
+  const body = summary.map(([ym,count]) => `${formatExpenseYmKorean(ym)} 미검토 경비 ${count}건`).join(' · ');
+  box.innerHTML = `<button class="member-alert-close" onclick="document.getElementById('gamchan-pending-alert')?.classList.remove('show')">×</button>
+    <div class="member-alert-icon">!</div>
+    <div class="member-alert-content">
+      <div class="member-alert-kicker">감찬 확인 필요</div>
+      <div class="member-alert-title">${body} 있습니다.</div>
+      <div class="member-alert-body">빠른 검토가 필요해요! 경비처리 페이지에서 확인해주세요.</div>
+    </div>
+    <button class="member-alert-action" onclick="goPendingExpenses()">미검토 경비 확인하기 ›</button>`;
+  box.classList.add('show');
+}
+
 
 
 // ══ 권한 관리 ══════════════════════════════════════════════════════
