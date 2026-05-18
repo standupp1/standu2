@@ -734,6 +734,22 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
   .panel-body { overflow-x: visible; }
 }
 
+
+
+/* ── 감찬 전용 미검토 알림 ── */
+.member-alert{
+  position:fixed;right:22px;bottom:22px;z-index:9998;
+  background:var(--amber-dim);border:1px solid rgba(240,168,48,.35);
+  color:var(--text);border-radius:14px;padding:14px 16px;
+  box-shadow:0 14px 38px rgba(0,0,0,.35);max-width:320px;
+  animation:fadeUp .2s ease;font-size:13px;line-height:1.7;
+}
+.member-alert-title{font-size:13px;font-weight:700;color:var(--amber);margin-bottom:4px}
+.member-alert-body{font-size:12px;color:var(--text2)}
+.member-alert-close{position:absolute;top:8px;right:10px;background:transparent;border:0;color:var(--text3);cursor:pointer;font-size:14px}
+.member-alert-close:hover{color:var(--text)}
+@media (max-width:768px){.member-alert{left:14px;right:14px;bottom:78px;max-width:none}}
+
 </style>
 </head>
 <body>
@@ -3505,6 +3521,7 @@ function renderExpenses(_forceRender){
   setHtml('expense-count', String(expenseData.length));
   setHtml('expense-receipts', String(receiptCount));
   setHtml('expense-pending', String(pendingCount));
+  updateGamchanPendingAlert();
 }
 window.setExpenseFilter = function(key, value){
   window._expenseFilter = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
@@ -3541,6 +3558,7 @@ window.updateExpenseField = function(id, key, value){
     }
   }
   if(window.fbSave) fbSave('expenseData');
+  updateGamchanPendingAlert();
 };
 async function loadPdfJs(){
   if(window.pdfjsLib) return window.pdfjsLib;
@@ -4234,6 +4252,7 @@ function doLogin() {
     const ts = getOnlineMembers()[n];
     return Date.now() - ts < 10 * 60 * 1000;
   }));
+  updateGamchanPendingAlert();
 }
 
 // 탭/창 닫을 때 오프라인 처리
@@ -4254,6 +4273,41 @@ setInterval(() => {
 
 // 초기 상태 갱신
 refreshOnlineStatus();
+
+
+
+
+// ── 감찬 전용 미검토 알림 ───────────────────────────────────────
+function formatExpenseYmKorean(ym){
+  const m = String(ym||'').match(/^(\d{4})-(\d{2})$/);
+  return m ? `${m[1]}년 ${Number(m[2])}월` : (ym || '날짜 미상');
+}
+function getPendingExpenseSummary(){
+  if((!window.expenseData || !window.expenseData.length) && typeof loadExpenseLocal === 'function') loadExpenseLocal();
+  const rows = (window.expenseData || expenseData || []).filter(r => (r.status || '미검토') === '미검토');
+  const grouped = rows.reduce((acc, r) => {
+    const ym = r.yearMonth || (typeof getExpenseYearMonth === 'function' ? getExpenseYearMonth(r.date) : '');
+    acc[ym || '날짜 미상'] = (acc[ym || '날짜 미상'] || 0) + 1;
+    return acc;
+  }, {});
+  return Object.entries(grouped).sort((a,b)=>String(b[0]).localeCompare(String(a[0])));
+}
+function updateGamchanPendingAlert(){
+  const old = document.getElementById('gamchan-pending-alert');
+  if(currentMember !== '감찬') { if(old) old.remove(); return; }
+  const summary = getPendingExpenseSummary();
+  if(!summary.length) { if(old) old.remove(); return; }
+  const body = summary.map(([ym,count]) => `${formatExpenseYmKorean(ym)}에 미검토 ${count}건`).join('<br>');
+  const html = `<button class="member-alert-close" onclick="document.getElementById('gamchan-pending-alert')?.remove()">×</button><div class="member-alert-title">감찬님 확인 필요</div><div class="member-alert-body">${body}</div>`;
+  if(old) old.innerHTML = html;
+  else {
+    const box = document.createElement('div');
+    box.id = 'gamchan-pending-alert';
+    box.className = 'member-alert';
+    box.innerHTML = html;
+    document.body.appendChild(box);
+  }
+}
 
 
 // ══ 권한 관리 ══════════════════════════════════════════════════════
