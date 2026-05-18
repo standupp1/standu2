@@ -1593,7 +1593,7 @@ PAGE_INITS['kanban'] = function(){
 renderBoard();
 };
 PAGE_INITS['expenses'] = function(){
-renderExpenses();
+renderExpenses(true);
 };
 PAGE_INITS['illust'] = function(){
 renderIllustStatus();
@@ -3457,7 +3457,7 @@ function loadExpenseLocal(){
 function saveExpenseLocal(){
   try{ localStorage.setItem(EXPENSE_LOCAL_KEY, JSON.stringify(expenseData)); }catch(e){}
 }
-function renderExpenses(){
+function renderExpenses(_forceRender){
   const tbody = document.getElementById('expense-tbody');
   if(!tbody) return;
   if((!expenseData || !expenseData.length) && Array.isArray(window.expenseData) && window.expenseData.length) {
@@ -3466,6 +3466,12 @@ function renderExpenses(){
   if(!expenseData || !expenseData.length) loadExpenseLocal();
   const normalized = normalizeExpenseRows();
   if(normalized) saveExpenseLocal();
+
+  // 변경 없으면 DOM 건드리지 않음 (Firebase 리스너 중복 렌더 방지)
+  const f = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
+  const renderHash = JSON.stringify({data: expenseData.map(r=>({id:r.id,category:r.category,status:r.status,receiptName:r.receiptName,driveLink:r.driveLink})), f});
+  if(!_forceRender && tbody._lastHash === renderHash) return;
+  tbody._lastHash = renderHash;
   const f = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
   const years = [...new Set(expenseData.map(r=>String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)).filter(Boolean))].sort((a,b)=>b.localeCompare(a));
   const months = [...new Set(expenseData
@@ -3511,20 +3517,36 @@ window.setExpenseFilter = function(key, value){
   window._expenseFilter = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
   window._expenseFilter[key] = value;
   if(key === 'year') window._expenseFilter.month = 'none';
-  renderExpenses();
+  renderExpenses(true);
 };
 window.resetExpenseFilters = function(){
   window._expenseFilter = {year:'none',month:'none',category:'all',status:'all'};
   if((!expenseData || !expenseData.length) && Array.isArray(window.expenseData) && window.expenseData.length) expenseData = window.expenseData;
   if(!expenseData || !expenseData.length) loadExpenseLocal();
-  renderExpenses();
+  renderExpenses(true);
 };
 window.updateExpenseField = function(id, key, value){
   const row = expenseData.find(r=>r.id===id);
   if(!row) return;
   row[key] = value;
   saveExpenseLocal();
-  renderExpenses();
+  // 전체 재렌더 대신 해시 무효화 후 KPI만 갱신 (드롭다운은 이미 사용자가 바꿈)
+  const tbody = document.getElementById('expense-tbody');
+  if(tbody) delete tbody._lastHash;
+  // KPI 카드만 업데이트
+  const activeRows = expenseData.filter(r=>r.status!=='제외');
+  const total = activeRows.reduce((s,r)=>s+(Number(r.total)||0),0);
+  const setHtml = (elId, html) => { const el=document.getElementById(elId); if(el) el.innerHTML=html; };
+  setHtml('expense-total', `<span>₩</span>${total.toLocaleString()}`);
+  setHtml('expense-pending', String(expenseData.filter(r=>r.status==='미검토').length));
+  // 금액 셀 색상 (제외 여부 반영)
+  if(key === 'status'){
+    const tr = tbody?.querySelector(`tr[data-id="${id}"]`) || [...(tbody?.querySelectorAll('tr')||[])].find(tr=>tr.innerHTML.includes(`updateExpenseField(${id},`));
+    if(tr){
+      const amtCell = tr.cells[3];
+      if(amtCell) amtCell.style.color = value==='제외'?'var(--text3)':'var(--amber)';
+    }
+  }
   if(window.fbSave) fbSave('expenseData');
 };
 async function loadPdfJs(){
@@ -3615,7 +3637,7 @@ window.importExpensePdf = async function(){
       category:'all',
       status:'all'
     };
-    renderExpenses();
+    renderExpenses(true);
     if(fresh.length && window.fbSave) fbSave('expenseData');
     if(status) status.textContent = `${parsed.length}건 추출 · ${fresh.length}건 추가됨${fresh.length ? '' : ' · 기존 내역 표시'}`;
     if(!parsed.length) {
@@ -3650,7 +3672,7 @@ window.addExpenseManual = function(){
     window.expenseData = expenseData;
     saveExpenseLocal();
     closeEdit();
-    renderExpenses();
+    renderExpenses(true);
     if(window.fbSave) fbSave('expenseData');
   });
 };
@@ -3671,7 +3693,7 @@ window.editExpense = function(id){
     Object.assign(r,{date,yearMonth:getExpenseYearMonth(date),merchant:gv('m'),category:gv('c'),total:gn('t'),approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n')});
     saveExpenseLocal();
     closeEdit();
-    renderExpenses();
+    renderExpenses(true);
     if(window.fbSave) fbSave('expenseData');
   });
 };
@@ -3682,7 +3704,7 @@ window.deleteExpense = function(id){
     expenseData.splice(expenseData.findIndex(x=>x.id===id),1);
     window.expenseData = expenseData;
     saveExpenseLocal();
-    renderExpenses();
+    renderExpenses(true);
     if(window.fbSave) fbSave('expenseData');
   });
 };
@@ -3851,20 +3873,20 @@ window.attachExpenseReceipt = function(id){
           row.driveLink = result.webViewLink || `https://drive.google.com/file/d/${result.fileId}/view`;
           row.receiptName = uploadName;
           saveExpenseLocal();
-          renderExpenses();
+          renderExpenses(true);
           if(window.fbSave) fbSave('expenseData');
           alert(`✅ Drive 업로드 완료!\n파일: ${uploadName}\n\n${row.driveLink}`);
         } else {
           // 업로드 실패 시 로컬 저장으로 fallback
           alert('⚠️ Drive 업로드에 실패했습니다. 로컬에 임시 저장합니다.');
           saveExpenseLocal();
-          renderExpenses();
+          renderExpenses(true);
         }
       } catch(err){
         console.error('Drive upload error:', err);
         alert('⚠️ Drive 업로드 오류: ' + err.message + '\n로컬에 임시 저장합니다.');
         saveExpenseLocal();
-        renderExpenses();
+        renderExpenses(true);
       }
     } else {
       // Drive 미연동: 기존 방식 (650KB 제한)
@@ -3878,7 +3900,7 @@ window.attachExpenseReceipt = function(id){
         row.receiptName = file.name;
         row.receiptDataUrl = e.target.result;
         saveExpenseLocal();
-        renderExpenses();
+        renderExpenses(true);
         if(window.fbSave) fbSave('expenseData');
       };
       reader.readAsDataURL(file);
