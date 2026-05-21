@@ -3650,7 +3650,7 @@ function renderExpenses(_forceRender){
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text2)">${r.approvalNo||'-'}</td>
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.businessNo||'-'}</td>
       <td><select class="form-select" style="width:104px;padding:5px 8px;font-size:12px" onchange="updateExpenseField(${r.id},'status',this.value)">${EXPENSE_STATUSES.map(s=>`<option value="${s}" ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
-      <td>${r.storageUrl?`<a href="${r.storageUrl}" target="_blank" class="btn" style="font-size:11px;padding:5px 9px;color:var(--teal);border-color:rgba(62,207,170,.3)">☁ 보기</a>`:r.receiptDataUrl?`<button class="btn" onclick="openExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px">보기</button>`:''}<button class="btn" onclick="attachExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px;margin-left:4px">${r.storageUrl||r.receiptDataUrl?'재첨부':'첨부'}</button><div style="font-size:10px;color:var(--text3);margin-top:3px">${r.receiptName||''}</div></td>
+      <td>${renderReceiptCell(r)}</td>
       <td><input class="input-field" value="${String(r.memo||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}" placeholder="메모" onchange="updateExpenseField(${r.id},'memo',this.value)" style="width:180px;padding:6px 8px;font-size:12px"></td>
       <td class='act-col'><div class='row-actions' style='opacity:1'><button class='act-btn edit' onclick='editExpense(${r.id})' title='수정'>✎</button><button class='act-btn del' onclick='deleteExpense(${r.id})' title='삭제'>✕</button></div></td>
     </tr>
@@ -3658,7 +3658,7 @@ function renderExpenses(_forceRender){
 
   const activeRows = expenseData.filter(r=>r.status!=='제외');
   const total = activeRows.reduce((s,r)=>s+(Number(r.total)||0),0);
-  const receiptCount = expenseData.filter(r=>r.receiptDataUrl||r.storageUrl).length;
+  const receiptCount = expenseData.filter(r=>(r.attachments&&r.attachments.length>0)||r.receiptDataUrl||r.storageUrl).length;
   const pendingCount = expenseData.filter(r=>r.status==='미검토').length;
   const setHtml = (id, html) => { const el=document.getElementById(id); if(el) el.innerHTML=html; };
   setHtml('expense-total', `<span>₩</span>${total.toLocaleString()}`);
@@ -3757,6 +3757,7 @@ function parseExpensePdfText(text, sourceFile){
       memo: '',
       receiptName: '',
       receiptDataUrl: '',
+      attachments: [],
       sourceFile: sourceFile || ''
     };
   }).filter(r=>r.date && r.merchant && r.total);
@@ -3823,7 +3824,7 @@ window.addExpenseManual = function(){
     if(!merchant){ alert('상호명을 입력해주세요.'); return; }
     const newId = expenseData.length ? Math.max(...expenseData.map(r=>Number(r.id)||0))+1 : 1;
     const date = gv('d');
-    expenseData.unshift({id:newId,date,yearMonth:getExpenseYearMonth(date),merchant,category:gv('c'),total:gn('t'),amount:gn('t'),tax:0,serviceFee:0,approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n'),receiptName:'',receiptDataUrl:'',sourceFile:'직접입력'});
+    expenseData.unshift({id:newId,date,yearMonth:getExpenseYearMonth(date),merchant,category:gv('c'),total:gn('t'),amount:gn('t'),tax:0,serviceFee:0,approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n'),receiptName:'',receiptDataUrl:'',attachments:[],sourceFile:'직접입력'});
     window.expenseData = expenseData;
     saveExpenseLocal();
     closeEdit();
@@ -3991,69 +3992,128 @@ async function uploadReceiptToDrive(file, fileName, folderId){
   });
 }
 
-window.attachExpenseReceipt = function(id){
+// ── 다중 첨부 헬퍼 ────────────────────────────────────────────────
+function getAttachments(row){
+  if(row.attachments && row.attachments.length > 0) return row.attachments;
+  // 기존 단일 첨부를 배열로 마이그레이션
+  const legacy = [];
+  if(row.storageUrl)     legacy.push({name:row.receiptName||'영수증', storageUrl:row.storageUrl, dataUrl:row.receiptDataUrl||''});
+  else if(row.receiptDataUrl) legacy.push({name:row.receiptName||'영수증', storageUrl:'', dataUrl:row.receiptDataUrl});
+  return legacy;
+}
+
+function renderReceiptCell(r){
+  const atts = getAttachments(r);
+  const listHtml = atts.map((a,i)=>`
+    <div style="display:flex;align-items:center;gap:4px;margin-top:3px">
+      ${a.storageUrl
+        ? `<a href="${a.storageUrl}" target="_blank" class="btn" style="font-size:11px;padding:3px 7px;color:var(--teal);border-color:rgba(62,207,170,.3)">☁ 보기</a>`
+        : a.dataUrl
+          ? `<button class="btn" onclick="openExpenseReceiptIdx(${r.id},${i})" style="font-size:11px;padding:3px 7px">보기</button>`
+          : ''}
+      <span style="font-size:10px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.name||''}">${a.name||''}</span>
+      <button class="btn" onclick="removeExpenseAttachment(${r.id},${i})" style="font-size:11px;padding:2px 6px;color:var(--coral);border-color:rgba(240,96,96,.3);margin-left:auto" title="삭제">✕</button>
+    </div>`).join('');
+  return `<div>
+    <button class="btn" onclick="attachExpenseReceipt(${r.id})" style="font-size:11px;padding:5px 9px">${atts.length>0?'+ 추가':'첨부'}</button>
+    ${listHtml}
+  </div>`;
+}
+window.renderReceiptCell = renderReceiptCell;
+
+window.attachExpenseReceipt = async function(id){
   const row = expenseData.find(r=>r.id===id);
   if(!row) return;
+  // 기존 단일 첨부를 배열로 마이그레이션
+  if(!row.attachments){
+    row.attachments = getAttachments(row);
+    delete row.storageUrl; delete row.receiptDataUrl; delete row.receiptName;
+  }
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*,application/pdf';
+  input.multiple = true;
   input.onchange = async () => {
-    const file = input.files?.[0];
-    if(!file) return;
-
-    const dateStr = (row.date||'').replace(/[^0-9]/g,'').slice(0,8);
-    const safeMerchant = (row.merchant||'영수증').replace(/[/\\:*?"<>|]/g,'');
-    const uploadName = `${dateStr}_${safeMerchant}_${file.name}`;
-
-    if(window.gasUploadReceipt||window.fbUploadReceipt){
-      try {
-        row.receiptName = uploadName + ' (업로드 중…)';
-        renderExpenses(true);
-        const uploadFn = window.gasUploadReceipt || window.fbUploadReceipt;
-        const downloadUrl = await uploadFn(file, uploadName);
-        row.receiptName = uploadName;
-        row.storageUrl = downloadUrl;
-        if(file.size <= 2 * 1024 * 1024){
-          const reader2 = new FileReader();
-          reader2.onload = e2 => { row.receiptDataUrl = e2.target.result; };
-          reader2.readAsDataURL(file);
+    const files = Array.from(input.files||[]);
+    if(!files.length) return;
+    for(const file of files){
+      const dateStr = (row.date||'').replace(/[^0-9]/g,'').slice(0,8);
+      const safeMerchant = (row.merchant||'영수증').replace(/[/\\:*?"<>|]/g,'');
+      const uploadName = `${dateStr}_${safeMerchant}_${file.name}`;
+      if(window.gasUploadReceipt||window.fbUploadReceipt){
+        try {
+          const placeholder = {name: uploadName+' (업로드 중…)', storageUrl:'', dataUrl:''};
+          row.attachments.push(placeholder);
+          renderExpenses(true);
+          const uploadFn = window.gasUploadReceipt || window.fbUploadReceipt;
+          const downloadUrl = await uploadFn(file, uploadName);
+          placeholder.name = uploadName;
+          placeholder.storageUrl = downloadUrl;
+          if(file.size <= 2*1024*1024){
+            const r2 = new FileReader();
+            r2.onload = e2 => { placeholder.dataUrl = e2.target.result; };
+            r2.readAsDataURL(file);
+          }
+          saveExpenseLocal();
+          renderExpenses(true);
+          if(window.fbSave) fbSave('expenseData');
+        } catch(err){
+          console.error('Storage upload error:', err);
+          alert('⚠️ 업로드 오류: ' + err.message);
+          row.attachments = row.attachments.filter(a=>!a.name.includes('업로드 중'));
+          renderExpenses(true);
         }
+      } else {
+        if(file.size > 650*1024){ alert('업로드 함수 초기화 중입니다. 잠시 후 다시 시도해주세요.'); continue; }
+        await new Promise(resolve=>{
+          const reader = new FileReader();
+          reader.onload = e => {
+            row.attachments.push({name: file.name, storageUrl:'', dataUrl: e.target.result});
+            resolve();
+          };
+          reader.readAsDataURL(file);
+        });
         saveExpenseLocal();
         renderExpenses(true);
         if(window.fbSave) fbSave('expenseData');
-      } catch(err){
-        console.error('Storage upload error:', err);
-        alert('⚠️ 업로드 오류: ' + err.message + '\n\nFirebase Storage 보안 규칙에서 읽기/쓰기를 허용했는지 확인해주세요.');
-        row.receiptName = '';
-        renderExpenses(true);
       }
-    } else {
-      if(file.size > 650 * 1024){
-        alert('업로드 함수 초기화 중입니다. 잠시 후 다시 시도해주세요.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = e => {
-        row.receiptName = file.name;
-        row.receiptDataUrl = e.target.result;
-        saveExpenseLocal();
-        renderExpenses(true);
-        if(window.fbSave) fbSave('expenseData');
-      };
-      reader.readAsDataURL(file);
     }
   };
   input.click();
 };
+
 window.openExpenseReceipt = function(id){
   const row = expenseData.find(r=>r.id===id);
   if(!row?.receiptDataUrl) return;
   const w = window.open();
   if(w) w.document.write(row.receiptDataUrl.startsWith('data:application/pdf') ? `<iframe src="${row.receiptDataUrl}" style="border:0;width:100%;height:100vh"></iframe>` : `<img src="${row.receiptDataUrl}" style="max-width:100%">`);
 };
+
+window.openExpenseReceiptIdx = function(id, idx){
+  const row = expenseData.find(r=>r.id===id);
+  const att = row?.attachments?.[idx];
+  if(!att?.dataUrl) return;
+  const w = window.open();
+  if(w) w.document.write(att.dataUrl.startsWith('data:application/pdf') ? `<iframe src="${att.dataUrl}" style="border:0;width:100%;height:100vh"></iframe>` : `<img src="${att.dataUrl}" style="max-width:100%">`);
+};
+
+window.removeExpenseAttachment = function(id, idx){
+  const row = expenseData.find(r=>r.id===id);
+  if(!row) return;
+  if(!row.attachments) row.attachments = getAttachments(row);
+  if(!confirm(`"${row.attachments[idx]?.name||'파일'}" 첨부를 삭제할까요?`)) return;
+  row.attachments.splice(idx, 1);
+  saveExpenseLocal();
+  renderExpenses(true);
+  if(window.fbSave) fbSave('expenseData');
+};
 function exportExpenseCsv(){
   const headers = ['데이터구분','귀속월','일시','상호명','분류','합계','금액','세금','취소금액','승인번호','결제방법','사업자번호','가맹점번호','카드종류','카드번호','주소','상태','영수증파일','기타','원본파일'];
-  const rows = (window.expenseData || expenseData || []).map(r=>['경비처리',r.yearMonth||getExpenseYearMonth(r.date),r.date||'',r.merchant||'',r.category||'',+r.total||0,+r.amount||0,+r.tax||0,+r.cancelAmount||0,r.approvalNo||'',r.method||'',r.businessNo||'',r.merchantNo||'',r.cardType||'',r.cardNo||'',r.address||'',r.status||'',r.receiptName||'',r.memo||'',r.sourceFile||'']);
+  const rows = (window.expenseData || expenseData || []).map(r=>{
+    const atts = getAttachments(r);
+    const receiptNames = atts.map(a=>a.name).filter(Boolean).join(' | ') || r.receiptName || '';
+    return ['경비처리',r.yearMonth||getExpenseYearMonth(r.date),r.date||'',r.merchant||'',r.category||'',+r.total||0,+r.amount||0,+r.tax||0,+r.cancelAmount||0,r.approvalNo||'',r.method||'',r.businessNo||'',r.merchantNo||'',r.cardType||'',r.cardNo||'',r.address||'',r.status||'',receiptNames,r.memo||'',r.sourceFile||''];
+  });
   downloadCsv(`standup_expenses_${csvDateStamp()}.csv`, headers, rows);
 }
 
