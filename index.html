@@ -3572,7 +3572,10 @@ function addTransaction() {
 function openEdit(title,html,saveFn){
   document.getElementById('edit-title').textContent=title;
   document.getElementById('edit-body').innerHTML=html;
-  document.getElementById('edit-save').onclick=saveFn;
+  const saveBtn = document.getElementById('edit-save');
+  saveBtn.textContent = '저장';
+  saveBtn.style.display = '';
+  saveBtn.onclick=saveFn;
   document.getElementById('modal-edit').classList.add('open');
 }
 function closeEdit(){document.getElementById('modal-edit').classList.remove('open');}
@@ -3832,50 +3835,63 @@ function expenseStatusBadge(status){
   return `<span class="status-tag ${map[status]||'tag-warn'}" style="margin:0">${escapeExpenseHtml(status||'미검토')}</span>`;
 }
 function renderExpenseExplainCell(r){
-  const assigned = r.assignedUser ? `<div style="font-size:10px;color:var(--text3);margin-top:4px">대상: ${escapeExpenseHtml(r.assignedUser)}</div>` : '';
+  const hasRequest = !!(r.explainRequest || r.assignedUser || r.explainDue);
+  const hasAnswer = !!r.explainAnswer;
+  const target = r.assignedUser ? `<div style="font-size:10px;color:var(--text3);margin-top:4px">대상: ${escapeExpenseHtml(r.assignedUser)}</div>` : '';
   const req = r.explainRequest ? `<div style="font-size:10px;color:var(--text2);max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeExpenseHtml(r.explainRequest)}">요청: ${escapeExpenseHtml(r.explainRequest)}</div>` : '';
-  const ansPreview = r.explainAnswer ? escapeExpenseHtml(r.explainAnswer).slice(0, 28) + (String(r.explainAnswer).length > 28 ? '…' : '') : '';
-  const ans = r.explainAnswer ? `
-    <button class="btn" onclick="openExpenseExplainDetail(${r.id})" style="font-size:10px;padding:3px 7px;margin-top:4px;color:var(--teal);border-color:rgba(62,207,170,.3)">답변 보기</button>
-    <div style="font-size:10px;color:var(--teal);max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px" title="${escapeExpenseHtml(r.explainAnswer)}">${ansPreview}</div>` : '<div style="font-size:10px;color:var(--text3);margin-top:3px">답변 없음</div>';
-  const label = r.explainAnswer ? '답변확인' : (r.status === '소명요청' ? '요청수정' : '소명요청');
-  return `<div style="min-width:116px">
-    <button class="btn" onclick="openExpenseExplainRequest(${r.id})" style="font-size:11px;padding:5px 9px;color:${r.status==='소명요청'?'var(--coral)':(r.explainAnswer?'var(--teal)':'var(--text)')}">${label}</button>
-    ${assigned}${req}${ans}
-    ${r.explainAnswer?`<button class="btn" onclick="markExpenseExplainChecked(${r.id})" style="font-size:10px;padding:3px 7px;margin-top:4px;color:var(--green);border-color:rgba(91,207,126,.3)">확인완료</button>`:''}
-  </div>`;
+  const due = r.explainDue ? `<div style="font-size:10px;color:var(--amber);margin-top:2px">기한: ${escapeExpenseHtml(r.explainDue)}</div>` : '';
+  if(hasAnswer){
+    return `<div style="min-width:118px">
+      <button class="btn" onclick="openExpenseExplainDetail(${r.id})" style="font-size:11px;padding:5px 9px;color:var(--teal);border-color:rgba(62,207,170,.3)">답변 보기</button>
+      ${target}${req}
+      <div style="font-size:10px;color:var(--teal);margin-top:3px">답변 도착</div>
+      <button class="btn" onclick="markExpenseExplainChecked(${r.id})" style="font-size:10px;padding:3px 7px;margin-top:4px;color:var(--green);border-color:rgba(91,207,126,.3)">확인완료</button>
+      <button class="btn" onclick="openExpenseExplainRequest(${r.id})" style="font-size:10px;padding:3px 7px;margin-top:4px;color:var(--text3)">요청수정</button>
+    </div>`;
+  }
+  if(hasRequest || r.status === '소명요청'){
+    return `<div style="min-width:118px">
+      <button class="btn" onclick="openExpenseExplainRequest(${r.id})" style="font-size:11px;padding:5px 9px;color:var(--coral);border-color:rgba(240,96,96,.3)">요청수정</button>
+      ${target}${req}${due}
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">답변 대기</div>
+    </div>`;
+  }
+  return `<button class="btn" onclick="openExpenseExplainRequest(${r.id})" style="font-size:11px;padding:5px 9px">소명요청</button>`;
 }
 window.openExpenseExplainDetail = function(id){
   const r = expenseData.find(x=>x.id===id);
   if(!r) return;
   const html = `
-    <div class="mf" style="margin-bottom:10px"><label>경비 정보</label><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text2);font-size:12px;line-height:1.7">${escapeExpenseHtml(r.date||'-')}<br>${escapeExpenseHtml(r.merchant||'-')} · ${formatWonValue(r.total)}<br>대상: ${escapeExpenseHtml(r.assignedUser||'-')} / 요청자: ${escapeExpenseHtml(r.explainRequestedBy||'-')}</div></div>
-    <div class="mf" style="margin-bottom:10px"><label>요청 사유</label><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text2);white-space:pre-wrap;word-break:break-word;min-height:58px">${escapeExpenseHtml(r.explainRequest||'-')}</div></div>
-    <div class="mf"><label>사용자 답변</label><div style="background:rgba(62,207,170,.08);border:1px solid rgba(62,207,170,.25);border-radius:8px;padding:10px;color:var(--teal);white-space:pre-wrap;word-break:break-word;min-height:80px">${escapeExpenseHtml(r.explainAnswer||'아직 답변이 없습니다.')}</div>${r.explainAnsweredAt?`<div style="font-size:10px;color:var(--text3);margin-top:6px">답변일: ${escapeExpenseHtml(r.explainAnsweredAt)}</div>`:''}</div>`;
-  openEdit('소명 답변 내용', html, ()=>{ closeEdit(); });
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;color:var(--text2);font-size:12px;line-height:1.8">
+      <div style="color:var(--text);font-weight:700;margin-bottom:2px">${escapeExpenseHtml(r.merchant||'-')} · ${formatWonValue(r.total)}</div>
+      <div>${escapeExpenseHtml(r.date||'-')}</div>
+      <div>대상: ${escapeExpenseHtml(r.assignedUser||'-')} / 요청자: ${escapeExpenseHtml(r.explainRequestedBy||'-')}${r.explainDue?` / 기한: ${escapeExpenseHtml(r.explainDue)}`:''}</div>
+    </div>
+    <div class="mf" style="margin-bottom:14px"><label>요청 사유</label><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text2);white-space:pre-wrap;word-break:break-word;min-height:70px">${escapeExpenseHtml(r.explainRequest||'-')}</div></div>
+    <div class="mf"><label>사용자 답변</label><div style="background:rgba(62,207,170,.08);border:1px solid rgba(62,207,170,.25);border-radius:8px;padding:12px;color:var(--teal);white-space:pre-wrap;word-break:break-word;min-height:96px;font-weight:600">${escapeExpenseHtml(r.explainAnswer||'아직 답변이 없습니다.')}</div>${r.explainAnsweredAt?`<div style="font-size:10px;color:var(--text3);margin-top:6px">답변일: ${escapeExpenseHtml(r.explainAnsweredAt)}</div>`:''}</div>`;
+  openEdit('소명 답변 확인', html, ()=>{ markExpenseExplainChecked(id); closeEdit(); });
+  document.getElementById('edit-save').textContent = '확인완료';
 };
 window.openExpenseExplainRequest = function(id){
   const r = expenseData.find(x=>x.id===id);
   if(!r) return;
   const members = (window.userList && window.userList.length ? window.userList : ['현지지','감찬','안알려줌','디네']);
   const target = r.assignedUser || (currentMember && members.includes(currentMember) ? currentMember : members[0]);
+  const answerNotice = r.explainAnswer ? `<div class="mf" style="grid-column:1 / -1;margin-bottom:8px"><label>답변 상태</label><div style="background:rgba(62,207,170,.08);border:1px solid rgba(62,207,170,.25);border-radius:8px;padding:10px;color:var(--teal);font-size:12px">사용자 답변이 도착했습니다. 답변 내용은 목록의 <b>답변 보기</b>에서 확인하세요.</div></div>` : '';
   openEdit('경비 소명 요청', mfields(
     {l:'요청 대상',id:'u',type:'select',val:target,opts:members},
     {l:'답변 기한',id:'due',type:'date',val:r.explainDue||''},
-    {l:'요청 사유',id:'req',type:'textarea',val:r.explainRequest||'',ph:'예: 사용 목적/구매 사유 확인 필요'},
-    {l:'현재 답변',id:'ans',type:'textarea',val:r.explainAnswer||'',ph:'사용자 답변 표시/수정 가능'}
-  ) + `<div class="mf" style="margin-top:8px"><label>경비 정보</label><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text2);font-size:12px">${escapeExpenseHtml(r.date||'-')} · ${escapeExpenseHtml(r.merchant||'-')} · ${formatWonValue(r.total)}</div></div>`,()=>{
+    {l:'요청 사유',id:'req',type:'textarea',val:r.explainRequest||'',ph:'예: 사용 목적/구매 사유 확인 필요',h:110}
+  ) + answerNotice + `<div class="mf" style="margin-top:8px"><label>경비 정보</label><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text2);font-size:12px">${escapeExpenseHtml(r.date||'-')} · ${escapeExpenseHtml(r.merchant||'-')} · ${formatWonValue(r.total)}</div></div>`,()=>{
     const req = gv('req').trim();
-    const ans = gv('ans').trim();
     r.assignedUser = gv('u');
     r.explainDue = gv('due');
     r.explainRequest = req;
-    r.explainAnswer = ans;
-    r.explainRequestedBy = currentMember || '감찬';
+    r.explainRequestedBy = r.explainRequestedBy || currentMember || '감찬';
     r.explainRequestedAt = r.explainRequestedAt || expenseNowString();
-    if(ans){ r.explainAnsweredAt = r.explainAnsweredAt || expenseNowString(); r.status = '소명완료'; }
+    if(r.explainAnswer){ r.status = r.status === '확인완료' ? '확인완료' : '소명완료'; }
     else if(req){ r.status = '소명요청'; r.explainAnsweredAt = ''; }
-    else { r.status = '미검토'; }
+    else { r.status = '미검토'; r.assignedUser=''; r.explainDue=''; r.explainRequestedBy=''; r.explainRequestedAt=''; }
     saveExpenseLocal();
     closeEdit();
     renderExpenses(true);
@@ -3922,8 +3938,8 @@ window.answerExpenseExplain = function(id){
   openEdit('소명 답변 제출', mfields(
     {l:'상호명',id:'m',val:r.merchant||''},
     {l:'금액',id:'t',val:formatWonValue(r.total)},
-    {l:'요청내용',id:'req',type:'textarea',val:r.explainRequest||'',h:72},
-    {l:'답변',id:'ans',type:'textarea',val:r.explainAnswer||'',ph:'실사용 목적, 구매 사유, 관련 행사명을 적어주세요'}
+    {l:'요청 사유',id:'req',type:'textarea',val:r.explainRequest||'',h:72},
+    {l:'내 답변',id:'ans',type:'textarea',val:r.explainAnswer||'',ph:'실사용 목적, 구매 사유, 관련 행사명을 적어주세요',h:120}
   ),()=>{
     const ans = gv('ans').trim();
     if(!ans){ alert('소명 답변을 입력해주세요.'); return; }
