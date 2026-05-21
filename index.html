@@ -311,6 +311,18 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 .mf input:focus,.mf select:focus{border-color:var(--amber)}
 .mf-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.notice-targets{display:flex;gap:8px;flex-wrap:wrap}
+.notice-check{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text2);cursor:pointer}
+.notice-check input{accent-color:var(--amber)}
+.notice-card{padding:16px 18px;border-bottom:1px solid var(--border)}
+.notice-card:last-child{border-bottom:none}
+.notice-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11px;color:var(--text3);margin-top:6px}
+.notice-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(240,168,48,.24)}
+.notice-pill.off{background:var(--bg3);color:var(--text3);border-color:var(--border)}
+.notice-popup-list{display:flex;flex-direction:column;gap:12px}
+.notice-popup-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px}
+.notice-popup-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:7px}
+.notice-popup-body{font-size:13px;color:var(--text2);line-height:1.8;white-space:pre-wrap;word-break:break-word}
 
 
 /* ── 로그인 오버레이 ── */
@@ -932,6 +944,10 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/><path d="M5 8h1M10 8h1"/></svg>
       권한 관리
     </div>
+    <div class="nav-item" id="nav-notices" onclick="setNav(this)" style="display:none">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a4 4 0 00-4 4v2.2L2.8 11h10.4L12 8.2V6a4 4 0 00-4-4z"/><path d="M6.5 13a1.7 1.7 0 003 0"/></svg>
+      공지
+    </div>
     <div class="nav-item" id="nav-settings" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="6" r="2"/><path d="M8 1v3M8 9v6M3 6h2M11 6h2"/><circle cx="8" cy="6" r="2"/></svg>
       설정
@@ -952,6 +968,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 
 <div class="modal-overlay" id="modal-edit" onclick="if(event.target===this)closeEdit()"><div class="mbox wide"><div class="mhead"><div class="mtitle" id="edit-title">수정</div><button class="mclose" onclick="closeEdit()">✕</button></div><div id="edit-body"></div><div class="mfoot"><button class="btn" onclick="closeEdit()">취소</button><button class="btn btn-primary" id="edit-save">저장</button></div></div></div>
 <div class="modal-overlay" id="modal-confirm" onclick="if(event.target===this)closeConfirm()"><div class="mbox" style="width:360px"><div class="mhead"><div style="font-size:15px;font-weight:700;color:var(--coral)">삭제 확인</div><button class="mclose" onclick="closeConfirm()">✕</button></div><div id="confirm-msg" style="font-size:14px;color:var(--text2);margin-bottom:8px;line-height:1.8"></div><div class="mfoot"><button class="btn" onclick="closeConfirm()">취소</button><button class="btn" style="background:var(--coral);color:#fff;border:none;font-weight:700" id="confirm-ok">삭제</button></div></div></div>
+<div class="modal-overlay" id="modal-notice-popup" onclick="if(event.target===this)closeNoticePopup()"><div class="mbox wide"><div class="mhead"><div class="mtitle">공지</div><button class="mclose" onclick="closeNoticePopup()">✕</button></div><div id="notice-popup-body"></div><div class="mfoot"><button class="btn btn-primary" onclick="closeNoticePopup()">확인</button></div></div></div>
 <div class="modal-overlay" id="modal-event" onclick="if(event.target===this)closeEventModal()"><div class="mbox"><div class="mhead"><div class="mtitle">행사 일정 추가</div><button class="mclose" onclick="closeEventModal()">✕</button></div><div class="mf-row"><div class="mf"><label>행사명</label><input id="ev-name" placeholder="예: 서울 코믹월드"></div><div class="mf"><label>날짜</label><input type="date" id="ev-date"></div></div><div class="mf-row"><div class="mf"><label>부스 형태</label><input id="ev-booth" placeholder="전문부스 2테이블"></div><div class="mf"><label>상태</label><select id="ev-status"><option>예정</option><option>검토중</option><option>완료</option></select></div></div><div class="mf"><label>메모</label><input id="ev-note"></div><div class="mfoot"><button class="btn" onclick="closeEventModal()">취소</button><button class="btn btn-primary" onclick="submitEventModal()">저장</button></div></div></div>
 <div class="modal-overlay" id="modal-pnl-event" onclick="if(event.target===this)closePnlEventModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">행사 추가</div><button class="mclose" onclick="closePnlEventModal()">✕</button></div><div class="mf-row"><div class="mf"><label>행사 키 (짧게)</label><input id="pnl-key" placeholder="예: 26/5"></div><div class="mf"><label>행사 전체명</label><input id="pnl-name" placeholder="예: 코믹월드 26/5"></div></div><div class="mf-row"><div class="mf"><label>날짜</label><input id="pnl-date" placeholder="2026-05-11"></div><div class="mf"><label>부스</label><input id="pnl-booth"></div></div><div class="mf-row"><div class="mf"><label>총매출 (₩)</label><input type="number" id="pnl-rev"></div><div class="mf"><label>선입금 (₩)</label><input type="number" id="pnl-pre"></div></div><div class="mf-row"><div class="mf"><label>현장매출 (₩)</label><input type="number" id="pnl-spot"></div><div class="mf"><label>총제작원가 (₩)</label><input type="number" id="pnl-cogs"></div></div><div class="mf-row"><div class="mf"><label>부스비 (₩)</label><input type="number" id="pnl-fb"></div><div class="mf"><label>교통/식비 (₩)</label><input type="number" id="pnl-ft"></div></div><div class="mf-row"><div class="mf"><label>자재비 (₩)</label><input type="number" id="pnl-fm"></div><div class="mf"><label>기타비용 (₩)</label><input type="number" id="pnl-fe"></div></div><div class="mfoot"><button class="btn" onclick="closePnlEventModal()">취소</button><button class="btn btn-primary" onclick="submitPnlEventModal()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-add-cost" onclick="if(event.target===this)closeAddCostModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">원가 항목 추가</div><button class="mclose" onclick="closeAddCostModal()">✕</button></div><div class="mf-row"><div class="mf"><label>굿즈명</label><input id="ac-name" placeholder="예: LD아크릴 스탠드"></div><div class="mf"><label>종류/멤버</label><input id="ac-type" placeholder="예: 이오몽"></div></div><div class="mf-row"><div class="mf"><label>제작 수량</label><input type="number" id="ac-qty" value="10"></div><div class="mf"><label>개당 원가 (₩)</label><input type="number" id="ac-cost" value="0"></div></div><div class="mf-row"><div class="mf"><label>판매가 (₩)</label><input type="number" id="ac-price" value="0"></div><div class="mf"><label>판매 수량</label><input type="number" id="ac-sold" value="0"></div></div><div class="mfoot"><button class="btn" onclick="closeAddCostModal()">취소</button><button class="btn btn-primary" onclick="submitAddCost()">추가</button></div></div></div>
@@ -1724,6 +1741,49 @@ PAGE_INITS['permissions'] = function() {
   renderPermTable();
 };
 
+PAGES['notices'] = `<div class="main-header">
+  <div>
+    <div class="page-title">공지</div>
+    <div class="page-sub">로그인 직후 대시보드에 표시할 팝업 안내문을 관리합니다.</div>
+  </div>
+</div>
+
+<div class="grid-2col" style="align-items:start">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>공지 작성</div>
+    </div>
+    <div class="panel-body">
+      <div class="mf"><label>제목</label><input id="notice-title" placeholder="예: 이번 행사 정산 안내"></div>
+      <div class="mf"><label>팝업 내용</label><textarea id="notice-body" rows="7" placeholder="안내할 내용을 입력하세요."></textarea></div>
+      <div class="mf">
+        <label>표시 대상</label>
+        <div class="notice-targets">
+          <label class="notice-check"><input type="checkbox" id="notice-target-all" checked onchange="toggleNoticeTargets()">전체 프로필</label>
+          ${['현지지','감찬','안알려줌','디네'].map(member => `<label class="notice-check"><input type="checkbox" class="notice-target-member" value="${member}" disabled>${member}</label>`).join('')}
+        </div>
+      </div>
+      <label class="notice-check" style="margin-bottom:14px"><input type="checkbox" id="notice-active" checked>로그인 팝업 표시</label>
+      <button class="btn btn-primary" onclick="saveNotice()">공지 저장</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--teal)"></div>등록된 공지</div>
+    </div>
+    <div id="notice-list"></div>
+  </div>
+</div>`;
+PAGE_INITS['notices'] = function() {
+  if (currentMember !== '현지지') {
+    const main = document.getElementById('main-content');
+    if (main) main.innerHTML = '<div class="panel"><div class="panel-body" style="color:var(--text2)">공지 작성은 현지지(관리자)만 사용할 수 있습니다.</div></div>';
+    return;
+  }
+  toggleNoticeTargets();
+  renderNoticeManager();
+};
+
 PAGES['settings'] = `<div class="main-header">
   <div>
     <div class="page-title">⚙️ 설정</div>
@@ -2492,7 +2552,7 @@ function estatSubmitManual() {
 }
 
 let currentPage = null;
-const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','expenses':'경비처리','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
+const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','expenses':'경비처리','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','notices':'공지','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
 
 function navigate(pageKey) {
   const main = document.getElementById('main-content');
@@ -4542,6 +4602,8 @@ function doLogin() {
   // 현지지(관리자)면 권한 관리 메뉴 표시
   const permNav = document.getElementById('nav-permissions');
   if (permNav) permNav.style.display = member === '현지지' ? '' : 'none';
+  const noticeNav = document.getElementById('nav-notices');
+  if (noticeNav) noticeNav.style.display = member === '현지지' ? '' : 'none';
   // 설정 메뉴는 전체 공개
 
   // 권한 로드 및 적용
@@ -4554,6 +4616,8 @@ function doLogin() {
     return Date.now() - ts < 10 * 60 * 1000;
   }));
   updateGamchanPendingAlert();
+  window._loginNoticeShown = false;
+  setTimeout(showLoginNotices, 700);
 }
 
 // 탭/창 닫을 때 오프라인 처리
@@ -4644,6 +4708,155 @@ const MENU_LIST = [
 ];
 
 const PERM_MEMBERS = ['현지지', '감찬', '안알려줌', '디네'];
+let notices = [];
+window.notices = notices;
+
+function noticeEscape(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+
+function getNoticeTargetLabel(notice) {
+  const targets = Array.isArray(notice.targets) ? notice.targets : [];
+  return notice.allTargets || !targets.length ? '전체 프로필' : targets.join(', ');
+}
+
+function formatNoticeSavedAt(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('ko-KR', { dateStyle:'short', timeStyle:'short' });
+}
+
+function toggleNoticeTargets() {
+  const all = document.getElementById('notice-target-all')?.checked;
+  document.querySelectorAll('.notice-target-member').forEach(input => {
+    input.disabled = !!all;
+    if (all) input.checked = false;
+  });
+}
+
+async function persistNotices() {
+  window.notices = notices;
+  if (window.fbSave) await fbSave('notices');
+}
+
+async function saveNotice() {
+  if (currentMember !== '현지지') {
+    alert('공지 작성은 현지지(관리자)만 가능합니다.');
+    return;
+  }
+  const title = document.getElementById('notice-title')?.value.trim();
+  const body = document.getElementById('notice-body')?.value.trim();
+  const allTargets = !!document.getElementById('notice-target-all')?.checked;
+  const targets = [...document.querySelectorAll('.notice-target-member:checked')].map(input => input.value);
+  if (!title || !body) {
+    alert('공지 제목과 내용을 입력해주세요.');
+    return;
+  }
+  if (!allTargets && !targets.length) {
+    alert('팝업을 표시할 프로필을 선택해주세요.');
+    return;
+  }
+  notices = Array.isArray(window.notices) ? window.notices : notices;
+  notices.unshift({
+    id: `notice-${Date.now()}`,
+    title,
+    body,
+    allTargets,
+    targets,
+    active: !!document.getElementById('notice-active')?.checked,
+    author: currentMember,
+    savedAt: new Date().toISOString()
+  });
+  await persistNotices();
+  document.getElementById('notice-title').value = '';
+  document.getElementById('notice-body').value = '';
+  document.getElementById('notice-target-all').checked = true;
+  document.getElementById('notice-active').checked = true;
+  toggleNoticeTargets();
+  renderNoticeManager();
+}
+
+async function toggleNoticeActive(id, active) {
+  if (currentMember !== '현지지') return;
+  notices = Array.isArray(window.notices) ? window.notices : notices;
+  const notice = notices.find(item => item.id === id);
+  if (!notice) return;
+  notice.active = !!active;
+  await persistNotices();
+  renderNoticeManager();
+}
+
+function deleteNotice(id) {
+  if (currentMember !== '현지지') {
+    alert('공지 삭제는 현지지(관리자)만 가능합니다.');
+    return;
+  }
+  notices = Array.isArray(window.notices) ? window.notices : notices;
+  const notice = notices.find(item => item.id === id);
+  if (!notice) return;
+  openConfirm(`<b>${noticeEscape(notice.title)}</b> 공지를 삭제할까요?`, async () => {
+    notices = notices.filter(item => item.id !== id);
+    await persistNotices();
+    renderNoticeManager();
+  });
+}
+
+function renderNoticeManager() {
+  const list = document.getElementById('notice-list');
+  if (!list) return;
+  notices = Array.isArray(window.notices) ? window.notices : notices;
+  if (!notices.length) {
+    list.innerHTML = '<div class="panel-body" style="color:var(--text3)">등록된 공지가 없습니다.</div>';
+    return;
+  }
+  list.innerHTML = notices.map(notice => `
+    <div class="notice-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div style="min-width:0">
+          <div style="font-size:14px;font-weight:700;color:var(--text);word-break:break-word">${noticeEscape(notice.title)}</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap;word-break:break-word;margin-top:5px">${noticeEscape(notice.body)}</div>
+          <div class="notice-meta">
+            <span class="notice-pill">${noticeEscape(getNoticeTargetLabel(notice))}</span>
+            <span>${noticeEscape(formatNoticeSavedAt(notice.savedAt))}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <label class="notice-check" title="팝업 표시 상태"><input type="checkbox" ${notice.active !== false ? 'checked' : ''} onchange="toggleNoticeActive('${noticeEscape(notice.id)}',this.checked)">표시</label>
+          <button class="act-btn del" onclick="deleteNotice('${noticeEscape(notice.id)}')" title="삭제">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function getLoginNotices(member) {
+  notices = Array.isArray(window.notices) ? window.notices : notices;
+  return notices.filter(notice => {
+    if (notice.active === false) return false;
+    return notice.allTargets || !Array.isArray(notice.targets) || notice.targets.includes(member);
+  });
+}
+
+function showLoginNotices() {
+  if (!currentMember || window._loginNoticeShown) return;
+  const matched = getLoginNotices(currentMember);
+  window._loginNoticeShown = true;
+  if (!matched.length) return;
+  const body = document.getElementById('notice-popup-body');
+  const modal = document.getElementById('modal-notice-popup');
+  if (!body || !modal) return;
+  body.innerHTML = `<div class="notice-popup-list">${matched.map(notice => `
+    <section class="notice-popup-item">
+      <div class="notice-popup-title">${noticeEscape(notice.title)}</div>
+      <div class="notice-popup-body">${noticeEscape(notice.body)}</div>
+    </section>`).join('')}</div>`;
+  modal.classList.add('open');
+}
+
+function closeNoticePopup() {
+  document.getElementById('modal-notice-popup')?.classList.remove('open');
+}
 
 // 기본 권한: 모두 허용
 let permissions = {};
@@ -6137,6 +6350,7 @@ const COLLECTIONS = {
   eventList:   'events',
   onlineMembers: 'presence',
   permissions: 'permissions',
+  notices:     'notices',
 };
 
 // ── 저장 함수 ─────────────────────────────────────────────────────
@@ -6247,7 +6461,7 @@ async function initFirebase() {
   }
 
   // 모든 데이터 병렬 로드
-  const keys = ['txData','memberShares','userList','costData','orderData','invData','tasks','expenseData','illustTasks','recruitData','vendors','eventList'];
+  const keys = ['txData','memberShares','userList','costData','orderData','invData','tasks','expenseData','illustTasks','recruitData','vendors','eventList','notices'];
   await Promise.all(keys.map(k => fbLoad(k)));
 
   // 첫 로드 후 로컬 데이터가 없으면 현재 앱 데이터를 Firebase에 업로드
@@ -6274,6 +6488,7 @@ async function initFirebase() {
     recruitData: () => { if(typeof renderRecruitList==='function') renderRecruitList(); },
     vendors:     () => { if(typeof renderVendors==='function') renderVendors(window._vf||'all'); },
     eventList:   () => { if(typeof renderEventListPanel==='function') renderEventListPanel(); },
+    notices:     () => { if(typeof renderNoticeManager==='function') renderNoticeManager(); },
   };
 
   keys.forEach(key => {
@@ -6282,7 +6497,7 @@ async function initFirebase() {
       const pageMap = {
         txData:'accounting', memberShares:'accounting', userList:'settings', costData:'cost', orderData:'orders',
         invData:'inventory', tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
-        vendors:'vendors', eventList:'dashboard'
+        vendors:'vendors', eventList:'dashboard', notices:'notices'
       };
       if (window.currentPage === pageMap[key] || window.currentPage === 'dashboard') {
         renderMap[key]?.();
