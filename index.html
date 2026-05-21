@@ -1455,7 +1455,7 @@ PAGES['expenses'] = `<div class="main-header">
   </div>
 </div>
 
-<div class="panel" style="margin-bottom:16px">
+<div class="panel" id="expense-pdf-panel" style="margin-bottom:16px;display:none">
   <div class="panel-header">
     <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>카드매출전표 PDF 업로드</div>
     <span id="expense-import-status" style="font-size:12px;color:var(--text3)">토스뱅크 카드매출전표 양식 지원</span>
@@ -1675,6 +1675,9 @@ renderBoard();
 };
 PAGE_INITS['expenses'] = function(){
 renderExpenses(true);
+// PDF 업로드 패널: 현지지만 표시
+const pdfPanel = document.getElementById('expense-pdf-panel');
+if (pdfPanel) pdfPanel.style.display = (currentMember === '현지지') ? '' : 'none';
 };
 PAGE_INITS['illust'] = function(){
 renderIllustStatus();
