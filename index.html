@@ -919,6 +919,10 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
       경비처리
     </div>
     <div class="nav-item" onclick="setNav(this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12v10H2z"/><path d="M4 6h8M4 9h5"/><circle cx="12" cy="11" r="2"/></svg>
+      내 소명 요청 <span class="nav-badge" id="expense-request-nav-badge" style="display:none">0</span>
+    </div>
+    <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/><path d="M5 4V2h6v2M6 8h4M6 11h2"/></svg>
       매출 입력
     </div>
@@ -1501,7 +1505,7 @@ PAGES['expenses'] = `<div class="main-header">
       <select class="form-select" id="expense-filter-month" onchange="setExpenseFilter('month',this.value)" style="width:100px"></select>
       <select class="form-select" id="expense-filter-category" onchange="setExpenseFilter('category',this.value)" style="width:130px"></select>
       <select class="form-select" id="expense-filter-status" onchange="setExpenseFilter('status',this.value)" style="width:120px">
-        <option value="all">상태 전체</option><option value="미검토">미검토</option><option value="확인완료">확인완료</option><option value="제외">제외</option>
+        <option value="all">상태 전체</option><option value="미검토">미검토</option><option value="소명요청">소명요청</option><option value="소명완료">소명완료</option><option value="확인완료">확인완료</option><option value="제외">제외</option>
       </select>
       <button class="btn" onclick="resetExpenseFilters()" style="font-size:11px;padding:5px 12px">전체 조회</button>
     </div>
@@ -1509,12 +1513,43 @@ PAGES['expenses'] = `<div class="main-header">
   <div class="panel-body" style="padding:0;overflow-x:auto">
     <table class="order-table">
       <thead><tr>
-        <th>일시</th><th>상호명</th><th>분류</th><th style="text-align:right">합계</th><th>승인번호</th><th>사업자번호</th><th>상태</th><th>영수증</th><th>기타</th><th style="width:70px"></th>
+        <th>일시</th><th>상호명</th><th>분류</th><th style="text-align:right">합계</th><th>승인번호</th><th>사업자번호</th><th>상태</th><th>소명</th><th>영수증</th><th>기타</th><th style="width:70px"></th>
       </tr></thead>
       <tbody id="expense-tbody"></tbody>
     </table>
   </div>
 </div>`;
+
+PAGES['expense-requests'] = `<div class="main-header">
+  <div>
+    <div class="page-title">내 소명 요청</div>
+    <div class="page-sub">경비 담당자가 요청한 사용 목적 확인 · 증빙 보완 답변</div>
+  </div>
+  <div class="header-right">
+    <button class="btn" onclick="navigate('expenses')">경비처리로 이동</button>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card coral"><div class="kpi-label">답변 대기</div><div class="kpi-value" id="my-explain-pending">0</div><div class="kpi-change neutral">소명요청</div></div>
+  <div class="kpi-card teal"><div class="kpi-label">제출 완료</div><div class="kpi-value" id="my-explain-done">0</div><div class="kpi-change neutral">소명완료</div></div>
+  <div class="kpi-card amber"><div class="kpi-label">전체 요청</div><div class="kpi-value" id="my-explain-total">0</div><div class="kpi-change neutral">내 담당</div></div>
+  <div class="kpi-card blue"><div class="kpi-label">확인 완료</div><div class="kpi-value" id="my-explain-checked">0</div><div class="kpi-change neutral">처리됨</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title"><div class="panel-title-dot" style="background:var(--coral)"></div>소명 요청 목록</div>
+    <span style="font-size:11px;color:var(--text3)">본인에게 배정된 경비만 표시됩니다</span>
+  </div>
+  <div class="panel-body" style="padding:0;overflow-x:auto">
+    <table class="order-table">
+      <thead><tr><th>상태</th><th>일시</th><th>상호명</th><th style="text-align:right">합계</th><th>요청자</th><th>요청내용</th><th>내 답변</th><th style="width:80px"></th></tr></thead>
+      <tbody id="expense-request-tbody"></tbody>
+    </table>
+  </div>
+</div>`;
+PAGE_INITS['expense-requests'] = function(){ renderExpenseRequests(); };
 PAGES['illust'] = `<div class="main-header">
   <div>
     <div class="page-title">일러작업현황</div>
@@ -1695,6 +1730,7 @@ renderExpenses(true);
 // PDF 업로드 패널: 현지지만 표시
 const pdfPanel = document.getElementById('expense-pdf-panel');
 if (pdfPanel) pdfPanel.style.display = (currentMember === '현지지') ? '' : 'none';
+updateExpenseRequestBadge();
 };
 PAGE_INITS['illust'] = function(){
 renderIllustStatus();
@@ -2552,7 +2588,7 @@ function estatSubmitManual() {
 }
 
 let currentPage = null;
-const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','expenses':'경비처리','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','notices':'공지','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
+const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','kanban':'굿즈제작 작업현황','expenses':'경비처리','expense-requests':'내 소명 요청','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','notices':'공지','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
 
 function navigate(pageKey) {
   const main = document.getElementById('main-content');
@@ -3612,7 +3648,7 @@ function getExpenseCategories(){
 function saveExpenseCategories(arr){ try{ localStorage.setItem(EXPENSE_CATEGORIES_KEY, JSON.stringify(arr)); }catch(e){} }
 // EXPENSE_CATEGORIES는 getter로 항상 최신 반영
 Object.defineProperty(window, 'EXPENSE_CATEGORIES', { get: getExpenseCategories, configurable: true });
-const EXPENSE_STATUSES = ['미검토','확인완료','제외'];
+const EXPENSE_STATUSES = ['미검토','소명요청','소명완료','확인완료','제외'];
 const EXPENSE_LOCAL_KEY = 'standup_expense_data_v1';
 var expenseData = [];
 window._expenseFilter = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
@@ -3643,6 +3679,13 @@ function normalizeExpenseRows(){
     if(!r.status){ r.status = '미검토'; changed = true; }
     if(!r.category){ r.category = inferExpenseCategory(r.merchant); changed = true; }
     if(typeof r.memo === 'undefined'){ r.memo = ''; changed = true; }
+    if(typeof r.assignedUser === 'undefined'){ r.assignedUser = ''; changed = true; }
+    if(typeof r.explainRequest === 'undefined'){ r.explainRequest = ''; changed = true; }
+    if(typeof r.explainAnswer === 'undefined'){ r.explainAnswer = ''; changed = true; }
+    if(typeof r.explainRequestedBy === 'undefined'){ r.explainRequestedBy = ''; changed = true; }
+    if(typeof r.explainRequestedAt === 'undefined'){ r.explainRequestedAt = ''; changed = true; }
+    if(typeof r.explainAnsweredAt === 'undefined'){ r.explainAnsweredAt = ''; changed = true; }
+    if(typeof r.explainDue === 'undefined'){ r.explainDue = ''; changed = true; }
   });
   return changed;
 }
@@ -3685,7 +3728,7 @@ function renderExpenses(_forceRender){
 
   // 변경 없으면 DOM 건드리지 않음 (Firebase 리스너 중복 렌더 방지)
   const f = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
-  const renderHash = JSON.stringify({data: expenseData.map(r=>({id:r.id,category:r.category,status:r.status,receiptName:r.receiptName,driveLink:r.driveLink,memo:r.memo})), f});
+  const renderHash = JSON.stringify({data: expenseData.map(r=>({id:r.id,category:r.category,status:r.status,receiptName:r.receiptName,driveLink:r.driveLink,memo:r.memo,assignedUser:r.assignedUser,explainRequest:r.explainRequest,explainAnswer:r.explainAnswer,explainDue:r.explainDue})), f});
   if(!_forceRender && tbody._lastHash === renderHash) return;
   tbody._lastHash = renderHash;
   const years = [...new Set(expenseData.map(r=>String(r.yearMonth||getExpenseYearMonth(r.date)).slice(0,4)).filter(Boolean))].sort((a,b)=>b.localeCompare(a));
@@ -3703,9 +3746,9 @@ function renderExpenses(_forceRender){
 
   const rows = getFilteredExpenses().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
   tbody.innerHTML = (f.year === 'none' || f.month === 'none')
-    ? `<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">연도와 월을 선택하면 해당 월 경비 내역이 표시됩니다.</td></tr>`
+    ? `<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">연도와 월을 선택하면 해당 월 경비 내역이 표시됩니다.</td></tr>`
     : rows.length ? rows.map(r=>`
-    <tr>
+    <tr data-id="${r.id}">
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.date||'-'}</td>
       <td style="font-weight:600">${r.merchant||'-'}</td>
       <td><select class="form-select" style="width:120px;padding:5px 8px;font-size:12px" onchange="updateExpenseField(${r.id},'category',this.value)">${EXPENSE_CATEGORIES.map(c=>`<option value="${c}" ${r.category===c?'selected':''}>${c}</option>`).join('')}</select></td>
@@ -3713,11 +3756,12 @@ function renderExpenses(_forceRender){
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text2)">${r.approvalNo||'-'}</td>
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${r.businessNo||'-'}</td>
       <td><select class="form-select" style="width:104px;padding:5px 8px;font-size:12px" onchange="updateExpenseField(${r.id},'status',this.value)">${EXPENSE_STATUSES.map(s=>`<option value="${s}" ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+      <td>${renderExpenseExplainCell(r)}</td>
       <td>${renderReceiptCell(r)}</td>
       <td><input class="input-field" value="${String(r.memo||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}" placeholder="메모" onchange="updateExpenseField(${r.id},'memo',this.value)" style="width:180px;padding:6px 8px;font-size:12px"></td>
       <td class='act-col'><div class='row-actions' style='opacity:1'><button class='act-btn edit' onclick='editExpense(${r.id})' title='수정'>✎</button><button class='act-btn del' onclick='deleteExpense(${r.id})' title='삭제'>✕</button></div></td>
     </tr>
-  `).join('') : `<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">선택한 월에 등록된 경비가 없습니다.</td></tr>`;
+  `).join('') : `<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">선택한 월에 등록된 경비가 없습니다.</td></tr>`;
 
   const activeRows = expenseData.filter(r=>r.status!=='제외');
   const total = activeRows.reduce((s,r)=>s+(Number(r.total)||0),0);
@@ -3764,9 +3808,139 @@ window.updateExpenseField = function(id, key, value){
       if(amtCell) amtCell.style.color = value==='제외'?'var(--text3)':'var(--amber)';
     }
   }
+  if(key === 'status') renderExpenses(true);
+  renderExpenseRequests();
+  updateExpenseRequestBadge();
   if(window.fbSave) fbSave('expenseData');
   updateGamchanPendingAlert();
 };
+
+function escapeExpenseHtml(value){
+  return String(value||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function expenseNowString(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function expenseStatusBadge(status){
+  const map = {'미검토':'tag-warn','소명요청':'tag-danger','소명완료':'tag-making','확인완료':'tag-good','제외':'tag-danger'};
+  return `<span class="status-tag ${map[status]||'tag-warn'}" style="margin:0">${escapeExpenseHtml(status||'미검토')}</span>`;
+}
+function renderExpenseExplainCell(r){
+  const assigned = r.assignedUser ? `<div style="font-size:10px;color:var(--text3);margin-top:4px">대상: ${escapeExpenseHtml(r.assignedUser)}</div>` : '';
+  const req = r.explainRequest ? `<div style="font-size:10px;color:var(--text2);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeExpenseHtml(r.explainRequest)}">${escapeExpenseHtml(r.explainRequest)}</div>` : '';
+  const ans = r.explainAnswer ? `<div style="font-size:10px;color:var(--teal);margin-top:3px">답변 있음</div>` : '';
+  const label = r.status === '소명완료' ? '답변확인' : (r.status === '소명요청' ? '요청수정' : '소명요청');
+  return `<div style="min-width:104px">
+    <button class="btn" onclick="openExpenseExplainRequest(${r.id})" style="font-size:11px;padding:5px 9px;color:${r.status==='소명요청'?'var(--coral)':(r.status==='소명완료'?'var(--teal)':'var(--text)')}">${label}</button>
+    ${assigned}${req}${ans}
+    ${r.status==='소명완료'?`<button class="btn" onclick="markExpenseExplainChecked(${r.id})" style="font-size:10px;padding:3px 7px;margin-top:4px;color:var(--green);border-color:rgba(91,207,126,.3)">확인완료</button>`:''}
+  </div>`;
+}
+window.openExpenseExplainRequest = function(id){
+  const r = expenseData.find(x=>x.id===id);
+  if(!r) return;
+  const members = (window.userList && window.userList.length ? window.userList : ['현지지','감찬','안알려줌','디네']);
+  const target = r.assignedUser || (currentMember && members.includes(currentMember) ? currentMember : members[0]);
+  openEdit('경비 소명 요청', mfields(
+    {l:'요청 대상',id:'u',type:'select',val:target,opts:members},
+    {l:'답변 기한',id:'due',type:'date',val:r.explainDue||''},
+    {l:'요청 사유',id:'req',val:r.explainRequest||'',ph:'예: 사용 목적/구매 사유 확인 필요'},
+    {l:'현재 답변',id:'ans',val:r.explainAnswer||'',ph:'사용자 답변 표시/수정 가능'}
+  ) + `<div class="mf" style="margin-top:8px"><label>경비 정보</label><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text2);font-size:12px">${escapeExpenseHtml(r.date||'-')} · ${escapeExpenseHtml(r.merchant||'-')} · ${formatWonValue(r.total)}</div></div>`,()=>{
+    const req = gv('req').trim();
+    const ans = gv('ans').trim();
+    r.assignedUser = gv('u');
+    r.explainDue = gv('due');
+    r.explainRequest = req;
+    r.explainAnswer = ans;
+    r.explainRequestedBy = currentMember || '감찬';
+    r.explainRequestedAt = r.explainRequestedAt || expenseNowString();
+    if(ans){ r.explainAnsweredAt = r.explainAnsweredAt || expenseNowString(); r.status = '소명완료'; }
+    else if(req){ r.status = '소명요청'; r.explainAnsweredAt = ''; }
+    else { r.status = '미검토'; }
+    saveExpenseLocal();
+    closeEdit();
+    renderExpenses(true);
+    renderExpenseRequests();
+    updateExpenseRequestBadge();
+    if(window.fbSave) fbSave('expenseData');
+  });
+};
+function getMyExpenseRequests(){
+  if((!expenseData || !expenseData.length) && Array.isArray(window.expenseData) && window.expenseData.length) expenseData = window.expenseData;
+  if(!expenseData || !expenseData.length) loadExpenseLocal();
+  normalizeExpenseRows();
+  const me = currentMember || '';
+  return expenseData.filter(r => r.assignedUser === me && ['소명요청','소명완료','확인완료'].includes(r.status));
+}
+function renderExpenseRequests(){
+  const tbody = document.getElementById('expense-request-tbody');
+  const rows = getMyExpenseRequests().sort((a,b)=>String(b.explainRequestedAt||b.date||'').localeCompare(String(a.explainRequestedAt||a.date||'')));
+  const pending = rows.filter(r=>r.status==='소명요청').length;
+  const done = rows.filter(r=>r.status==='소명완료').length;
+  const checked = rows.filter(r=>r.status==='확인완료').length;
+  const setText = (id, v) => { const el=document.getElementById(id); if(el) el.textContent = String(v); };
+  setText('my-explain-pending', pending);
+  setText('my-explain-done', done);
+  setText('my-explain-total', rows.length);
+  setText('my-explain-checked', checked);
+  if(!tbody) { updateExpenseRequestBadge(); return; }
+  tbody.innerHTML = rows.length ? rows.map(r=>`
+    <tr>
+      <td>${expenseStatusBadge(r.status)}</td>
+      <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${escapeExpenseHtml(r.date||'-')}</td>
+      <td style="font-weight:600">${escapeExpenseHtml(r.merchant||'-')}</td>
+      <td style="text-align:right;font-family:'DM Mono';font-weight:700;color:var(--amber)">${formatWonValue(r.total)}</td>
+      <td>${escapeExpenseHtml(r.explainRequestedBy||'-')}</td>
+      <td style="max-width:260px;white-space:normal;word-break:break-word;color:var(--text2)">${escapeExpenseHtml(r.explainRequest||'-')}${r.explainDue?`<div style="font-size:10px;color:var(--amber);margin-top:3px">기한: ${escapeExpenseHtml(r.explainDue)}</div>`:''}</td>
+      <td style="max-width:260px;white-space:normal;word-break:break-word;color:${r.explainAnswer?'var(--teal)':'var(--text3)'}">${escapeExpenseHtml(r.explainAnswer||'답변 전')}</td>
+      <td><button class="btn" onclick="answerExpenseExplain(${r.id})" style="font-size:11px;padding:5px 9px">답변</button></td>
+    </tr>`).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">현재 내게 온 소명 요청이 없습니다.</td></tr>`;
+  updateExpenseRequestBadge();
+}
+window.answerExpenseExplain = function(id){
+  const r = expenseData.find(x=>x.id===id);
+  if(!r) return;
+  openEdit('소명 답변 제출', mfields(
+    {l:'상호명',id:'m',val:r.merchant||''},
+    {l:'금액',id:'t',val:formatWonValue(r.total)},
+    {l:'요청내용',id:'req',val:r.explainRequest||''},
+    {l:'답변',id:'ans',val:r.explainAnswer||'',ph:'실사용 목적, 구매 사유, 관련 행사명을 적어주세요'}
+  ),()=>{
+    const ans = gv('ans').trim();
+    if(!ans){ alert('소명 답변을 입력해주세요.'); return; }
+    r.explainAnswer = ans;
+    r.explainAnsweredAt = expenseNowString();
+    r.status = '소명완료';
+    saveExpenseLocal();
+    closeEdit();
+    renderExpenseRequests();
+    renderExpenses(true);
+    updateExpenseRequestBadge();
+    if(window.fbSave) fbSave('expenseData');
+  });
+};
+window.markExpenseExplainChecked = function(id){
+  const r = expenseData.find(x=>x.id===id);
+  if(!r) return;
+  r.status = '확인완료';
+  saveExpenseLocal();
+  renderExpenses(true);
+  renderExpenseRequests();
+  updateExpenseRequestBadge();
+  if(window.fbSave) fbSave('expenseData');
+};
+function updateExpenseRequestBadge(){
+  const badge = document.getElementById('expense-request-nav-badge');
+  if(!badge) return;
+  let cnt = 0;
+  try { cnt = getMyExpenseRequests().filter(r=>r.status==='소명요청').length; } catch(e) { cnt = 0; }
+  badge.textContent = String(cnt);
+  badge.style.display = cnt ? '' : 'none';
+}
+
 async function loadPdfJs(){
   if(window.pdfjsLib) return window.pdfjsLib;
   const mod = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
@@ -3817,6 +3991,13 @@ function parseExpensePdfText(text, sourceFile){
       cardType: extractExpenseValue(block, '카드종류'),
       cardNo: extractExpenseValue(block, '카드번호'),
       status: '미검토',
+      assignedUser: '',
+      explainRequest: '',
+      explainAnswer: '',
+      explainRequestedBy: '',
+      explainRequestedAt: '',
+      explainAnsweredAt: '',
+      explainDue: '',
       memo: '',
       receiptName: '',
       receiptDataUrl: '',
@@ -3887,7 +4068,7 @@ window.addExpenseManual = function(){
     if(!merchant){ alert('상호명을 입력해주세요.'); return; }
     const newId = expenseData.length ? Math.max(...expenseData.map(r=>Number(r.id)||0))+1 : 1;
     const date = gv('d');
-    expenseData.unshift({id:newId,date,yearMonth:getExpenseYearMonth(date),merchant,category:gv('c'),total:gn('t'),amount:gn('t'),tax:0,serviceFee:0,approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),memo:gv('n'),receiptName:'',receiptDataUrl:'',attachments:[],sourceFile:'직접입력'});
+    expenseData.unshift({id:newId,date,yearMonth:getExpenseYearMonth(date),merchant,category:gv('c'),total:gn('t'),amount:gn('t'),tax:0,serviceFee:0,approvalNo:gv('a'),businessNo:gv('b'),status:gv('s'),assignedUser:'',explainRequest:'',explainAnswer:'',explainRequestedBy:'',explainRequestedAt:'',explainAnsweredAt:'',explainDue:'',memo:gv('n'),receiptName:'',receiptDataUrl:'',attachments:[],sourceFile:'직접입력'});
     window.expenseData = expenseData;
     saveExpenseLocal();
     closeEdit();
@@ -4171,11 +4352,11 @@ window.removeExpenseAttachment = function(id, idx){
   if(window.fbSave) fbSave('expenseData');
 };
 function exportExpenseCsv(){
-  const headers = ['데이터구분','귀속월','일시','상호명','분류','합계','금액','세금','취소금액','승인번호','결제방법','사업자번호','가맹점번호','카드종류','카드번호','주소','상태','영수증파일','기타','원본파일'];
+  const headers = ['데이터구분','귀속월','일시','상호명','분류','합계','금액','세금','취소금액','승인번호','결제방법','사업자번호','가맹점번호','카드종류','카드번호','주소','상태','소명대상','소명요청','소명답변','소명요청자','소명요청일','소명답변일','소명기한','영수증파일','기타','원본파일'];
   const rows = (window.expenseData || expenseData || []).map(r=>{
     const atts = getAttachments(r);
     const receiptNames = atts.map(a=>a.name).filter(Boolean).join(' | ') || r.receiptName || '';
-    return ['경비처리',r.yearMonth||getExpenseYearMonth(r.date),r.date||'',r.merchant||'',r.category||'',+r.total||0,+r.amount||0,+r.tax||0,+r.cancelAmount||0,r.approvalNo||'',r.method||'',r.businessNo||'',r.merchantNo||'',r.cardType||'',r.cardNo||'',r.address||'',r.status||'',receiptNames,r.memo||'',r.sourceFile||''];
+    return ['경비처리',r.yearMonth||getExpenseYearMonth(r.date),r.date||'',r.merchant||'',r.category||'',+r.total||0,+r.amount||0,+r.tax||0,+r.cancelAmount||0,r.approvalNo||'',r.method||'',r.businessNo||'',r.merchantNo||'',r.cardType||'',r.cardNo||'',r.address||'',r.status||'',r.assignedUser||'',r.explainRequest||'',r.explainAnswer||'',r.explainRequestedBy||'',r.explainRequestedAt||'',r.explainAnsweredAt||'',r.explainDue||'',receiptNames,r.memo||'',r.sourceFile||''];
   });
   downloadCsv(`standup_expenses_${csvDateStamp()}.csv`, headers, rows);
 }
@@ -4700,6 +4881,7 @@ const MENU_LIST = [
   { key: 'inventory',   label: '재고 현황',          icon: '📅' },
   { key: 'kanban',      label: '굿즈제작 작업현황',  icon: '▦' },
   { key: 'expenses',    label: '경비처리',          icon: '🧾' },
+  { key: 'expense-requests', label: '내 소명 요청', icon: '📣' },
   { key: 'illust',      label: '일러작업현황',      icon: '✎' },
   { key: 'sales',       label: '매출 입력',          icon: '📊' },
   { key: 'settlement',  label: '정산내역서',         icon: '📄' },
