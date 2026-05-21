@@ -3847,6 +3847,7 @@ function renderExpenseExplainCell(r){
       <div style="font-size:10px;color:var(--teal);margin-top:3px">답변 도착</div>
       <button class="btn" onclick="markExpenseExplainChecked(${r.id})" style="font-size:10px;padding:3px 7px;margin-top:4px;color:var(--green);border-color:rgba(91,207,126,.3)">확인완료</button>
       <button class="btn" onclick="openExpenseExplainRequest(${r.id})" style="font-size:10px;padding:3px 7px;margin-top:4px;color:var(--text3)">요청수정</button>
+      <button class="btn" onclick="deleteExpenseExplain(${r.id})" style="font-size:10px;padding:3px 7px;margin-top:4px;color:var(--coral);border-color:rgba(240,96,96,.25)">소명삭제</button>
     </div>`;
   }
   if(hasRequest || r.status === '소명요청'){
@@ -3854,6 +3855,7 @@ function renderExpenseExplainCell(r){
       <button class="btn" onclick="openExpenseExplainRequest(${r.id})" style="font-size:11px;padding:5px 9px;color:var(--coral);border-color:rgba(240,96,96,.3)">요청수정</button>
       ${target}${req}${due}
       <div style="font-size:10px;color:var(--text3);margin-top:3px">답변 대기</div>
+      <button class="btn" onclick="deleteExpenseExplain(${r.id})" style="font-size:10px;padding:3px 7px;margin-top:4px;color:var(--coral);border-color:rgba(240,96,96,.25)">소명삭제</button>
     </div>`;
   }
   return `<button class="btn" onclick="openExpenseExplainRequest(${r.id})" style="font-size:11px;padding:5px 9px">소명요청</button>`;
@@ -3871,6 +3873,27 @@ window.openExpenseExplainDetail = function(id){
     <div class="mf"><label>사용자 답변</label><div style="background:rgba(62,207,170,.08);border:1px solid rgba(62,207,170,.25);border-radius:8px;padding:12px;color:var(--teal);white-space:pre-wrap;word-break:break-word;min-height:96px;font-weight:600">${escapeExpenseHtml(r.explainAnswer||'아직 답변이 없습니다.')}</div>${r.explainAnsweredAt?`<div style="font-size:10px;color:var(--text3);margin-top:6px">답변일: ${escapeExpenseHtml(r.explainAnsweredAt)}</div>`:''}</div>`;
   openEdit('소명 답변 확인', html, ()=>{ markExpenseExplainChecked(id); closeEdit(); });
   document.getElementById('edit-save').textContent = '확인완료';
+};
+
+window.deleteExpenseExplain = function(id){
+  const r = expenseData.find(x=>x.id===id);
+  if(!r) return;
+  const msg = '이 경비 항목의 소명 요청과 답변 내용을 모두 삭제할까요?\n삭제하면 대상자, 요청 사유, 답변, 기한, 요청/답변 시간이 모두 초기화됩니다.';
+  if(!confirm(msg)) return;
+  r.assignedUser = '';
+  r.explainRequest = '';
+  r.explainAnswer = '';
+  r.explainDue = '';
+  r.explainRequestedBy = '';
+  r.explainRequestedAt = '';
+  r.explainAnsweredAt = '';
+  if(r.status === '소명요청' || r.status === '소명완료' || r.status === '확인완료') r.status = '미검토';
+  saveExpenseLocal();
+  renderExpenses(true);
+  renderExpenseRequests();
+  updateExpenseRequestBadge();
+  if(window.fbSave) fbSave('expenseData');
+  alert('소명 요청이 삭제되었습니다.');
 };
 window.openExpenseExplainRequest = function(id){
   const r = expenseData.find(x=>x.id===id);
