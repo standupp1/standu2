@@ -1479,7 +1479,7 @@ PAGES['expenses'] = `<div class="main-header">
 <div class="panel" id="expense-pdf-panel" style="margin-bottom:16px;display:none">
   <div class="panel-header">
     <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>카드매출전표 PDF 업로드</div>
-    <span id="expense-import-status" style="font-size:12px;color:var(--text3)">토스뱅크 카드매출전표 양식 지원</span>
+    <span id="expense-import-status" style="font-size:12px;color:var(--text3)">토스뱅크 국내·해외 카드매출전표 양식 지원</span>
   </div>
   <div class="panel-body">
     <div style="display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:12px;align-items:center">
@@ -3668,10 +3668,11 @@ function formatWonValue(value){
 }
 function inferExpenseCategory(merchant=''){
   const name = String(merchant).toLowerCase();
-  if(name.includes('adobe')) return '소프트웨어';
+  if(name.includes('adobe') || name.includes('cloudflare') || name.includes('aws') || name.includes('notion') || name.includes('figma') || name.includes('github') || name.includes('google') || name.includes('microsoft') || name.includes('slack') || name.includes('zoom')) return '소프트웨어';
   if(name.includes('코믹월드') || name.includes('스타라이크')) return '행사비';
-  if(name.includes('쿠팡') || name.includes('네이버페이')) return '사무/비품';
+  if(name.includes('쿠팡') || name.includes('네이버페이') || name.includes('aliexpress') || name.includes('amazon') || name.includes('ebay')) return '사무/비품';
   if(name.includes('렌탈') || name.includes('워시스왓')) return '배송/운송';
+  if(name.includes('paypal') || name.includes('stripe')) return '수수료';
   return '기타';
 }
 function getExpenseYearMonth(dateValue=''){
@@ -4010,7 +4011,94 @@ function extractExpenseValue(text, label){
   const match = String(text||'').match(re);
   return match ? match[1].trim() : '';
 }
+
+// 해외 전표 필드 추출 (가맹점명, 결제금액, 수수료, 적용환율, 현지통화거래금액 등)
+function extractForeignValue(text, label){
+  const labels = ['카드종류','카드번호','고객명','승인번호','일시','현지통화거래금액','미화기준거래금액','결제금액','수수료','적용환율','가맹점명','발행처','회사명','사업자등록번호','전화번호','대표자'];
+  const escaped = labels.map(v=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+  const re = new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s+(.+?)(?=\\s+(?:' + escaped + ')|$)');
+  const match = String(text||'').match(re);
+  return match ? match[1].trim() : '';
+}
+
+// 해외 전표 여부 판단
+function isForeignExpensePdf(text){
+  return /현지통화거래금액|미화기준거래금액|적용환율|가맹점명/.test(text);
+}
+
+// 해외 전표 파싱
+function parseForeignExpensePdfText(text, sourceFile){
+  const clean = String(text||'')
+    .replace(/\u00a0/g,' ')
+    .replace(/\s*\d+\s*\/\s*\d+\s*/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+
+  // 날짜 형식: "2026.03.28. 23:00:59" 또는 "2026.04.17. 16:34:43"
+  const dateRe = /(\d{4})\.(\d{1,2})\.(\d{1,2})\.\s*(\d{1,2}):(\d{1,2}):(\d{1,2})/g;
+  const starts = [];
+  let m;
+  while((m = dateRe.exec(clean))) starts.push({index: m.index, match: m});
+
+  return starts.map((start, i) => {
+    const block = clean.slice(start.index, starts[i+1]?.index || clean.length).replace(/\s+/g,' ');
+    const dm = start.match;
+    const merchant = extractForeignValue(block, '가맹점명');
+    const totalStr = extractForeignValue(block, '결제금액');
+    const total = parseWon(totalStr);
+    const fee = parseWon(extractForeignValue(block, '수수료'));
+    const localAmt = extractForeignValue(block, '현지통화거래금액');
+    const usdAmt = extractForeignValue(block, '미화기준거래금액');
+    const rate = extractForeignValue(block, '적용환율');
+    const approvalNo = extractForeignValue(block, '승인번호');
+    const cardType = extractForeignValue(block, '카드종류') || clean.match(/토스뱅크[^\s]*/)?.[0] || '';
+    const cardNo = extractForeignValue(block, '카드번호') || clean.match(/\d{4}-\d{2}\*\*-\*{4}-\d{4}/)?.[0] || '';
+
+    const memo = [
+      localAmt ? `현지: ${localAmt}` : '',
+      usdAmt ? `USD기준: ${usdAmt}` : '',
+      rate ? `환율: ${rate}` : '',
+      fee ? `수수료: ₩${fee.toLocaleString()}` : ''
+    ].filter(Boolean).join(' / ');
+
+    return {
+      id: Date.now() + i,
+      date: `${dm[1]}-${String(dm[2]).padStart(2,'0')}-${String(dm[3]).padStart(2,'0')} ${String(dm[4]).padStart(2,'0')}:${String(dm[5]).padStart(2,'0')}:${String(dm[6]).padStart(2,'0')}`,
+      yearMonth: `${dm[1]}-${String(dm[2]).padStart(2,'0')}`,
+      merchant,
+      category: inferExpenseCategory(merchant),
+      amount: total - fee,
+      cancelAmount: 0,
+      tax: 0,
+      serviceFee: fee,
+      total,
+      approvalNo,
+      method: '해외결제',
+      businessNo: '',
+      merchantNo: '',
+      address: '',
+      cardType,
+      cardNo,
+      status: '미검토',
+      assignedUser: '',
+      explainRequest: '',
+      explainAnswer: '',
+      explainRequestedBy: '',
+      explainRequestedAt: '',
+      explainAnsweredAt: '',
+      explainDue: '',
+      memo,
+      receiptName: '',
+      receiptDataUrl: '',
+      attachments: [],
+      sourceFile: sourceFile || ''
+    };
+  }).filter(r => r.date && r.merchant && r.total);
+}
 function parseExpensePdfText(text, sourceFile){
+  // 해외 전표 자동 감지 후 분기
+  if(isForeignExpensePdf(text)) return parseForeignExpensePdfText(text, sourceFile);
+
   const cleanBase = String(text||'')
     .replace(/\u00a0/g,' ')
     .replace(/\s*\d+\s*\/\s*\d+\s*/g,' ')
@@ -4105,7 +4193,7 @@ window.importExpensePdf = async function(){
   }catch(e){
     console.error(e);
     if(status) status.textContent = 'PDF 읽기 실패';
-    alert('PDF를 읽지 못했어요. 토스뱅크 카드매출전표 PDF인지 확인해주세요.');
+    alert('PDF를 읽지 못했어요. 토스뱅크 카드매출전표 PDF(국내·해외)인지 확인해주세요.');
   }
 };
 window.addExpenseManual = function(){
