@@ -2171,11 +2171,94 @@ PAGES['event-stats'] = `<div class="main-header">
 PAGE_INITS['event-stats'] = function() { initEstatPage(); };
 
 /* ── 행사 통계 데이터 & 로직 ── */
-let estatData = JSON.parse(localStorage.getItem('estatData') || '[]');
+const ESTAT_STORAGE_KEY = 'estatData';
+const ESTAT_REMOTE_DOC = 'eventStats';
+let estatData = JSON.parse(localStorage.getItem(ESTAT_STORAGE_KEY) || '[]');
 let estatMetric = 'rev';
+let estatRemoteReady = false;
+let estatUnsubscribe = null;
+window.estatData = estatData;
 
-function estatSave() {
-  localStorage.setItem('estatData', JSON.stringify(estatData));
+function cloneEstatData(data) {
+  return (Array.isArray(data) ? data : []).map(row => ({...row}));
+}
+
+function estatRowKey(row) {
+  return `${row?.name || ''}__${row?.date || ''}`;
+}
+
+function replaceEstatData(data) {
+  estatData = cloneEstatData(data);
+  window.estatData = estatData;
+}
+
+function mergeEstatData(localRows, remoteRows) {
+  const merged = [];
+  const seen = new Set();
+  cloneEstatData(remoteRows).forEach(row => {
+    const key = estatRowKey(row);
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(row);
+  });
+  cloneEstatData(localRows).forEach(row => {
+    const key = estatRowKey(row);
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(row);
+  });
+  return merged;
+}
+
+async function estatSave() {
+  window.estatData = estatData;
+  localStorage.setItem(ESTAT_STORAGE_KEY, JSON.stringify(estatData));
+  try {
+    if (!window.fbDb) return;
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await setDoc(doc(window.fbDb, 'standup_app', ESTAT_REMOTE_DOC), { data: JSON.stringify(estatData) });
+    if (typeof markNavUpdate === 'function') markNavUpdate('event-stats');
+  } catch(e) {
+    console.warn('event stats remote save failed', e);
+  }
+}
+
+async function initEstatRemote() {
+  if (estatRemoteReady || !window.fbDb) return;
+  estatRemoteReady = true;
+  try {
+    const { doc, getDoc, setDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const ref = doc(window.fbDb, 'standup_app', ESTAT_REMOTE_DOC);
+    const localSnapshot = cloneEstatData(estatData);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const remote = JSON.parse(snap.data().data || '[]');
+      const merged = mergeEstatData(localSnapshot, remote);
+      replaceEstatData(merged);
+      localStorage.setItem(ESTAT_STORAGE_KEY, JSON.stringify(estatData));
+      if (JSON.stringify(merged) !== JSON.stringify(remote)) {
+        await setDoc(ref, { data: JSON.stringify(estatData) });
+      }
+    } else {
+      replaceEstatData(localSnapshot);
+      localStorage.setItem(ESTAT_STORAGE_KEY, JSON.stringify(estatData));
+      await setDoc(ref, { data: JSON.stringify(estatData) });
+    }
+    estatUnsubscribe = onSnapshot(ref, remoteSnap => {
+      if (!remoteSnap.exists()) return;
+      try {
+        const remote = JSON.parse(remoteSnap.data().data || '[]');
+        replaceEstatData(remote);
+        localStorage.setItem(ESTAT_STORAGE_KEY, JSON.stringify(estatData));
+        if (window.currentPage === 'event-stats') estatRenderAll();
+      } catch(e) {
+        console.warn('event stats remote update failed', e);
+      }
+    });
+  } catch(e) {
+    estatRemoteReady = false;
+    console.warn('event stats remote init failed', e);
+  }
 }
 
 function initEstatPage() {
@@ -3723,6 +3806,9 @@ function submitKanbanModal(){const goods=document.getElementById('kb-goods').val
 // 경비처리
 const EXPENSE_CATEGORIES_DEFAULT = ['소프트웨어','행사비','제작/원재료','사무/비품','배송/운송','식비/접대','수수료','기타'];
 const EXPENSE_CATEGORIES_KEY = 'standup_expense_categories_v1';
+const EXPENSE_CATEGORIES_REMOTE_DOC = 'expenseCategories';
+let expenseCategoriesRemoteReady = false;
+let expenseCategoriesUnsubscribe = null;
 function getExpenseCategories(){
   try {
     const raw = localStorage.getItem(EXPENSE_CATEGORIES_KEY);
@@ -3730,7 +3816,51 @@ function getExpenseCategories(){
   } catch(e){}
   return [...EXPENSE_CATEGORIES_DEFAULT];
 }
-function saveExpenseCategories(arr){ try{ localStorage.setItem(EXPENSE_CATEGORIES_KEY, JSON.stringify(arr)); }catch(e){} }
+async function saveExpenseCategories(arr){
+  const next = Array.isArray(arr) && arr.length ? arr : [...EXPENSE_CATEGORIES_DEFAULT];
+  try{ localStorage.setItem(EXPENSE_CATEGORIES_KEY, JSON.stringify(next)); }catch(e){}
+  try{
+    if(!window.fbDb) return;
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await setDoc(doc(window.fbDb, 'standup_app', EXPENSE_CATEGORIES_REMOTE_DOC), { data: JSON.stringify(next) });
+  }catch(e){ console.warn('expense categories remote save failed', e); }
+}
+async function initExpenseCategoriesRemote(){
+  if(expenseCategoriesRemoteReady || !window.fbDb) return;
+  expenseCategoriesRemoteReady = true;
+  try{
+    const { doc, getDoc, setDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const ref = doc(window.fbDb, 'standup_app', EXPENSE_CATEGORIES_REMOTE_DOC);
+    const localCats = getExpenseCategories();
+    const snap = await getDoc(ref);
+    if(snap.exists()){
+      const remoteCats = JSON.parse(snap.data().data || '[]');
+      const merged = [...new Set([...(Array.isArray(remoteCats) ? remoteCats : []), ...localCats])];
+      localStorage.setItem(EXPENSE_CATEGORIES_KEY, JSON.stringify(merged.length ? merged : EXPENSE_CATEGORIES_DEFAULT));
+      if(JSON.stringify(merged) !== JSON.stringify(remoteCats)){
+        await setDoc(ref, { data: JSON.stringify(merged) });
+      }
+    }else{
+      await setDoc(ref, { data: JSON.stringify(localCats) });
+    }
+    expenseCategoriesUnsubscribe = onSnapshot(ref, remoteSnap => {
+      if(!remoteSnap.exists()) return;
+      try{
+        const remoteCats = JSON.parse(remoteSnap.data().data || '[]');
+        if(Array.isArray(remoteCats) && remoteCats.length){
+          localStorage.setItem(EXPENSE_CATEGORIES_KEY, JSON.stringify(remoteCats));
+          if(window.currentPage === 'expenses') {
+            if(typeof renderExpenses === 'function') renderExpenses();
+            if(typeof renderExpenseCategoryMgmt === 'function') renderExpenseCategoryMgmt();
+          }
+        }
+      }catch(e){ console.warn('expense categories remote update failed', e); }
+    });
+  }catch(e){
+    expenseCategoriesRemoteReady = false;
+    console.warn('expense categories remote init failed', e);
+  }
+}
 // EXPENSE_CATEGORIES는 getter로 항상 최신 반영
 Object.defineProperty(window, 'EXPENSE_CATEGORIES', { get: getExpenseCategories, configurable: true });
 const EXPENSE_STATUSES = ['미검토','소명요청','소명완료','확인완료','제외'];
@@ -4537,7 +4667,7 @@ window.moveExpenseCategory = function(idx, dir){
 };
 window.resetExpenseCategories = function(){
   if(!confirm('분류 목록을 기본값으로 초기화할까요?')) return;
-  localStorage.removeItem(EXPENSE_CATEGORIES_KEY);
+  saveExpenseCategories([...EXPENSE_CATEGORIES_DEFAULT]);
   renderExpenseCategoryMgmt();
 };
 
@@ -6835,6 +6965,7 @@ function backupData() {
       recruitData: window.recruitData || [],
       vendors:     window.vendors     || [],
       eventList:   window.eventList   || [],
+      eventStats:  window.estatData   || estatData || [],
       salesData:   window.salesData   || {},
     }
   };
@@ -6878,6 +7009,7 @@ function restoreData(input) {
           if (d.recruitData) { window.recruitData = d.recruitData; if(window.fbSave) await fbSave('recruitData'); }
           if (d.vendors)     { window.vendors     = d.vendors;     if(window.fbSave) await fbSave('vendors'); }
           if (d.eventList)   { window.eventList   = d.eventList;   if(window.fbSave) await fbSave('eventList'); }
+          if (d.eventStats)  { replaceEstatData(d.eventStats); if(typeof estatSave === 'function') await estatSave(); }
           if (d.salesData)   {
             window.salesData = d.salesData;
             if(window.fbDb) {
@@ -6980,6 +7112,7 @@ loadExpenseLocal();
 window.illustTasks = illustTasks;
 window.recruitData = recruitData;
 window.vendors     = vendors;
+window.estatData   = estatData;
 // eventList, artistList 는 이미 let으로 전역 선언됨
 
 // Boot - Firebase 로딩 완료 후 navigate 호출됨
@@ -7168,6 +7301,8 @@ async function initFirebase() {
   const keys = ['txData','memberShares','userList','costData','orderData','invData','tasks','expenseData','illustTasks','recruitData','vendors','eventList','notices'];
   await Promise.all(keys.map(k => fbLoad(k)));
   if (typeof initPnlEventsRemote === 'function') await initPnlEventsRemote();
+  if (typeof initEstatRemote === 'function') await initEstatRemote();
+  if (typeof initExpenseCategoriesRemote === 'function') await initExpenseCategoriesRemote();
 
   // 첫 로드 후 로컬 데이터가 없으면 현재 앱 데이터를 Firebase에 업로드
   // (최초 1회)
