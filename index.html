@@ -882,7 +882,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M5 7h6M5 10h4"/></svg>
-      회계 / 모임통장 <span class="nav-badge">NEW</span>
+      회계 / 모임통장 <span class="nav-badge" id="accounting-new-badge" style="display:none">NEW</span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4L2 5h4z"/></svg>
@@ -3563,6 +3563,7 @@ function addTransaction() {
   renderDashboardAccounting();
   if(window.currentPage==='accounting') renderTable(window._tf||'all');
   if(window.fbSave)fbSave('txData');
+  if(typeof updateAccountingNewBadge==='function') updateAccountingNewBadge();
   document.getElementById('tx-desc').value = '';
   document.getElementById('tx-amount').value = '';
   document.getElementById('tx-note').value = '';
@@ -4069,6 +4070,21 @@ function updateExpenseRequestBadge(){
   badge.textContent = String(cnt);
   badge.style.display = cnt ? '' : 'none';
 }
+
+function updateAccountingNewBadge(){
+  const badge = document.getElementById('accounting-new-badge');
+  if(!badge) return;
+  const data = (window.txData && window.txData.length) ? window.txData : (typeof txData !== 'undefined' ? txData : []);
+  if(!data.length){ badge.style.display='none'; return; }
+  const dates = data.map(r=>r.date||'').filter(Boolean).sort().reverse();
+  const latestStr = dates[0];
+  if(!latestStr){ badge.style.display='none'; return; }
+  const latest = new Date(latestStr);
+  const now = new Date();
+  const diffDays = (now - latest) / (1000 * 60 * 60 * 24);
+  badge.style.display = diffDays <= 3 ? '' : 'none';
+}
+window.updateAccountingNewBadge = updateAccountingNewBadge;
 
 async function loadPdfJs(){
   if(window.pdfjsLib) return window.pdfjsLib;
@@ -5017,6 +5033,8 @@ function doLogin() {
   setTimeout(showLoginNotices, 700);
   // 로그인 후 소명 요청 배지 갱신 (expenseData 로컬 로드 후)
   setTimeout(() => { if(typeof updateExpenseRequestBadge==='function') updateExpenseRequestBadge(); }, 300);
+  // 로그인 후 회계 NEW 배지 갱신
+  setTimeout(() => { if(typeof updateAccountingNewBadge==='function') updateAccountingNewBadge(); }, 200);
 }
 
 // 탭/창 닫을 때 오프라인 처리
@@ -6876,7 +6894,7 @@ async function initFirebase() {
 
   // 실시간 리스너 등록
   const renderMap = {
-    txData:      () => { if(typeof renderTable==='function') renderTable(window._tf||'all'); },
+    txData:      () => { if(typeof renderTable==='function') renderTable(window._tf||'all'); if(typeof updateAccountingNewBadge==='function') updateAccountingNewBadge(); },
     memberShares:() => { if(typeof renderMemberShares==='function') renderMemberShares(); },
     userList:    () => { window.userList = userList; if(typeof renderUserMgmt==='function') renderUserMgmt(); if(typeof updateUserSelects==='function') updateUserSelects(); },
     costData:    () => { if(typeof renderCost==='function')  renderCost(window._cf||'all'); },
