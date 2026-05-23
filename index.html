@@ -1544,7 +1544,7 @@ PAGES['expense-requests'] = `<div class="main-header">
   </div>
   <div class="panel-body" style="padding:0;overflow-x:auto">
     <table class="order-table">
-      <thead><tr><th>상태</th><th>일시</th><th>상호명</th><th style="text-align:right">합계</th><th>요청자</th><th>요청내용</th><th>내 답변</th><th style="width:80px"></th></tr></thead>
+      <thead><tr><th>상태</th><th>일시</th><th>상호명</th><th style="text-align:right">합계</th><th>요청자</th><th>요청내용</th><th>내 답변</th><th>첨부파일</th><th style="width:80px"></th></tr></thead>
       <tbody id="expense-request-tbody"></tbody>
     </table>
   </div>
@@ -3943,7 +3943,17 @@ function renderExpenseRequests(){
   setText('my-explain-total', rows.length);
   setText('my-explain-checked', checked);
   if(!tbody) { updateExpenseRequestBadge(); return; }
-  tbody.innerHTML = rows.length ? rows.map(r=>`
+  tbody.innerHTML = rows.length ? rows.map(r=>{
+    const atts = getAttachments(r);
+    const attCell = atts.length > 0
+      ? atts.map((a,i)=>`<div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+          ${a.storageUrl?`<a href="${a.storageUrl}" target="_blank" class="btn" style="font-size:10px;padding:2px 6px;color:var(--teal);border-color:rgba(62,207,170,.3)">☁ 보기</a>`
+            :a.dataUrl?`<button class="btn" onclick="openExpenseReceiptIdx(${r.id},${i})" style="font-size:10px;padding:2px 6px">보기</button>`:''}
+          <span style="font-size:10px;color:var(--text3);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.name||''}">${a.name||''}</span>
+        </div>`).join('')
+        + `<button class="btn" onclick="answerExpenseExplain(${r.id})" style="font-size:10px;padding:2px 6px;margin-top:4px">+ 추가</button>`
+      : `<button class="btn" onclick="answerExpenseExplain(${r.id})" style="font-size:10px;padding:2px 6px;color:var(--text3)">첨부</button>`;
+    return `
     <tr>
       <td>${expenseStatusBadge(r.status)}</td>
       <td style="font-family:'DM Mono';font-size:12px;color:var(--text3)">${escapeExpenseHtml(r.date||'-')}</td>
@@ -3952,19 +3962,80 @@ function renderExpenseRequests(){
       <td>${escapeExpenseHtml(r.explainRequestedBy||'-')}</td>
       <td style="max-width:260px;white-space:normal;word-break:break-word;color:var(--text2)">${escapeExpenseHtml(r.explainRequest||'-')}${r.explainDue?`<div style="font-size:10px;color:var(--amber);margin-top:3px">기한: ${escapeExpenseHtml(r.explainDue)}</div>`:''}</td>
       <td style="max-width:260px;white-space:normal;word-break:break-word;color:${r.explainAnswer?'var(--teal)':'var(--text3)'}">${escapeExpenseHtml(r.explainAnswer||'답변 전')}</td>
+      <td style="min-width:120px">${attCell}</td>
       <td><button class="btn" onclick="answerExpenseExplain(${r.id})" style="font-size:11px;padding:5px 9px">답변</button></td>
-    </tr>`).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">현재 내게 온 소명 요청이 없습니다.</td></tr>`;
+    </tr>`;}).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">현재 내게 온 소명 요청이 없습니다.</td></tr>`;
   updateExpenseRequestBadge();
 }
 window.answerExpenseExplain = function(id){
   const r = expenseData.find(x=>x.id===id);
   if(!r) return;
-  openEdit('소명 답변 제출', mfields(
+  // 기존 첨부 배열 정규화
+  if(!r.attachments) {
+    r.attachments = getAttachments(r);
+    delete r.storageUrl; delete r.receiptDataUrl; delete r.receiptName;
+  }
+
+  function buildAttachHtml(){
+    const atts = r.attachments||[];
+    const items = atts.map((a,i)=>`
+      <div id="explain-att-${i}" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;margin-top:4px">
+        <span style="font-size:11px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.name||''}">${a.name||'파일'}</span>
+        ${a.storageUrl?`<a href="${a.storageUrl}" target="_blank" style="font-size:10px;color:var(--teal);text-decoration:none;flex-shrink:0">☁ 보기</a>`
+          :a.dataUrl?`<button onclick="(()=>{const w=window.open('','_blank');w&&w.document.write('${a.dataUrl.startsWith('data:application/pdf')?`<iframe src=\\'${a.dataUrl}\\' style=\\'border:0;width:100%;height:100vh\\'></iframe>`:`<img src=\\'${a.dataUrl}\\' style=\\'max-width:100%\\'>`}');})()" style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;flex-shrink:0;padding:0">보기</button>`:''}
+        <button onclick="window._explainRemoveAtt(${i})" style="font-size:11px;color:var(--coral);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px 4px" title="삭제">✕</button>
+      </div>`).join('');
+    return `<div id="explain-att-list">${items}</div>
+    <button onclick="window._explainAddAtt()" class="btn" style="margin-top:6px;font-size:11px;padding:4px 10px">+ 파일 추가</button>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px">이미지·PDF 모두 지원 / 여러 파일 동시 선택 가능</div>`;
+  }
+
+  const html = mfields(
     {l:'상호명',id:'m',val:r.merchant||''},
     {l:'금액',id:'t',val:formatWonValue(r.total)},
     {l:'요청 사유',id:'req',type:'textarea',val:r.explainRequest||'',h:72},
     {l:'내 답변',id:'ans',type:'textarea',val:r.explainAnswer||'',ph:'실사용 목적, 구매 사유, 관련 행사명을 적어주세요',h:120}
-  ),()=>{
+  ) + `<div style="margin-top:12px"><div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:500">📎 첨부파일</div><div id="explain-att-area">${buildAttachHtml()}</div></div>`;
+
+  window._explainRemoveAtt = function(i){
+    r.attachments.splice(i,1);
+    const area = document.getElementById('explain-att-area');
+    if(area) area.innerHTML = buildAttachHtml();
+  };
+
+  window._explainAddAtt = async function(){
+    const input = document.createElement('input');
+    input.type='file'; input.accept='image/*,application/pdf'; input.multiple=true;
+    input.onchange = async ()=>{
+      const files = Array.from(input.files||[]);
+      if(!files.length) return;
+      for(const file of files){
+        const dateStr = (r.date||'').replace(/[^0-9]/g,'').slice(0,8);
+        const safeMerchant = (r.merchant||'파일').replace(/[/\\:*?"<>|]/g,'');
+        const uploadName = `${dateStr}_${safeMerchant}_${file.name}`;
+        if(window.gasUploadReceipt||window.fbUploadReceipt){
+          try{
+            const ph = {name:uploadName+' (업로드 중…)',storageUrl:'',dataUrl:''};
+            r.attachments.push(ph);
+            const area=document.getElementById('explain-att-area'); if(area) area.innerHTML=buildAttachHtml();
+            const uploadFn=window.gasUploadReceipt||window.fbUploadReceipt;
+            const url = await uploadFn(file,uploadName);
+            ph.name=uploadName; ph.storageUrl=url;
+            if(file.size<=2*1024*1024){
+              await new Promise(res=>{ const fr=new FileReader(); fr.onload=e=>{ph.dataUrl=e.target.result;res();}; fr.readAsDataURL(file); });
+            }
+            const area2=document.getElementById('explain-att-area'); if(area2) area2.innerHTML=buildAttachHtml();
+          }catch(e){ alert('업로드 실패: '+e.message); r.attachments.pop(); }
+        } else {
+          await new Promise(res=>{ const fr=new FileReader(); fr.onload=e=>{ r.attachments.push({name:file.name,storageUrl:'',dataUrl:e.target.result}); res(); }; fr.readAsDataURL(file); });
+          const area=document.getElementById('explain-att-area'); if(area) area.innerHTML=buildAttachHtml();
+        }
+      }
+    };
+    input.click();
+  };
+
+  openEdit('소명 답변 제출', html, ()=>{
     const ans = gv('ans').trim();
     if(!ans){ alert('소명 답변을 입력해주세요.'); return; }
     r.explainAnswer = ans;
@@ -3977,6 +4048,8 @@ window.answerExpenseExplain = function(id){
     updateExpenseRequestBadge();
     if(window.fbSave) fbSave('expenseData');
   });
+
+
 };
 window.markExpenseExplainChecked = function(id){
   const r = expenseData.find(x=>x.id===id);
