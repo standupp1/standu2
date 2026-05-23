@@ -18,12 +18,17 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .logo-sub{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:.5px}
 .sidebar-section{padding:16px 12px 8px}
 .sidebar-label{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;padding:0 8px;margin-bottom:6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;margin-bottom:1px;border:1px solid transparent}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;margin-bottom:1px;border:1px solid transparent;flex-wrap:wrap}
+.nav-item-label{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
 .nav-item:hover{background:var(--bg3);color:var(--text)}
 .nav-item.active{background:var(--amber-dim);color:var(--amber);border-color:rgba(240,168,48,.2);font-weight:500}
 .nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
 .nav-item.active .nav-icon{opacity:1}
 .nav-badge{margin-left:auto;font-size:10px;font-family:'DM Mono',monospace;background:var(--coral-dim);color:var(--coral);padding:1px 6px;border-radius:10px}
+.nav-update{display:block;flex-basis:100%;font-size:9px;font-family:'DM Mono',monospace;color:var(--text3);padding-left:26px;line-height:1.2;opacity:.75;margin-top:1px}
+.nav-item.active .nav-update{color:rgba(240,168,48,.6)}
+.nav-item:hover .nav-update{opacity:1}
+
 .sidebar-bottom{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border)}
 .members-row{display:flex;align-items:center;gap:6px;padding:8px 10px}
 .member-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:1.5px solid var(--bg2)}
@@ -32,11 +37,6 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .main-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px}
 .page-title{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.5px;line-height:1.2}
 .page-sub{font-size:13px;color:var(--text3);margin-top:4px;font-weight:300}
-.page-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.page-update-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--bg3);border:1px solid var(--border);color:var(--text3);font-size:11px;font-weight:500;letter-spacing:0;font-family:'Noto Sans KR',sans-serif;line-height:1.2}
-.page-update-badge::before{content:'최근 업데이트';color:var(--text3);font-size:10px;font-weight:500}
-.nav-update{display:none!important}
-
 .header-right{display:flex;align-items:center;gap:10px}
 .event-badge{display:flex;align-items:center;gap:6px;background:var(--teal-dim);border:1px solid rgba(62,207,170,.2);color:var(--teal);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500}
 .dot-live{width:6px;height:6px;border-radius:50%;background:var(--teal);animation:pulse 2s infinite}
@@ -887,67 +887,67 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M5 7h6M5 10h4"/></svg>
-      회계 / 모임통장 <span class="nav-badge" id="accounting-new-badge" style="display:none">NEW</span>
+      회계 / 모임통장 <span class="nav-badge" id="accounting-new-badge" style="display:none">NEW</span><span class="nav-update" id="navupd-accounting"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4L2 5h4z"/></svg>
-      행사 손익
+      행사 손익<span class="nav-update" id="navupd-pnl"></span>
     </div>
   </div>
   <div class="sidebar-section">
     <div class="sidebar-label">굿즈</div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1"/></svg>
-      원가 관리
+      원가 관리<span class="nav-update" id="navupd-cost"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2h12M2 6h12M2 10h8M2 14h5"/></svg>
-      제작 의뢰
+      제작 의뢰<span class="nav-update" id="navupd-orders"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="11" rx="1.5"/><path d="M4 3V1M12 3V1M1 7h14"/></svg>
-      재고 현황
+      재고 현황<span class="nav-update" id="navupd-inventory"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="3" height="12" rx="1"/><rect x="6" y="5" width="3" height="9" rx="1"/><rect x="11" y="8" width="3" height="6" rx="1"/></svg>
-      굿즈제작 작업현황
+      굿즈제작 작업현황<span class="nav-update" id="navupd-kanban"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13l2.5-.6L13 4.9 11.1 3 3.6 10.5 3 13z"/><path d="M10 4l2 2"/></svg>
-      일러작업현황
+      일러작업현황<span class="nav-update" id="navupd-illust"></span>
     </div>
   </div>
   <div class="sidebar-section">
     <div class="sidebar-label">행사 관리</div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10v12H3z"/><path d="M5 5h6M5 8h6M5 11h3"/></svg>
-      경비처리
+      경비처리<span class="nav-update" id="navupd-expenses"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12v10H2z"/><path d="M4 6h8M4 9h5"/><circle cx="12" cy="11" r="2"/></svg>
-      내 소명 요청 <span class="nav-badge" id="expense-request-nav-badge" style="display:none">0</span>
+      내 소명 요청 <span class="nav-badge" id="expense-request-nav-badge" style="display:none">0</span><span class="nav-update" id="navupd-expense-requests"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/><path d="M5 4V2h6v2M6 8h4M6 11h2"/></svg>
-      매출 입력
+      매출 입력<span class="nav-update" id="navupd-sales"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M5 6h6M5 9h6M5 12h3"/></svg>
-      정산내역서
+      정산내역서<span class="nav-update" id="navupd-settlement"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,13 5,7 8,10 11,5 15,3"/><circle cx="15" cy="3" r="1.5" fill="currentColor" stroke="none"/></svg>
-      행사 통계
+      행사 통계<span class="nav-update" id="navupd-event-stats"></span>
     </div>
   <div class="sidebar-section">
     <div class="sidebar-label">관리</div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
-      작가 / 모집
+      작가 / 모집<span class="nav-update" id="navupd-artists"></span>
     </div>
     <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v3l-2 2v5H5V8L3 6V3z"/></svg>
-      제작 업체
+      제작 업체<span class="nav-update" id="navupd-vendors"></span>
     </div>
     <div class="nav-item" id="nav-permissions" onclick="setNav(this)" style="display:none">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/><path d="M5 8h1M10 8h1"/></svg>
@@ -2609,16 +2609,16 @@ function navigate(pageKey) {
     if (NAV_MAP[pageKey] && (t === NAV_MAP[pageKey] || t.startsWith(NAV_MAP[pageKey]))) n.classList.add('active');
   });
   if (PAGE_INITS[pageKey]) { try { PAGE_INITS[pageKey](); } catch(e) { console.error('Init error', pageKey, e); } }
-  currentPage = pageKey;
-  window.currentPage = pageKey;
-  if(typeof injectPageLastUpdated==='function') injectPageLastUpdated(pageKey);
   // 페이지 전환 후 대시보드 경고 배너 영역이 있으면 상태를 다시 반영
   if (pageKey === 'dashboard') {
     setTimeout(() => {
       if (typeof updateGamchanPendingAlert === 'function') updateGamchanPendingAlert();
     }, 0);
   }
+  currentPage = pageKey;
+  window.currentPage = pageKey;
   main.scrollTop = 0;
+  if(typeof updateAllNavDates==='function') setTimeout(updateAllNavDates, 50);
 }
 function setNav(el) {
   // 배지 <span> 텍스트를 제외하고 nav-item의 텍스트 노드만 읽음
@@ -4079,78 +4079,96 @@ window.markExpenseExplainChecked = function(id){
   updateExpenseRequestBadge();
   if(window.fbSave) fbSave('expenseData');
 };
-// ── 페이지별 최근 업데이트 시각 ──────────────────────────────
+
+// ── 사이드바 메뉴 최근 업데이트 일자 ──────────────────────────────
 const NAV_UPDATE_KEY = 'standup_nav_update_ts';
 
 function getNavUpdateTs() {
   try { return JSON.parse(localStorage.getItem(NAV_UPDATE_KEY) || '{}'); } catch(e) { return {}; }
 }
-
 function setNavUpdateTs(key) {
   const ts = getNavUpdateTs();
-  ts[key] = new Date().toISOString();
+  ts[key] = new Date().toISOString().slice(0,10); // YYYY-MM-DD
   try { localStorage.setItem(NAV_UPDATE_KEY, JSON.stringify(ts)); } catch(e) {}
 }
 
-function normalizeUpdateDate(dateStr) {
-  if (!dateStr) return null;
-  if (dateStr instanceof Date) return Number.isNaN(dateStr.getTime()) ? null : dateStr;
-  const s = String(dateStr).trim();
-  if (!s) return null;
-  const dateOnly = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  const d = dateOnly ? new Date(`${s}T00:00:00`) : new Date(s);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function pad2(n) { return String(n).padStart(2, '0'); }
-
 function formatNavDate(dateStr) {
-  const d = normalizeUpdateDate(dateStr);
-  if (!d) return '';
-  return `${d.getFullYear()}년 ${pad2(d.getMonth()+1)}월 ${pad2(d.getDate())}일 ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  if (!dateStr) return '';
+  // YYYY-MM-DD 또는 YY/M 형식 처리
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    const now = new Date();
+    const d = new Date(dateStr);
+    const diffMs = now - d;
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays === 0) return '오늘';
+    if (diffDays === 1) return '어제';
+    if (diffDays < 7) return `${diffDays}일 전`;
+    // 올해면 M/D, 다른 해면 YY/M/D
+    const isThisYear = d.getFullYear() === now.getFullYear();
+    return isThisYear
+      ? `${d.getMonth()+1}/${d.getDate()}`
+      : `${String(d.getFullYear()).slice(2)}/${d.getMonth()+1}/${d.getDate()}`;
+  }
+  return String(dateStr).slice(0,7); // fallback
 }
 
-function getPageUpdateKey(pageKey) {
-  const alias = {
-    'expense-requests': 'expenses',
-    'settlement': 'sales'
-  };
-  return alias[pageKey] || pageKey;
+function getLatestDate(arr, ...fields) {
+  if (!Array.isArray(arr) || !arr.length) return null;
+  let latest = null;
+  for (const item of arr) {
+    for (const f of fields) {
+      const v = item[f];
+      if (v && typeof v === 'string' && /\d{4}-\d{2}-\d{2}/.test(v)) {
+        if (!latest || v > latest) latest = v;
+      }
+    }
+  }
+  return latest;
 }
 
-function getPageUpdateText(pageKey) {
-  const ts = getNavUpdateTs();
-  return formatNavDate(ts[getPageUpdateKey(pageKey)]);
+function setNavUpdate(id, text) {
+  const el = document.getElementById('navupd-' + id);
+  if (el) el.textContent = text ? text : '';
 }
-
-function injectPageLastUpdated(pageKey) {
-  const title = document.querySelector('#main-content .page-title');
-  if (!title) return;
-
-  const old = title.querySelector('.page-update-badge');
-  if (old) old.remove();
-
-  if (pageKey === 'dashboard') return;
-
-  const badge = document.createElement('span');
-  badge.className = 'page-update-badge';
-  badge.textContent = getPageUpdateText(pageKey) || '기록 없음';
-  title.appendChild(badge);
-}
-
-function updateCurrentPageUpdateBadge() {
-  if (window.currentPage) injectPageLastUpdated(window.currentPage);
-}
-window.updateCurrentPageUpdateBadge = updateCurrentPageUpdateBadge;
 
 function updateAllNavDates() {
-  updateCurrentPageUpdateBadge();
+  const ts = getNavUpdateTs();
+
+  // 데이터 날짜 기반
+  const txDate = getLatestDate(window.txData || txData, 'date');
+  setNavUpdate('accounting', formatNavDate(txDate));
+
+  const expDate = getLatestDate(window.expenseData || expenseData, 'date');
+  setNavUpdate('expenses', formatNavDate(expDate));
+  setNavUpdate('expense-requests', formatNavDate(expDate));
+
+  const evDate = getLatestDate(window.eventList || eventList, 'date','startDate');
+  setNavUpdate('pnl', formatNavDate(evDate));
+  setNavUpdate('event-stats', formatNavDate(evDate));
+
+  const rcDate = getLatestDate(window.recruitData || recruitData, 'date');
+  setNavUpdate('artists', formatNavDate(rcDate));
+
+  // illustTasks: due 필드
+  const ilDate = getLatestDate(window.illustTasks || illustTasks, 'due');
+  setNavUpdate('illust', formatNavDate(ilDate));
+
+  // localStorage 저장 시각 기반 (date 필드 없는 데이터)
+  setNavUpdate('cost',      formatNavDate(ts['cost']));
+  setNavUpdate('orders',    formatNavDate(ts['orders']));
+  setNavUpdate('inventory', formatNavDate(ts['inventory']));
+  setNavUpdate('kanban',    formatNavDate(ts['kanban']));
+  setNavUpdate('vendors',   formatNavDate(ts['vendors']));
+  setNavUpdate('sales',     formatNavDate(ts['sales']));
+  setNavUpdate('settlement',formatNavDate(ts['settlement']));
 }
 window.updateAllNavDates = updateAllNavDates;
 
+// 저장 시 타임스탬프 기록 헬퍼
 function markNavUpdate(pageKey) {
-  setNavUpdateTs(getPageUpdateKey(pageKey));
-  updateCurrentPageUpdateBadge();
+  setNavUpdateTs(pageKey);
+  updateAllNavDates();
 }
 window.markNavUpdate = markNavUpdate;
 
@@ -5127,6 +5145,8 @@ function doLogin() {
   setTimeout(() => { if(typeof updateExpenseRequestBadge==='function') updateExpenseRequestBadge(); }, 300);
   // 로그인 후 회계 NEW 배지 갱신
   setTimeout(() => { if(typeof updateAccountingNewBadge==='function') updateAccountingNewBadge(); }, 200);
+  // 로그인 후 사이드바 날짜 갱신
+  setTimeout(() => { if(typeof updateAllNavDates==='function') updateAllNavDates(); }, 400);
 }
 
 // 탭/창 닫을 때 오프라인 처리
@@ -6089,6 +6109,54 @@ function salesRow(r, i, eventKey, artist) {
     </td>
   </tr>`;
 }
+
+function updateSalesField(eventKey, artist, idx, field, value) {
+  if (!salesData[eventKey]?.artists[artist]) return;
+  const item = salesData[eventKey].artists[artist][idx];
+  if (!item) return;
+  item[field] = (field === 'note') ? value : (+value || 0);
+
+  const row = document.querySelector(`#sales-tbody tr[data-idx="${idx}"]`);
+  if (row) {
+    const sold = getSalesCoeff(item);
+    const settled = getSalesSettledQty(item, artist);
+    const remain = getSalesRemain(item, artist);
+    const rev = sold * (+item.price || 0);
+    const dist = calcDist(item, sold);
+    const cells = row.querySelectorAll('td');
+
+    if (cells[6]) cells[6].textContent = sold;
+    if (cells[7]) {
+      cells[7].textContent = remain;
+      cells[7].style.color = remain < 0 ? 'var(--coral)' : remain === 0 ? 'var(--text3)' : 'var(--blue)';
+    }
+    if (cells[8]) cells[8].textContent = settled;
+    if (cells[9]) cells[9].textContent = '₩' + rev.toLocaleString();
+    if (cells[10]) cells[10].textContent = '₩' + dist.toLocaleString();
+    if (cells[13]) {
+      const noteInput = cells[13].querySelector('input');
+      if (noteInput) noteInput.style.color = item.note ? 'var(--coral)' : 'var(--text3)';
+    }
+  }
+  updateSalesFooter(eventKey, artist);
+  scheduleSalesDataLocalSave();
+}
+
+function updateSalesFooter(eventKey, artist) {
+  const items = salesData[eventKey]?.artists[artist] || [];
+  const totalSold = items.reduce((s, r) => s + getSalesCoeff(r), 0);
+  const totalRev = items.reduce((s, r) => s + (getSalesCoeff(r) * (+r.price || 0)), 0);
+  const totalDist = items.reduce((s, r) => s + calcDist(r, getSalesCoeff(r)), 0);
+  const sfSold = document.getElementById('sf-sold');
+  const sfRev = document.getElementById('sf-rev');
+  const sfDist = document.getElementById('sf-dist');
+  if (sfSold) sfSold.textContent = totalSold;
+  if (sfRev) sfRev.textContent = '₩' + totalRev.toLocaleString();
+  if (sfDist) sfDist.textContent = '₩' + totalDist.toLocaleString();
+}
+
+window.updateSalesField = updateSalesField;
+
 function addSalesItem(eventKey, artist) {
   openEdit('굿즈 추가', mfields(
     {l:'굿즈명',id:'gn',ph:'예: LD 아크릴 스탠드(리제)'},
@@ -6880,20 +6948,14 @@ window.fbSave = async function(key) {
     // 빈 배열([])도 저장 가능하게 - 아이템 삭제 후 반영 필요
     await setDoc(doc(db, COL, COLLECTIONS[key]), { data: JSON.stringify(data) });
     showSaveIndicator();
+    // 사이드바 업데이트 날짜 갱신
     const keyToPage = {
-      txData:'accounting', memberShares:'accounting', userList:'settings',
-      costData:'cost', orderData:'orders', invData:'inventory',
+      txData:'accounting', costData:'cost', orderData:'orders', invData:'inventory',
       tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
-      vendors:'vendors', notices:'notices'
+      vendors:'vendors', eventList:'event-stats', salesData:'sales'
     };
-    if (key === 'eventList' && typeof markNavUpdate === 'function') {
-      markNavUpdate('pnl');
-      markNavUpdate('event-stats');
-    } else if (keyToPage[key] && typeof markNavUpdate === 'function') {
-      markNavUpdate(keyToPage[key]);
-    } else if (typeof updateCurrentPageUpdateBadge === 'function') {
-      updateCurrentPageUpdateBadge();
-    }
+    if (keyToPage[key] && typeof markNavUpdate === 'function') markNavUpdate(keyToPage[key]);
+    else if (typeof updateAllNavDates === 'function') updateAllNavDates();
   } catch(e) {
     console.error('fbSave error:', key, e);
   }
@@ -7007,14 +7069,14 @@ async function initFirebase() {
 
   // 실시간 리스너 등록
   const renderMap = {
-    txData:      () => { if(typeof renderTable==='function') renderTable(window._tf||'all'); if(typeof updateAccountingNewBadge==='function') updateAccountingNewBadge(); },
+    txData:      () => { if(typeof renderTable==='function') renderTable(window._tf||'all'); if(typeof updateAccountingNewBadge==='function') updateAccountingNewBadge(); if(typeof updateAllNavDates==='function') updateAllNavDates(); },
     memberShares:() => { if(typeof renderMemberShares==='function') renderMemberShares(); },
     userList:    () => { if(Array.isArray(window.userList)) userList = window.userList; if(typeof renderUserMgmt==='function') renderUserMgmt(); if(typeof updateUserSelects==='function') updateUserSelects(); },
     costData:    () => { if(typeof renderCost==='function')  renderCost(window._cf||'all'); },
     orderData:   () => { if(typeof renderOrders==='function') renderOrders(window._of||'all'); },
     invData:     () => { if(typeof renderInv==='function')   renderInv(window._iv||'all'); },
     tasks:       () => { if(typeof renderBoard==='function') renderBoard(); },
-    expenseData: () => { if(typeof renderExpenses==='function') renderExpenses(); if(typeof renderExpenseRequests==='function' && window.currentPage==='expense-requests') renderExpenseRequests(); if(typeof updateExpenseRequestBadge==='function') updateExpenseRequestBadge(); },
+    expenseData: () => { if(typeof renderExpenses==='function') renderExpenses(); if(typeof renderExpenseRequests==='function' && window.currentPage==='expense-requests') renderExpenseRequests(); if(typeof updateExpenseRequestBadge==='function') updateExpenseRequestBadge(); if(typeof updateAllNavDates==='function') updateAllNavDates(); },
     illustTasks: () => { if(typeof renderIllustStatus==='function') renderIllustStatus(); },
     recruitData: () => { if(typeof renderRecruitList==='function') renderRecruitList(); },
     vendors:     () => { if(typeof renderVendors==='function') renderVendors(window._vf||'all'); },
@@ -7071,49 +7133,6 @@ window.addEventListener('beforeunload', () => {
   if (window.currentMember) fbSetOffline(window.currentMember);
 });
 
-function updateSalesField(eventKey, artist, idx, field, value) {
-  if (!salesData[eventKey]?.artists[artist]) return;
-  const item = salesData[eventKey].artists[artist][idx];
-  if (!item) return;
-  item[field] = (field === 'note') ? value : (+value || 0);
-
-  const row = document.querySelector(`tr[data-idx="${idx}"]`);
-  if (row) {
-    const sold = getSalesCoeff(item);
-    const settled = getSalesSettledQty(item, artist);
-    const remain = getSalesRemain(item, artist);
-    const rev = sold * (+item.price || 0);
-    const dist = calcDist(item, sold);
-
-    const cells = row.querySelectorAll('td');
-    // [0]굿즈명 [1]생산 [2]샘플 [3]선입금 [4]본행사 [5]사은품
-    // [6]판매계수 [7]남은재고 [8]정산완료수량 [9]매출금액 [10]작가정산 [11]판매가 [12]배분% [13]비고 [14]삭제
-    if (cells[6]) cells[6].textContent = sold;
-    if (cells[7]) {
-      cells[7].textContent = remain;
-      cells[7].style.color = remain < 0 ? 'var(--coral)' : remain === 0 ? 'var(--text3)' : 'var(--blue)';
-    }
-    if (cells[8]) cells[8].textContent = settled;
-    if (cells[9]) cells[9].textContent = '₩' + rev.toLocaleString();
-    if (cells[10]) cells[10].textContent = '₩' + dist.toLocaleString();
-  }
-  updateSalesFooter(eventKey, artist);
-  scheduleSalesDataLocalSave();
-}
-function updateSalesFooter(eventKey, artist) {
-  const items = salesData[eventKey]?.artists[artist] || [];
-  const totalSold = items.reduce((s, r) => s + getSalesCoeff(r), 0);
-  const totalRev = items.reduce((s, r) => s + (getSalesCoeff(r) * (+r.price || 0)), 0);
-  const totalDist = items.reduce((s, r) => s + calcDist(r, getSalesCoeff(r)), 0);
-
-  const sfSold = document.getElementById('sf-sold');
-  const sfRev = document.getElementById('sf-rev');
-  const sfDist = document.getElementById('sf-dist');
-  if (sfSold) sfSold.textContent = totalSold;
-  if (sfRev) sfRev.textContent = '₩' + totalRev.toLocaleString();
-  if (sfDist) sfDist.textContent = '₩' + totalDist.toLocaleString();
-}
-window.updateSalesField = updateSalesField;
 window.saveSalesData = saveSalesData;
 
 // 행사 통계 차트 반응형
