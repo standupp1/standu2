@@ -3057,7 +3057,7 @@ async function initPnlEventsRemote(){
     if(snap.exists()){
       const remote = JSON.parse(snap.data().data || '{}');
       const localSnapshot = clonePnlEvents(events);
-      const merged = {...remote};
+      const merged = {...DEFAULT_PNL_EVENTS, ...remote};
       Object.entries(localSnapshot).forEach(([key, value]) => {
         if(!(key in remote) && !(key in DEFAULT_PNL_EVENTS)) merged[key] = value;
       });
