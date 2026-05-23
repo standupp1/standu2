@@ -3009,9 +3009,24 @@ const events = {
     fixed:{부스비:130000, 자재비:25000, '교통/식비':100000, 기타비용:2000},
     result:'적자'},
 };
+const DEFAULT_PNL_EVENTS = JSON.parse(JSON.stringify(events));
 
 // ── 행사 손익 데이터 저장/불러오기 ─────────────────────────────
 const PNL_EVENTS_STORAGE_KEY = 'standup_pnl_events_v1';
+const PNL_EVENTS_REMOTE_DOC = 'pnlEvents';
+let pnlEventsRemoteReady = false;
+let pnlEventsUnsubscribe = null;
+
+function clonePnlEvents(data){
+  try{ return JSON.parse(JSON.stringify(data || {})); }
+  catch(e){ return {}; }
+}
+
+function replacePnlEvents(nextEvents){
+  Object.keys(events).forEach(key => delete events[key]);
+  Object.assign(events, clonePnlEvents(nextEvents));
+}
+
 function loadPnlEvents(){
   try{
     const saved = localStorage.getItem(PNL_EVENTS_STORAGE_KEY);
@@ -3021,9 +3036,56 @@ function loadPnlEvents(){
     }
   }catch(e){ console.warn('행사 손익 불러오기 실패', e); }
 }
-function savePnlEvents(){
+async function savePnlEvents(){
   try{ localStorage.setItem(PNL_EVENTS_STORAGE_KEY, JSON.stringify(events)); }
   catch(e){ console.warn('행사 손익 저장 실패', e); }
+  try{
+    if(!window.fbDb) return;
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await setDoc(doc(window.fbDb, 'standup_app', PNL_EVENTS_REMOTE_DOC), { data: JSON.stringify(events) });
+    if(typeof markNavUpdate === 'function') markNavUpdate('pnl');
+  }catch(e){ console.warn('행사 손익 원격 저장 실패', e); }
+}
+
+async function initPnlEventsRemote(){
+  if(pnlEventsRemoteReady || !window.fbDb) return;
+  pnlEventsRemoteReady = true;
+  try{
+    const { doc, getDoc, setDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const ref = doc(window.fbDb, 'standup_app', PNL_EVENTS_REMOTE_DOC);
+    const snap = await getDoc(ref);
+    if(snap.exists()){
+      const remote = JSON.parse(snap.data().data || '{}');
+      const localSnapshot = clonePnlEvents(events);
+      const merged = {...remote};
+      Object.entries(localSnapshot).forEach(([key, value]) => {
+        if(!(key in remote) && !(key in DEFAULT_PNL_EVENTS)) merged[key] = value;
+      });
+      replacePnlEvents(merged);
+      localStorage.setItem(PNL_EVENTS_STORAGE_KEY, JSON.stringify(events));
+      if(JSON.stringify(merged) !== JSON.stringify(remote)){
+        await setDoc(ref, { data: JSON.stringify(events) });
+      }
+    } else {
+      const initial = Object.keys(events).length ? events : DEFAULT_PNL_EVENTS;
+      replacePnlEvents(initial);
+      localStorage.setItem(PNL_EVENTS_STORAGE_KEY, JSON.stringify(events));
+      await setDoc(ref, { data: JSON.stringify(events) });
+    }
+    pnlEventsUnsubscribe = onSnapshot(ref, remoteSnap => {
+      if(!remoteSnap.exists()) return;
+      try{
+        const remote = JSON.parse(remoteSnap.data().data || '{}');
+        replacePnlEvents(remote);
+        localStorage.setItem(PNL_EVENTS_STORAGE_KEY, JSON.stringify(events));
+        if(window.currentPage === 'pnl') renderPnlChips(window.currentPnlKey);
+        if(typeof updateAllNavDates === 'function') updateAllNavDates();
+      }catch(e){ console.warn('행사 손익 원격 반영 실패', e); }
+    });
+  }catch(e){
+    pnlEventsRemoteReady = false;
+    console.warn('행사 손익 원격 초기화 실패', e);
+  }
 }
 function getPnlEventKeys(){
   return Object.keys(events).sort((a,b)=>String(events[b]?.date||'').localeCompare(String(events[a]?.date||'')));
@@ -7105,6 +7167,7 @@ async function initFirebase() {
   // 모든 데이터 병렬 로드
   const keys = ['txData','memberShares','userList','costData','orderData','invData','tasks','expenseData','illustTasks','recruitData','vendors','eventList','notices'];
   await Promise.all(keys.map(k => fbLoad(k)));
+  if (typeof initPnlEventsRemote === 'function') await initPnlEventsRemote();
 
   // 첫 로드 후 로컬 데이터가 없으면 현재 앱 데이터를 Firebase에 업로드
   // (최초 1회)
