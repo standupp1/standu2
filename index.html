@@ -5780,7 +5780,53 @@ function syncSalesMetaFromInventory(eventKey, artist) {
 // { eventKey: { name, date, manager, artists: { artistName: [ {name, prod, sample, presale, onsite, gift, price, distPct, note} ] } } }
 var salesData = {};
 const SALES_LOCAL_KEY = 'standup_app_sales_data';
+const SALES_SETTLEMENT_LOCAL_KEY = 'standup_app_sales_settlement_data';
 let salesLocalSaveTimer = null;
+let settlementSalesData = {};
+
+function cloneSalesData(data) {
+  try { return JSON.parse(JSON.stringify(data || {})); }
+  catch(e) { return {}; }
+}
+
+function loadSettlementSalesDataLocal() {
+  try {
+    const raw = localStorage.getItem(SALES_SETTLEMENT_LOCAL_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      settlementSalesData = parsed;
+      return true;
+    }
+  } catch(e) {
+    console.error('loadSettlementSalesDataLocal:', e);
+  }
+  return false;
+}
+
+function commitSettlementSalesData() {
+  settlementSalesData = cloneSalesData(salesData);
+  try {
+    localStorage.setItem(SALES_SETTLEMENT_LOCAL_KEY, JSON.stringify(settlementSalesData));
+  } catch(e) {
+    console.error('commitSettlementSalesData:', e);
+  }
+}
+
+function getSettlementData() {
+  if (!Object.keys(settlementSalesData || {}).length) {
+    loadSettlementSalesDataLocal();
+  }
+  return settlementSalesData || {};
+}
+
+function getSettlementSettledQty(r) {
+  return +r.settledQty || 0;
+}
+
+function getSettlementRemain(r) {
+  return (+r.prod || 0) - getSettlementSettledQty(r) - getSalesCoeff(r);
+}
 
 function loadSalesDataLocal() {
   try {
@@ -5813,18 +5859,21 @@ function scheduleSalesDataLocalSave(delay = 180) {
 async function loadSalesDataFb() {
   try {
     loadSalesDataLocal();
+    loadSettlementSalesDataLocal();
     if (!window.fbDb) return;
     const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const snap = await getDoc(doc(window.fbDb, 'standup_app', 'sales'));
     if (snap.exists()) {
       salesData = JSON.parse(snap.data().data);
       saveSalesDataLocal();
+      commitSettlementSalesData();
     }
   } catch(e) { console.error('loadSalesData:', e); }
 }
 
 async function saveSalesDataFb() {
   saveSalesDataLocal();
+  commitSettlementSalesData();
   if (typeof markNavUpdate === 'function') markNavUpdate('sales');
   showSaveToast('로컬 저장 완료');
   try {
@@ -5931,11 +5980,11 @@ function addSalesEvent() {
     currentSalesEvent = key;
     updateSalesEventSelect();
     loadSalesEvent(key);
-    saveSalesDataFb();
+    scheduleSalesDataLocalSave();
 
     // 안내 토스트
     const cnt = Object.values(salesData[key].artists).reduce((s,a)=>s+a.length,0);
-    if (cnt > 0) showSaveToast(`재고현황에서 ${cnt}개 굿즈 자동 불러오기 완료!`);
+    if (cnt > 0) showSaveToast(`재고현황에서 ${cnt}개 굿즈를 불러왔어요. 정산내역서 반영은 저장 후 적용됩니다.`);
   });
 }
 
@@ -5981,6 +6030,7 @@ function addSalesArtist(eventKey) {
     closeEdit();
     currentSalesArtist = name;
     loadSalesEvent(eventKey);
+    scheduleSalesDataLocalSave();
   });
 }
 
@@ -6153,7 +6203,7 @@ function addSalesItem(eventKey, artist) {
     });
     closeEdit();
     renderSalesTable(eventKey, artist);
-    saveSalesDataFb();
+    scheduleSalesDataLocalSave();
   });
 }
 
@@ -6162,7 +6212,7 @@ function deleteSalesItem(eventKey, artist, idx) {
   openConfirm(`<b>${item.name}</b>을 삭제할까요?`, () => {
     salesData[eventKey].artists[artist].splice(idx, 1);
     renderSalesTable(eventKey, artist);
-    saveSalesDataFb();
+    scheduleSalesDataLocalSave();
   });
 }
 
@@ -6206,7 +6256,7 @@ function deleteCurrentSalesEvent() {
         content.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:40vh;color:var(--text3);font-size:14px">위에서 행사를 선택하거나 새 행사를 추가해주세요</div>`;
       }
     }
-    saveSalesDataFb();
+    scheduleSalesDataLocalSave();
   });
 }
 
@@ -6218,14 +6268,20 @@ function saveSalesTableInput() {
 function initSettlementPage() {
   const sel = document.getElementById('settle-event-select');
   if (!sel) return;
-  const keys = Object.keys(salesData);
+  const settlementData = getSettlementData();
+  const keys = Object.keys(settlementData);
   sel.innerHTML = '<option value="">행사 선택</option>' +
-    keys.map(k => `<option value="${k}">${salesData[k].name}</option>`).join('');
+    keys.map(k => `<option value="${k}">${settlementData[k].name}</option>`).join('');
+  const el = document.getElementById('settlement-content');
+  if (el && !keys.length) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:40vh;color:var(--text3);font-size:14px">매출 입력 페이지에서 저장을 누른 뒤 정산내역서를 확인해주세요</div>';
+  }
 }
 
 function loadSettlementEvent(key) {
   if (!key) return;
-  const event = salesData[key];
+  const settlementData = getSettlementData();
+  const event = settlementData[key];
   if (!event) return;
   const sel = document.getElementById('settle-artist-select');
   if (!sel) return;
@@ -6244,7 +6300,12 @@ function renderSettlement() {
     el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:40vh;color:var(--text3);font-size:14px">행사와 작가를 선택해주세요</div>';
     return;
   }
-  const event  = salesData[eventKey];
+  const settlementData = getSettlementData();
+  const event  = settlementData[eventKey];
+  if (!event) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:40vh;color:var(--text3);font-size:14px">저장된 매출 데이터가 없습니다. 매출 입력에서 저장 후 다시 확인해주세요</div>';
+    return;
+  }
   const items  = event.artists[artist] || [];
   const totalRev  = items.reduce((s,r) => s+(getSalesCoeff(r)*(+r.price||0)), 0);
   const totalDist = items.reduce((s,r)=>s+calcDist(r,getSalesCoeff(r)), 0);
@@ -6284,10 +6345,10 @@ function renderSettlement() {
         <tbody>
           ${items.map(r => {
             const sold = getSalesCoeff(r);
-            const remain = getSalesRemain(r, artist);
+            const remain = getSettlementRemain(r);
             const rev = sold*(+r.price||0);
             const dist = calcDist(r, sold);
-            const settled = getSalesSettledQty(r, artist);
+            const settled = getSettlementSettledQty(r);
             return `<tr style="border-bottom:1px solid var(--border)">
               <td style="padding:9px 14px;font-size:13px;font-weight:500">${r.name}</td>
               <td style="padding:9px 8px;text-align:center;font-family:'DM Mono';font-size:12px">${r.prod||0}</td>
@@ -6338,17 +6399,19 @@ function printSettlement() {
   const artist   = document.getElementById('settle-artist-select')?.value;
   if (!eventKey || !artist) { alert('먼저 행사와 작가를 선택해주세요'); return; }
 
-  const event = salesData[eventKey];
+  const settlementData = getSettlementData();
+  const event = settlementData[eventKey];
+  if (!event) { alert('저장된 매출 데이터가 없습니다. 매출 입력에서 저장 후 다시 확인해주세요'); return; }
   const items = event.artists[artist] || [];
   const totalRev  = items.reduce((s,r) => s+(getSalesCoeff(r)*(+r.price||0)), 0);
   const totalDist = items.reduce((s,r) => s+calcDist(r,getSalesCoeff(r)), 0);
 
   const rows = items.map(r => {
     const sold    = getSalesCoeff(r);
-    const remain  = getSalesRemain(r, artist);
+    const remain  = getSettlementRemain(r);
     const rev     = sold*(+r.price||0);
     const dist    = calcDist(r, sold);
-    const settled = getSalesSettledQty(r, artist);
+    const settled = getSettlementSettledQty(r);
     return `<tr>
       <td class="left">${r.name}</td>
       <td class="center">${r.prod||0}</td>
