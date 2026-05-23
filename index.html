@@ -5015,6 +5015,8 @@ function doLogin() {
   updateGamchanPendingAlert();
   window._loginNoticeShown = false;
   setTimeout(showLoginNotices, 700);
+  // 로그인 후 소명 요청 배지 갱신 (expenseData 로컬 로드 후)
+  setTimeout(() => { if(typeof updateExpenseRequestBadge==='function') updateExpenseRequestBadge(); }, 300);
 }
 
 // 탭/창 닫을 때 오프라인 처리
@@ -6881,7 +6883,7 @@ async function initFirebase() {
     orderData:   () => { if(typeof renderOrders==='function') renderOrders(window._of||'all'); },
     invData:     () => { if(typeof renderInv==='function')   renderInv(window._iv||'all'); },
     tasks:       () => { if(typeof renderBoard==='function') renderBoard(); },
-    expenseData: () => { if(typeof renderExpenses==='function') renderExpenses(); },
+    expenseData: () => { if(typeof renderExpenses==='function') renderExpenses(); if(typeof updateExpenseRequestBadge==='function') updateExpenseRequestBadge(); },
     illustTasks: () => { if(typeof renderIllustStatus==='function') renderIllustStatus(); },
     recruitData: () => { if(typeof renderRecruitList==='function') renderRecruitList(); },
     vendors:     () => { if(typeof renderVendors==='function') renderVendors(window._vf||'all'); },
