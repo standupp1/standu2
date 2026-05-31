@@ -3681,7 +3681,7 @@ function buildAuditSheetPages({target, title, subtitle, stockLabel, rows, totalS
   if(!area) return;
   const now = new Date();
   const printedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const ROWS_PER_PAGE = 32; // A4에서 제목/서명 영역과 겹치지 않도록 안전하게 분할
+  const ROWS_PER_PAGE = 58; // A4 1장에 최대한 많이 들어가도록 압축 분할(57종 기준 1장 출력)
   const safeRows = rows.length ? rows : [{artist:'', name:'등록된 항목이 없습니다.', stock:'', note:'', empty:true}];
   const pages = [];
   for(let i=0; i<safeRows.length; i+=ROWS_PER_PAGE) pages.push(safeRows.slice(i, i+ROWS_PER_PAGE));
@@ -3742,6 +3742,54 @@ function buildAuditSheetPages({target, title, subtitle, stockLabel, rows, totalS
       </div>`;
   }).join('');
 }
+
+function openAuditPrintWindow(targetId, docTitle){
+  const source = document.getElementById(targetId);
+  if(!source) return;
+  const clone = source.cloneNode(true);
+  clone.querySelectorAll('input').forEach((input)=>{
+    input.setAttribute('value', input.value || '');
+  });
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>${invAuditEscape(docTitle || '재고실사표')}</title>
+<style>
+  @page{size:A4 portrait;margin:8mm}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,'Malgun Gothic',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .audit-sheet-wrap{background:#fff;color:#111;padding:0;margin:0;overflow:visible;max-height:none;border-radius:0}
+  .audit-sheet{width:194mm;min-height:0;height:auto;margin:0 auto;page-break-after:always;break-after:page;background:#fff;color:#111;padding:0;overflow:hidden}
+  .audit-sheet:last-child{page-break-after:auto;break-after:auto}
+  .audit-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;border-bottom:2px solid #111;padding-bottom:5px;margin-bottom:5px;break-after:avoid;page-break-after:avoid}
+  .audit-title{font-size:18px;font-weight:800;letter-spacing:-.4px;line-height:1.2}
+  .audit-meta{font-size:9px;color:#555;text-align:right;line-height:1.35;white-space:nowrap}
+  .audit-note{display:flex;justify-content:space-between;gap:8px;font-size:9px;color:#444;margin:4px 0 5px;line-height:1.35;break-after:avoid;page-break-after:avoid}
+  .audit-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.2px;page-break-inside:avoid;break-inside:avoid}
+  .audit-table thead{display:table-row-group}
+  .audit-table th,.audit-table td{border:1px solid #333;padding:1.7px 3px;height:14px;line-height:1.1;vertical-align:middle;overflow:hidden}
+  .audit-table th{background:#efefef;font-weight:800;text-align:center}
+  .audit-table .num{text-align:center;font-family:Arial, sans-serif}
+  .audit-table .goods{font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
+  .audit-table tr{page-break-inside:avoid;break-inside:avoid}
+  .audit-table .write-cell input{width:100%;height:12px;border:0;outline:0;text-align:center;font-size:8px;background:transparent;font-family:Arial,sans-serif}
+  .audit-sign{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:5px;font-size:9px;page-break-inside:avoid;break-inside:avoid}
+  .audit-sign div{border:1px solid #333;height:18px;display:flex;align-items:center;justify-content:center}
+  @media print{.audit-sheet{margin:0 auto}}
+</style>
+</head>
+<body>${clone.outerHTML}</body>
+</html>`;
+  const win = window.open('', '_blank', 'width=980,height=720');
+  if(!win){ window.print(); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ win.print(); }, 250);
+}
+
 function renderInventoryAuditSheet(){
   const rows = [...invData].sort((a,b)=>
     String(a.artist||'').localeCompare(String(b.artist||''),'ko') ||
@@ -3770,7 +3818,7 @@ function closeInventoryAuditSheet(){
 }
 function printInventoryAuditSheet(){
   renderInventoryAuditSheet();
-  setTimeout(()=>window.print(), 50);
+  setTimeout(()=>openAuditPrintWindow('inventory-audit-print-area', '스탠드업 재고실사표'), 50);
 }
 
 
@@ -3886,7 +3934,7 @@ function closeSurplusAuditSheet(){
 }
 function printSurplusAuditSheet(){
   renderSurplusAuditSheet();
-  setTimeout(()=>window.print(), 50);
+  setTimeout(()=>openAuditPrintWindow('surplus-audit-print-area', '스탠드업 PR 잉여재고 실사표'), 50);
 }
 
 // ── kanban ──────────────
