@@ -851,14 +851,12 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 .audit-sheet{
   width:210mm;
   min-height:297mm;
-  margin:0 auto 16px;
+  margin:0 auto;
   padding:12mm;
   background:#fff;
   color:#111;
   font-family:'Noto Sans KR', sans-serif;
 }
-.audit-sheet:last-child{margin-bottom:0}
-.audit-page-label{font-size:9px;color:#666;text-align:right;margin-top:4px}
 .audit-head{
   display:flex;
   justify-content:space-between;
@@ -966,20 +964,492 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     margin:0!important;
     padding:0!important;
     box-shadow:none!important;
-    page-break-after:always;
-    break-after:page;
   }
-  .audit-sheet:last-child{page-break-after:auto;break-after:auto}
-  .audit-head{break-after:avoid;page-break-after:avoid}
-  .audit-note{break-after:avoid;page-break-after:avoid}
-  .audit-table{font-size:8.4px;page-break-inside:auto}
-  .audit-table thead{display:table-header-group}
-  .audit-table tfoot{display:table-footer-group}
-  .audit-table th,.audit-table td{padding:2px 4px;height:16px;line-height:1.18}
+  .audit-head{break-after:avoid}
+  .audit-table{font-size:8.8px}
+  .audit-table th,.audit-table td{padding:2px 4px;height:18px}
   .audit-table tr{break-inside:avoid;page-break-inside:avoid}
-  .audit-table .write-cell input{font-size:8.5px;height:14px}
-  .audit-sign{break-inside:avoid;page-break-inside:avoid;margin-top:6px}
-  .audit-sign div{height:22px}
+  .audit-table .write-cell input{font-size:9px}
+}
+
+
+
+/* ═══════════════════════════════════════
+   모바일 전반 최적화 패치 2026-05-31
+   PC 레이아웃은 유지하고 768px 이하 화면만 보강
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+  body { font-size: 13px; }
+
+  /* 전체 여백/스크롤 안정화 */
+  .main {
+    width: 100%;
+    padding: 14px 12px calc(92px + env(safe-area-inset-bottom));
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .main-header {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .page-title {
+    font-size: 18px;
+    line-height: 1.35;
+    word-break: keep-all;
+  }
+  .page-sub {
+    font-size: 12px;
+    line-height: 1.45;
+    word-break: keep-all;
+  }
+  .page-update-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  /* 하단 모바일 메뉴: 터치 영역, 가독성, 가로 스크롤 개선 */
+  .sidebar {
+    height: calc(72px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(22,23,25,.98);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 -10px 28px rgba(0,0,0,.28);
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sidebar-section {
+    flex: 0 0 auto;
+    min-width: max-content;
+  }
+  .nav-item {
+    min-width: 70px;
+    height: 72px;
+    justify-content: center;
+    scroll-snap-align: start;
+    padding: 8px 8px 7px;
+    font-size: 10px;
+    line-height: 1.25;
+    word-break: keep-all;
+    color: var(--text2);
+  }
+  .nav-item .nav-icon {
+    width: 19px;
+    height: 19px;
+    margin-bottom: 2px;
+  }
+  .nav-item.active {
+    color: var(--amber);
+    background: linear-gradient(180deg, rgba(240,168,48,.16), rgba(240,168,48,.05));
+    border-top: 2px solid var(--amber);
+  }
+  .nav-item.active::after {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--amber);
+    position: absolute;
+    bottom: 5px;
+  }
+
+  /* KPI 카드: 너무 작게 깨지지 않도록 정리 */
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin-bottom: 14px;
+  }
+  .kpi-card {
+    min-height: 92px;
+    padding: 14px 13px;
+    border-radius: 12px;
+  }
+  .kpi-label {
+    font-size: 10px;
+    margin-bottom: 8px;
+    line-height: 1.35;
+  }
+  .kpi-value {
+    font-size: clamp(17px, 5.2vw, 22px);
+    letter-spacing: -.5px;
+    overflow-wrap: anywhere;
+  }
+  .kpi-change {
+    font-size: 10px;
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  /* 패널/버튼 영역: 가로로 찌그러지지 않게 */
+  .panel {
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 13px 14px;
+    align-items: flex-start;
+  }
+  .panel-title {
+    width: 100%;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .panel-header > div[style*="display:flex"] {
+    width: 100%;
+    margin-top: 8px;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+  .header-right {
+    width: 100%;
+    gap: 7px;
+  }
+  .btn,
+  .filter-btn,
+  .event-chip,
+  .act-btn,
+  button {
+    min-height: 38px;
+  }
+  .btn {
+    justify-content: center;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    border-radius: 9px;
+  }
+  .btn-primary { font-weight: 800; }
+  .panel-header .btn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 96px;
+  }
+  #inv-filter-btns {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px !important;
+    margin-bottom: 2px;
+  }
+  #inv-filter-btns .filter-btn {
+    width: 100%;
+    padding: 7px 6px;
+    font-size: 11px;
+  }
+
+  /* 인라인 3/4열 그리드 강제 정리 */
+  .grid-2col,
+  .grid-3col {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .panel-body > div[style*="grid-template-columns:1fr 1fr 1fr 1fr"],
+  .panel-body > div[style*="grid-template-columns: 1fr 1fr 1fr 1fr"],
+  .panel-body > div[style*="grid-template-columns:1fr 1fr 1fr"],
+  .panel-body > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  div[style*="grid-template-columns: repeat(4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* 테이블 공통 카드화 */
+  .tx-table,
+  .cost-table,
+  .order-table,
+  .inv-table {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .tx-table tbody,
+  .cost-table tbody,
+  .order-table tbody,
+  .inv-table tbody {
+    display: block;
+  }
+  .tx-table thead,
+  .cost-table thead,
+  .order-table thead,
+  .inv-table thead {
+    display: none !important;
+  }
+  .tx-table tr,
+  .cost-table tr,
+  .order-table tr,
+  .inv-table tr {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 8px;
+    margin: 10px 10px;
+    padding: 13px 13px 50px !important;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg2);
+    position: relative;
+  }
+  .tx-table td,
+  .cost-table td,
+  .order-table td,
+  .inv-table td {
+    display: block !important;
+    border: 0 !important;
+    padding: 0 !important;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: normal !important;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    background: transparent !important;
+  }
+  .tx-table tr:hover td,
+  .cost-table tr:hover td,
+  .order-table tr:hover td,
+  .inv-table tr:hover td {
+    background: transparent !important;
+  }
+  .tx-table td.act-col,
+  .cost-table td.act-col,
+  .order-table td.act-col,
+  .inv-table td.act-col,
+  .surplus-table td.act-col {
+    position: absolute !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    top: auto !important;
+    width: auto !important;
+  }
+  .row-actions {
+    opacity: 1 !important;
+    gap: 7px;
+  }
+  .act-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+
+  /* 재고 현황 카드: 작가/굿즈/수량 중심 */
+  .inv-table:not(.surplus-table) td:nth-child(1) {
+    grid-column: 1 / 2;
+    font-size: 12px;
+  }
+  .inv-table:not(.surplus-table) td:nth-child(1)::before { content: '작가 '; color: var(--text3); font-size: 10px; }
+  .inv-table:not(.surplus-table) td:nth-child(2) {
+    grid-column: 1 / 3;
+    font-size: 15px;
+    font-weight: 800 !important;
+    color: var(--text);
+    padding-right: 0 !important;
+  }
+  .inv-table:not(.surplus-table) td:nth-child(3)::before { content: '생산 '; color: var(--text3); font-size: 10px; }
+  .inv-table:not(.surplus-table) td:nth-child(4) { display: block !important; text-align: left !important; }
+  .inv-table:not(.surplus-table) td:nth-child(4)::before { content: '생산단가 '; color: var(--text3); font-size: 10px; }
+  .inv-table:not(.surplus-table) td:nth-child(5)::before { content: '판매가 '; color: var(--text3); font-size: 10px; }
+  .inv-table:not(.surplus-table) td:nth-child(6) {
+    font-size: 15px;
+    text-align: left !important;
+  }
+  .inv-table:not(.surplus-table) td:nth-child(6)::before { content: '실재고 '; color: var(--text3); font-size: 10px; }
+  .inv-table:not(.surplus-table) td:nth-child(7) {
+    text-align: left !important;
+    color: var(--blue) !important;
+  }
+  .inv-table:not(.surplus-table) td:nth-child(7)::before { content: '재고금액 '; color: var(--text3); font-size: 10px; }
+
+  /* 잉여재고 카드 */
+  .surplus-table tr {
+    padding-bottom: 54px !important;
+  }
+  .surplus-table td:nth-child(1) {
+    grid-column: 1 / 2;
+    font-size: 12px;
+  }
+  .surplus-table td:nth-child(1)::before { content: '작가 '; color: var(--text3); font-size: 10px; }
+  .surplus-table td:nth-child(2) {
+    grid-column: 1 / 3 !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    color: var(--text);
+  }
+  .surplus-table td:nth-child(3) {
+    font-size: 15px;
+    color: var(--blue);
+    font-family: 'DM Mono', monospace;
+    font-weight: 800;
+  }
+  .surplus-table td:nth-child(3)::before { content: '실재고 '; color: var(--text3); font-size: 10px; font-family:'Noto Sans KR',sans-serif; font-weight:500; }
+  .surplus-table td:nth-child(4) {
+    grid-column: 1 / 3 !important;
+    color: var(--text2);
+    min-height: 18px;
+  }
+  .surplus-table td:nth-child(4)::before { content: '비고 '; color: var(--text3); font-size: 10px; }
+
+  /* 회계 테이블: 사용자 컬럼 추가 상태 보정 */
+  .tx-table:not(#estat-table) tr {
+    padding-bottom: 54px !important;
+  }
+  .tx-table:not(#estat-table) td:nth-child(1) {
+    position: static !important;
+    grid-column: 1 / 3;
+    width: auto !important;
+    margin: 0;
+  }
+  .tx-table:not(#estat-table) td:nth-child(2),
+  .tx-table:not(#estat-table) td:nth-child(3),
+  .tx-table:not(#estat-table) td:nth-child(4) {
+    grid-column: 1 / 3;
+    width: auto !important;
+  }
+  .tx-table:not(#estat-table) td:nth-child(7) {
+    position: static !important;
+    grid-column: 1 / 3;
+    text-align: left !important;
+  }
+
+  /* 칸반/작가/업체 카드 */
+  .kanban-board {
+    display: flex !important;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 0 2px 8px;
+    scroll-snap-type: x mandatory;
+  }
+  .kanban-col-wrap {
+    flex: 0 0 78vw;
+    max-width: 320px;
+    scroll-snap-align: start;
+  }
+  .kanban-filter-wrap {
+    align-items: stretch;
+  }
+  .kanban-filter-group {
+    width: 100%;
+  }
+  .kanban-filter-group .filter-btn {
+    flex: 1 1 calc(50% - 4px);
+  }
+  .artist-card,
+  .vendor-card,
+  .recruit-row,
+  .notice-card {
+    border-radius: 12px;
+  }
+
+  /* 입력 폼/모달: 모바일 바텀시트 느낌 */
+  .modal-overlay.open {
+    align-items: flex-end !important;
+    justify-content: center !important;
+  }
+  .mbox,
+  .mbox.wide,
+  .modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    max-height: 88vh !important;
+    border-radius: 18px 18px 0 0 !important;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom)) !important;
+    overflow-y: auto;
+  }
+  .mhead {
+    position: sticky;
+    top: -18px;
+    z-index: 2;
+    background: var(--bg2);
+    padding-top: 4px;
+    margin-bottom: 14px;
+  }
+  .mclose {
+    width: 38px;
+    height: 38px;
+  }
+  .mf-row,
+  .form-row {
+    grid-template-columns: 1fr !important;
+    gap: 9px;
+  }
+  .mf input,
+  .mf select,
+  .mf textarea,
+  .form-field input,
+  .form-field select,
+  .form-field textarea,
+  .input-field,
+  .form-select,
+  .sim-input {
+    min-height: 42px;
+    font-size: 16px; /* iOS 자동 확대 방지 */
+    border-radius: 10px;
+  }
+  .mfoot {
+    position: sticky;
+    bottom: calc(-18px - env(safe-area-inset-bottom));
+    background: var(--bg2);
+    padding: 12px 0 calc(4px + env(safe-area-inset-bottom));
+    margin-top: 14px;
+  }
+  .mfoot .btn {
+    flex: 1 1 0;
+    min-height: 42px;
+  }
+
+  /* 실사표 미리보기: 모바일에서는 화면 넘침 방지 */
+  .audit-sheet-wrap {
+    max-height: 58vh;
+    padding: 10px;
+    border-radius: 12px;
+    overflow: auto;
+  }
+  .audit-sheet {
+    width: 100%;
+    min-width: 720px;
+    min-height: auto;
+    padding: 10px;
+  }
+
+  /* 캘린더/차트 */
+  .event-cal-grid,
+  .event-cal-week {
+    gap: 3px;
+  }
+  .event-cal-cell {
+    min-height: 44px;
+    padding: 3px;
+  }
+  .event-cal-pill {
+    font-size: 8px;
+  }
+  .chart-area {
+    height: 110px;
+  }
+
+  /* 모바일에서 빈 행 안내가 카드처럼 너무 커지는 것 방지 */
+  .inv-table tr:has(td[colspan]),
+  .tx-table tr:has(td[colspan]),
+  .cost-table tr:has(td[colspan]),
+  .order-table tr:has(td[colspan]) {
+    display: block !important;
+    padding: 18px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .main { padding-left: 10px; padding-right: 10px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .kpi-card { min-height: 82px; }
+  #inv-filter-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .panel-header .btn { flex-basis: 100%; }
+  .nav-item { min-width: 64px; font-size: 9px; }
+  .kanban-col-wrap { flex-basis: 86vw; }
 }
 
 </style>
@@ -3675,140 +4145,63 @@ function filterInv(f,btn){
 function invAuditEscape(v){
   return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
-
-function buildAuditSheetPages({target, title, subtitle, stockLabel, rows, totalStock, noteText, noteRight, noteKey}){
-  const area = document.getElementById(target);
+function renderInventoryAuditSheet(){
+  const area = document.getElementById('inventory-audit-print-area');
   if(!area) return;
   const now = new Date();
   const printedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const ROWS_PER_PAGE = 58; // A4 1장에 최대한 많이 들어가도록 압축 분할(57종 기준 1장 출력)
-  const safeRows = rows.length ? rows : [{artist:'', name:'등록된 항목이 없습니다.', stock:'', note:'', empty:true}];
-  const pages = [];
-  for(let i=0; i<safeRows.length; i+=ROWS_PER_PAGE) pages.push(safeRows.slice(i, i+ROWS_PER_PAGE));
-
-  area.innerHTML = pages.map((pageRows, pageIndex)=>{
-    const startNo = pageIndex * ROWS_PER_PAGE;
-    const bodyHtml = pageRows.map((r, i)=>{
-      if(r.empty){
-        return `<tr><td colspan="6" style="text-align:center;height:32px">${invAuditEscape(r.name)}</td></tr>`;
-      }
-      const absoluteNo = startNo + i + 1;
-      return `
-        <tr>
-          <td class="num" style="width:7%">${absoluteNo}</td>
-          <td style="width:13%;text-align:center;font-weight:700">${invAuditEscape(r.artist)}</td>
-          <td class="goods" style="width:42%">${invAuditEscape(r.name)}</td>
-          <td class="num" style="width:12%">${Number(r.stock || 0).toLocaleString()}</td>
-          <td class="write-cell" style="width:14%"><input inputmode="numeric" aria-label="${invAuditEscape(r.name)} 실사수량"></td>
-          <td style="width:12%">${noteKey ? invAuditEscape(r[noteKey] || '') : ''}</td>
-        </tr>`;
-    }).join('');
-
-    return `
-      <div class="audit-sheet">
-        <div class="audit-head">
-          <div>
-            <div class="audit-title">${invAuditEscape(title)}</div>
-            <div style="font-size:10px;color:#555;margin-top:2px">${invAuditEscape(subtitle)}</div>
-          </div>
-          <div class="audit-meta">
-            출력일시: ${printedAt}<br>
-            품목 수: ${rows.length.toLocaleString()}종 · ${invAuditEscape(stockLabel)} 합계: ${Number(totalStock || 0).toLocaleString()}개<br>
-            ${pageIndex+1} / ${pages.length} 페이지
-          </div>
-        </div>
-        <div class="audit-note">
-          <span>${invAuditEscape(noteText)}</span>
-          <span>${invAuditEscape(noteRight || '단위: 개')}</span>
-        </div>
-        <table class="audit-table">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>작가</th>
-              <th>굿즈명</th>
-              <th>${invAuditEscape(stockLabel)}</th>
-              <th>직원 실사수량</th>
-              <th>비고</th>
-            </tr>
-          </thead>
-          <tbody>${bodyHtml}</tbody>
-        </table>
-        <div class="audit-sign">
-          <div>실사자:　　　　　(서명)</div>
-          <div>검토자:　　　　　(서명)</div>
-          <div>확인일:　　　　　</div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function openAuditPrintWindow(targetId, docTitle){
-  const source = document.getElementById(targetId);
-  if(!source) return;
-  const clone = source.cloneNode(true);
-  clone.querySelectorAll('input').forEach((input)=>{
-    input.setAttribute('value', input.value || '');
-  });
-  const html = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>${invAuditEscape(docTitle || '재고실사표')}</title>
-<style>
-  @page{size:A4 portrait;margin:8mm}
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,'Malgun Gothic',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .audit-sheet-wrap{background:#fff;color:#111;padding:0;margin:0;overflow:visible;max-height:none;border-radius:0}
-  .audit-sheet{width:194mm;min-height:0;height:auto;margin:0 auto;page-break-after:always;break-after:page;background:#fff;color:#111;padding:0;overflow:hidden}
-  .audit-sheet:last-child{page-break-after:auto;break-after:auto}
-  .audit-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;border-bottom:2px solid #111;padding-bottom:5px;margin-bottom:5px;break-after:avoid;page-break-after:avoid}
-  .audit-title{font-size:18px;font-weight:800;letter-spacing:-.4px;line-height:1.2}
-  .audit-meta{font-size:9px;color:#555;text-align:right;line-height:1.35;white-space:nowrap}
-  .audit-note{display:flex;justify-content:space-between;gap:8px;font-size:9px;color:#444;margin:4px 0 5px;line-height:1.35;break-after:avoid;page-break-after:avoid}
-  .audit-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.2px;page-break-inside:avoid;break-inside:avoid}
-  .audit-table thead{display:table-row-group}
-  .audit-table th,.audit-table td{border:1px solid #333;padding:1.7px 3px;height:14px;line-height:1.1;vertical-align:middle;overflow:hidden}
-  .audit-table th{background:#efefef;font-weight:800;text-align:center}
-  .audit-table .num{text-align:center;font-family:Arial, sans-serif}
-  .audit-table .goods{font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
-  .audit-table tr{page-break-inside:avoid;break-inside:avoid}
-  .audit-table .write-cell input{width:100%;height:12px;border:0;outline:0;text-align:center;font-size:8px;background:transparent;font-family:Arial,sans-serif}
-  .audit-sign{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:5px;font-size:9px;page-break-inside:avoid;break-inside:avoid}
-  .audit-sign div{border:1px solid #333;height:18px;display:flex;align-items:center;justify-content:center}
-  @media print{.audit-sheet{margin:0 auto}}
-</style>
-</head>
-<body>${clone.outerHTML}</body>
-</html>`;
-  const win = window.open('', '_blank', 'width=980,height=720');
-  if(!win){ window.print(); return; }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  setTimeout(()=>{ win.print(); }, 250);
-}
-
-function renderInventoryAuditSheet(){
   const rows = [...invData].sort((a,b)=>
     String(a.artist||'').localeCompare(String(b.artist||''),'ko') ||
     String(a.name||'').localeCompare(String(b.name||''),'ko')
   );
   const totalStock = rows.reduce((sum, r)=>sum + Number(r.stock || 0), 0);
-  buildAuditSheetPages({
-    target:'inventory-audit-print-area',
-    title:'스탠드업 재고실사표',
-    subtitle:'행사 종료 후 재고실 실사 확인용',
-    stockLabel:'PR 실재고',
-    rows,
-    totalStock,
-    noteText:'작성 방법: 실물 수량 확인 후 직원 실사수량 칸에 기입하고, 차이가 있으면 비고에 사유를 적어주세요.',
-    noteRight:'단위: 개',
-    noteKey:null
-  });
+  const rowHtml = rows.map((r, idx)=>`
+    <tr>
+      <td class="num" style="width:7%">${idx+1}</td>
+      <td style="width:13%;text-align:center;font-weight:700">${invAuditEscape(r.artist)}</td>
+      <td class="goods" style="width:43%">${invAuditEscape(r.name)}</td>
+      <td class="num" style="width:13%">${Number(r.stock || 0).toLocaleString()}</td>
+      <td class="write-cell" style="width:14%"><input inputmode="numeric" aria-label="${invAuditEscape(r.name)} 실사수량"></td>
+      <td style="width:10%"></td>
+    </tr>
+  `).join('');
+  area.innerHTML = `
+    <div class="audit-sheet">
+      <div class="audit-head">
+        <div>
+          <div class="audit-title">스탠드업 재고실사표</div>
+          <div style="font-size:10px;color:#555;margin-top:2px">행사 종료 후 재고실 실사 확인용</div>
+        </div>
+        <div class="audit-meta">
+          출력일시: ${printedAt}<br>
+          품목 수: ${rows.length.toLocaleString()}종 · PR 실재고 합계: ${totalStock.toLocaleString()}개
+        </div>
+      </div>
+      <div class="audit-note">
+        <span>작성 방법: 실물 수량 확인 후 ‘직원 실사수량’ 칸에 기입하고, 차이가 있으면 비고에 사유를 적어주세요.</span>
+        <span>단위: 개</span>
+      </div>
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>작가</th>
+            <th>굿즈명</th>
+            <th>PR 실재고</th>
+            <th>직원 실사수량</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>${rowHtml || '<tr><td colspan="6" style="text-align:center;height:32px">등록된 재고 항목이 없습니다.</td></tr>'}</tbody>
+      </table>
+      <div class="audit-sign">
+        <div>실사자:　　　　　(서명)</div>
+        <div>검토자:　　　　　(서명)</div>
+        <div>확인일:　　　　　</div>
+      </div>
+    </div>
+  `;
 }
-
 function openInventoryAuditSheet(){
   renderInventoryAuditSheet();
   document.getElementById('modal-inv-audit')?.classList.add('open');
@@ -3818,7 +4211,7 @@ function closeInventoryAuditSheet(){
 }
 function printInventoryAuditSheet(){
   renderInventoryAuditSheet();
-  setTimeout(()=>openAuditPrintWindow('inventory-audit-print-area', '스탠드업 재고실사표'), 50);
+  setTimeout(()=>window.print(), 50);
 }
 
 
@@ -3907,24 +4300,62 @@ function deleteSurplus(idx){
   });
 }
 function renderSurplusAuditSheet(){
+  const area = document.getElementById('surplus-audit-print-area');
+  if(!area) return;
+  const now = new Date();
+  const printedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   const rows = [...surplusData].sort((a,b)=>
     String(a.artist||'').localeCompare(String(b.artist||''),'ko') ||
     String(a.name||'').localeCompare(String(b.name||''),'ko')
   );
   const totalStock = rows.reduce((sum, r)=>sum + Number(r.stock || 0), 0);
-  buildAuditSheetPages({
-    target:'surplus-audit-print-area',
-    title:'스탠드업 PR 잉여재고 실사표',
-    subtitle:'PR 사이트 보관 잉여재고 실사 확인용',
-    stockLabel:'실재고',
-    rows,
-    totalStock,
-    noteText:'작성 방법: 실물 수량 확인 후 직원 실사수량 칸에 기입하고, 차이가 있으면 비고에 사유를 추가로 적어주세요.',
-    noteRight:'단위: 개',
-    noteKey:'note'
-  });
+  const rowHtml = rows.map((r, idx)=>`
+    <tr>
+      <td class="num" style="width:7%">${idx+1}</td>
+      <td style="width:14%;text-align:center;font-weight:700">${invAuditEscape(r.artist)}</td>
+      <td class="goods" style="width:39%">${invAuditEscape(r.name)}</td>
+      <td class="num" style="width:12%">${Number(r.stock || 0).toLocaleString()}</td>
+      <td class="write-cell" style="width:14%"><input inputmode="numeric" aria-label="${invAuditEscape(r.name)} 실사수량"></td>
+      <td style="width:14%">${invAuditEscape(r.note || '')}</td>
+    </tr>
+  `).join('');
+  area.innerHTML = `
+    <div class="audit-sheet">
+      <div class="audit-head">
+        <div>
+          <div class="audit-title">스탠드업 PR 잉여재고 실사표</div>
+          <div style="font-size:10px;color:#555;margin-top:2px">PR 사이트 보관 잉여재고 실사 확인용</div>
+        </div>
+        <div class="audit-meta">
+          출력일시: ${printedAt}<br>
+          품목 수: ${rows.length.toLocaleString()}종 · 실재고 합계: ${totalStock.toLocaleString()}개
+        </div>
+      </div>
+      <div class="audit-note">
+        <span>작성 방법: 실물 수량 확인 후 ‘직원 실사수량’ 칸에 기입하고, 차이가 있으면 비고에 사유를 추가로 적어주세요.</span>
+        <span>단위: 개</span>
+      </div>
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>작가</th>
+            <th>굿즈명</th>
+            <th>실재고</th>
+            <th>직원 실사수량</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>${rowHtml || '<tr><td colspan="6" style="text-align:center;height:32px">등록된 잉여재고 항목이 없습니다.</td></tr>'}</tbody>
+      </table>
+      <div class="audit-sign">
+        <div>실사자:　　　　　(서명)</div>
+        <div>검토자:　　　　　(서명)</div>
+        <div>확인일:　　　　　</div>
+      </div>
+    </div>
+  `;
 }
-
 function openSurplusAuditSheet(){
   renderSurplusAuditSheet();
   document.getElementById('modal-surplus-audit')?.classList.add('open');
@@ -3934,7 +4365,7 @@ function closeSurplusAuditSheet(){
 }
 function printSurplusAuditSheet(){
   renderSurplusAuditSheet();
-  setTimeout(()=>openAuditPrintWindow('surplus-audit-print-area', '스탠드업 PR 잉여재고 실사표'), 50);
+  setTimeout(()=>window.print(), 50);
 }
 
 // ── kanban ──────────────
