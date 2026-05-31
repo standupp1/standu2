@@ -70,6 +70,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .share-total-value{font-size:15px;font-weight:700;font-family:'DM Mono';color:var(--amber)}
 .kpi-change{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-family:'DM Mono',monospace;margin-top:8px;padding:2px 6px;border-radius:4px}
 .kpi-change.up{background:var(--green-dim);color:var(--green)}
+.kpi-change.down{background:var(--coral-dim);color:var(--coral)}
 .kpi-change.neutral{background:var(--bg3);color:var(--text3)}
 .grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .grid-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
@@ -938,25 +939,59 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 }
 @media print{
   @page{size:A4 portrait;margin:8mm}
-  body{background:#fff!important}
-  body *{visibility:hidden!important}
-  #inventory-audit-print-area,
-  #inventory-audit-print-area *,
-  #surplus-audit-print-area,
-  #surplus-audit-print-area *{visibility:visible!important}
-  #inventory-audit-print-area,
-  #surplus-audit-print-area{
-    position:absolute!important;
-    left:0!important;
-    top:0!important;
+  html,body{
+    background:#fff!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  /* 모든 요소 숨기기 */
+  body > *{display:none!important}
+  /* 인쇄 중인 실사표 컨테이너만 표시 */
+  body.printing-inv-audit > #modal-inv-audit,
+  body.printing-surplus-audit > #modal-surplus-audit{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    z-index:99999!important;
+    background:#fff!important;
+    overflow:visible!important;
+    overflow-y:visible!important;
+    height:auto!important;
+    max-height:none!important;
+    backdrop-filter:none!important;
+    align-items:unset!important;
+    justify-content:unset!important;
+  }
+  body.printing-inv-audit > #modal-inv-audit .mbox,
+  body.printing-surplus-audit > #modal-surplus-audit .mbox{
+    display:block!important;
     width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+    overflow-y:visible!important;
+    box-shadow:none!important;
+    border-radius:0!important;
+    padding:0!important;
+    margin:0!important;
     background:#fff!important;
   }
+  body.printing-inv-audit > #modal-inv-audit .mhead,
+  body.printing-surplus-audit > #modal-surplus-audit .mhead,
+  body.printing-inv-audit > #modal-inv-audit .mfoot,
+  body.printing-surplus-audit > #modal-surplus-audit .mfoot,
+  body.printing-inv-audit > #modal-inv-audit > .mbox > div:nth-child(2),
+  body.printing-surplus-audit > #modal-surplus-audit > .mbox > div:nth-child(2){
+    display:none!important;
+  }
   .audit-sheet-wrap{
+    display:block!important;
     max-height:none!important;
     overflow:visible!important;
     padding:0!important;
     border-radius:0!important;
+    background:#fff!important;
   }
   .audit-sheet{
     width:auto!important;
@@ -964,8 +999,10 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     margin:0!important;
     padding:0!important;
     box-shadow:none!important;
+    background:#fff!important;
   }
   .audit-head{break-after:avoid}
+  .audit-title{font-size:16px!important}
   .audit-table{font-size:8.8px}
   .audit-table th,.audit-table td{padding:2px 4px;height:18px}
   .audit-table tr{break-inside:avoid;page-break-inside:avoid}
@@ -1566,6 +1603,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,13 5,7 8,10 11,5 15,3"/><circle cx="15" cy="3" r="1.5" fill="currentColor" stroke="none"/></svg>
       행사 통계
     </div>
+  </div>
   <div class="sidebar-section">
     <div class="sidebar-label">관리</div>
     <div class="nav-item" onclick="setNav(this)">
@@ -4211,7 +4249,11 @@ function closeInventoryAuditSheet(){
 }
 function printInventoryAuditSheet(){
   renderInventoryAuditSheet();
-  setTimeout(()=>window.print(), 50);
+  document.body.classList.add('printing-inv-audit');
+  setTimeout(()=>{
+    window.print();
+    document.body.classList.remove('printing-inv-audit');
+  }, 80);
 }
 
 
@@ -4365,7 +4407,11 @@ function closeSurplusAuditSheet(){
 }
 function printSurplusAuditSheet(){
   renderSurplusAuditSheet();
-  setTimeout(()=>window.print(), 50);
+  document.body.classList.add('printing-surplus-audit');
+  setTimeout(()=>{
+    window.print();
+    document.body.classList.remove('printing-surplus-audit');
+  }, 80);
 }
 
 // ── kanban ──────────────
