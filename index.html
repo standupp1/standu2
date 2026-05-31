@@ -829,6 +829,137 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
   .tx-table:not(#estat-table) td.act-col{position:absolute;top:10px;right:10px;width:auto;padding:0;}
 }
 
+
+/* ── 재고 실사표 미리보기/인쇄 ── */
+.audit-sheet-wrap{
+  background:#fff;
+  color:#111;
+  border-radius:12px;
+  padding:18px;
+  max-height:62vh;
+  overflow:auto;
+}
+.audit-sheet{
+  width:210mm;
+  min-height:297mm;
+  margin:0 auto;
+  padding:12mm;
+  background:#fff;
+  color:#111;
+  font-family:'Noto Sans KR', sans-serif;
+}
+.audit-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:12px;
+  border-bottom:2px solid #111;
+  padding-bottom:8px;
+  margin-bottom:8px;
+}
+.audit-title{
+  font-size:20px;
+  font-weight:800;
+  letter-spacing:-.4px;
+}
+.audit-meta{
+  font-size:10px;
+  color:#555;
+  text-align:right;
+  line-height:1.5;
+}
+.audit-note{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:10px;
+  color:#444;
+  margin:6px 0 8px;
+}
+.audit-table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  font-size:9px;
+}
+.audit-table th,
+.audit-table td{
+  border:1px solid #333;
+  padding:3px 5px;
+  height:20px;
+  vertical-align:middle;
+}
+.audit-table th{
+  background:#efefef;
+  font-weight:800;
+  text-align:center;
+}
+.audit-table .num{
+  text-align:center;
+  font-family:'DM Mono', monospace;
+}
+.audit-table .goods{
+  font-weight:600;
+  word-break:keep-all;
+  overflow-wrap:anywhere;
+}
+.audit-table .write-cell input{
+  width:100%;
+  height:18px;
+  border:0;
+  outline:0;
+  text-align:center;
+  font-family:'DM Mono', monospace;
+  font-size:10px;
+  background:transparent;
+}
+.audit-sign{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  margin-top:10px;
+  font-size:10px;
+}
+.audit-sign div{
+  border:1px solid #333;
+  height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+@media print{
+  @page{size:A4 portrait;margin:8mm}
+  body{background:#fff!important}
+  body *{visibility:hidden!important}
+  #inventory-audit-print-area,
+  #inventory-audit-print-area *{visibility:visible!important}
+  #inventory-audit-print-area{
+    position:absolute!important;
+    left:0!important;
+    top:0!important;
+    width:100%!important;
+    background:#fff!important;
+  }
+  .audit-sheet-wrap{
+    max-height:none!important;
+    overflow:visible!important;
+    padding:0!important;
+    border-radius:0!important;
+  }
+  .audit-sheet{
+    width:auto!important;
+    min-height:auto!important;
+    margin:0!important;
+    padding:0!important;
+    box-shadow:none!important;
+  }
+  .audit-head{break-after:avoid}
+  .audit-table{font-size:8.8px}
+  .audit-table th,.audit-table td{padding:2px 4px;height:18px}
+  .audit-table tr{break-inside:avoid;page-break-inside:avoid}
+  .audit-table .write-cell input{font-size:9px}
+}
+
 </style>
 </head>
 <body>
@@ -983,6 +1114,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 <div class="modal-overlay" id="modal-add-cost" onclick="if(event.target===this)closeAddCostModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">원가 항목 추가</div><button class="mclose" onclick="closeAddCostModal()">✕</button></div><div class="mf-row"><div class="mf"><label>굿즈명</label><input id="ac-name" placeholder="예: LD아크릴 스탠드"></div><div class="mf"><label>종류/멤버</label><input id="ac-type" placeholder="예: 이오몽"></div></div><div class="mf-row"><div class="mf"><label>제작 수량</label><input type="number" id="ac-qty" value="10"></div><div class="mf"><label>개당 원가 (₩)</label><input type="number" id="ac-cost" value="0"></div></div><div class="mf-row"><div class="mf"><label>판매가 (₩)</label><input type="number" id="ac-price" value="0"></div><div class="mf"><label>판매 수량</label><input type="number" id="ac-sold" value="0"></div></div><div class="mfoot"><button class="btn" onclick="closeAddCostModal()">취소</button><button class="btn btn-primary" onclick="submitAddCost()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-order" onclick="if(event.target===this)closeOrderModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">제작 의뢰 추가</div><button class="mclose" onclick="closeOrderModal()">✕</button></div><div class="mf-row"><div class="mf"><label>작가명</label><select id="ord-artist"><option>닐마</option><option>맹이</option><option>양초</option><option>하쿠야</option></select></div><div class="mf"><label>굿즈명</label><select id="ord-goods" onchange="document.getElementById('ord-goods-custom-wrap').style.display=this.value==='직접입력'?'block':'none'"><option>LD아크릴 스탠드</option><option>LD아크릴 스탠드 (어린이)</option><option>LD아크릴 스탠드 (전투메이드)</option><option>코롯토</option><option>키링</option><option>키링 (팬캐릭)</option><option>투명포토카드</option><option>포토카드</option><option>캔뱃지</option><option>말랑핀뱃지</option><option>장패드</option><option>엽서</option><option>직접입력</option></select></div></div><div class="mf" id="ord-goods-custom-wrap" style="display:none"><label>굿즈명 직접입력</label><input id="ord-goods-custom"></div><div class="mf-row"><div class="mf"><label>멤버</label><input id="ord-member" placeholder="예: 이오몽"></div><div class="mf"><label>수량</label><input type="number" id="ord-qty" value="10"></div></div><div class="mf-row"><div class="mf"><label>장르</label><select id="ord-genre"><option>미츄</option><option>스텔라이브</option><option>기타</option></select></div><div class="mf"><label>컨셉</label><input id="ord-concept"></div></div><div class="mf-row"><div class="mf"><label>포장</label><select id="ord-pkg"><option value="O">포장 O</option><option value="X">포장 X</option></select></div><div class="mf"><label>사이트</label><input id="ord-site" placeholder="예: Hipduck"></div></div><div class="mf"><label>사이즈/스펙</label><input id="ord-spec"></div><div class="mfoot"><button class="btn" onclick="closeOrderModal()">취소</button><button class="btn btn-primary" onclick="submitOrderModal()">저장</button></div></div></div>
 <div class="modal-overlay" id="modal-add-inv" onclick="if(event.target===this)closeAddInvModal()"><div class="mbox"><div class="mhead"><div class="mtitle">재고 항목 추가</div><button class="mclose" onclick="closeAddInvModal()">✕</button></div><div class="mf-row"><div class="mf"><label>작가</label><select id="ai-artist"><option>양초</option><option>맹이</option><option>닐마</option><option>하쿠야</option></select></div><div class="mf"><label>굿즈명</label><input id="ai-name"></div></div><div class="mf-row"><div class="mf"><label>생산수량</label><input type="number" id="ai-prod" value="10"></div><div class="mf"><label>생산단가 (₩)</label><input type="number" id="ai-cost" value="0"></div></div><div class="mf-row"><div class="mf"><label>판매가 (₩)</label><input type="number" id="ai-price" value="0"></div><div class="mf"><label>실재고</label><input type="number" id="ai-stock" value="0"></div></div><div class="mfoot"><button class="btn" onclick="closeAddInvModal()">취소</button><button class="btn btn-primary" onclick="submitAddInv()">추가</button></div></div></div>
+<div class="modal-overlay" id="modal-inv-audit" onclick="if(event.target===this)closeInventoryAuditSheet()"><div class="mbox wide" style="width:min(980px,96vw)"><div class="mhead"><div class="mtitle">재고실사표</div><button class="mclose" onclick="closeInventoryAuditSheet()">✕</button></div><div style="font-size:12px;color:var(--text3);margin:-8px 0 12px;line-height:1.7">굿즈명과 PR 실재고는 현재 재고현황 기준으로 자동 표시됩니다. 직원 실사수량 칸은 화면에서 입력하거나, 빈칸으로 인쇄해 수기로 작성할 수 있습니다.</div><div id="inventory-audit-print-area" class="audit-sheet-wrap"></div><div class="mfoot"><button class="btn" onclick="closeInventoryAuditSheet()">닫기</button><button class="btn btn-primary" onclick="printInventoryAuditSheet()">인쇄</button></div></div></div>
 <div class="modal-overlay" id="modal-kanban" onclick="if(event.target===this)closeKanbanModal()"><div class="mbox"><div class="mhead"><div class="mtitle">제작 항목 추가</div><button class="mclose" onclick="closeKanbanModal()">✕</button></div><div class="mf-row"><div class="mf"><label>작가명</label><select id="kb-artist"><option>닐마</option><option>맹이</option><option>양초</option><option>하쿠야</option></select></div><div class="mf"><label>굿즈명</label><input id="kb-goods"></div></div><div class="mf-row"><div class="mf"><label>멤버</label><input id="kb-member"></div><div class="mf"><label>장르</label><select id="kb-genre"><option>미츄</option><option>스텔라이브</option></select></div></div><div class="mf-row"><div class="mf"><label>사이트</label><input id="kb-site"></div><div class="mf"><label>초기 상태</label><select id="kb-status"><option>대기</option><option>제작중</option><option>재생산</option><option>완료</option></select></div></div><div class="mf"><label>비고</label><input id="kb-note"></div><div class="mfoot"><button class="btn" onclick="closeKanbanModal()">취소</button><button class="btn btn-primary" onclick="submitKanbanModal()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-recruit" onclick="if(event.target===this)closeRecruitModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">신청자 추가</div><button class="mclose" onclick="closeRecruitModal()">✕</button></div><div class="mf-row"><div class="mf"><label>날짜</label><input id="rc-date" placeholder="예: 26/4"></div><div class="mf"><label>행사명</label><input id="rc-event"></div></div><div class="mf-row"><div class="mf"><label>이름 (닉네임)</label><input id="rc-name"></div><div class="mf"><label>역할</label><select id="rc-role"><option>작가</option><option>제작업체</option><option>스태프</option></select></div></div><div class="mf-row"><div class="mf"><label>디스코드</label><input id="rc-discord"></div><div class="mf"><label>트위터</label><input id="rc-twitter"></div></div><div class="mf"><label>상태</label><select id="rc-status"><option>검토</option><option>계약완</option><option>활동중</option><option>재계약</option><option>계약만료</option><option>미계약</option></select></div><div class="mfoot"><button class="btn" onclick="closeRecruitModal()">취소</button><button class="btn btn-primary" onclick="submitRecruitModal()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-add-vendor" onclick="if(event.target===this)closeAddVendorModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">업체 추가</div><button class="mclose" onclick="closeAddVendorModal()">✕</button></div><div class="mf-row"><div class="mf"><label>업체명</label><input id="av-name"></div><div class="mf"><label>종류</label><input id="av-type" placeholder="예: 아크릴 등신대"></div></div><div class="mf-row"><div class="mf"><label>개당가격 (₩)</label><input type="number" id="av-price" value="0"></div><div class="mf"><label>협찬 할인율 (%)</label><input type="number" id="av-discount" value="0"></div></div><div class="mf-row"><div class="mf"><label>사이즈</label><input id="av-size"></div><div class="mf"><label>연락처</label><input id="av-contact"></div></div><div class="mf"><label>링크</label><input id="av-link" placeholder="https://..."></div><div class="mf"><label>비고</label><input id="av-note"></div><div class="mfoot"><button class="btn" onclick="closeAddVendorModal()">취소</button><button class="btn btn-primary" onclick="submitAddVendor()">추가</button></div></div></div>
@@ -1435,7 +1567,7 @@ PAGES['inventory'] = `<div class="main-header">
     <div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>재고 현황 상세</div>
     <div style="display:flex;gap:6px">
       <div id="inv-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-      <button class="btn" onclick="exportInventoryCsv()" style="font-size:11px;padding:5px 12px;margin-left:6px">CSV</button><button class="btn btn-primary" onclick="openAddInvModal()" style="font-size:11px;padding:5px 12px">+ 추가</button>
+      <button class="btn" onclick="openInventoryAuditSheet()" style="font-size:11px;padding:5px 12px;margin-left:6px">재고실사표</button><button class="btn" onclick="exportInventoryCsv()" style="font-size:11px;padding:5px 12px">CSV</button><button class="btn btn-primary" onclick="openAddInvModal()" style="font-size:11px;padding:5px 12px">+ 추가</button>
     </div>
   </div>
   <div class="panel-body" style="padding:0">
@@ -3474,6 +3606,78 @@ function filterInv(f,btn){
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   renderInv(f);
+}
+
+function invAuditEscape(v){
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function renderInventoryAuditSheet(){
+  const area = document.getElementById('inventory-audit-print-area');
+  if(!area) return;
+  const now = new Date();
+  const printedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const rows = [...invData].sort((a,b)=>
+    String(a.artist||'').localeCompare(String(b.artist||''),'ko') ||
+    String(a.name||'').localeCompare(String(b.name||''),'ko')
+  );
+  const totalStock = rows.reduce((sum, r)=>sum + Number(r.stock || 0), 0);
+  const rowHtml = rows.map((r, idx)=>`
+    <tr>
+      <td class="num" style="width:7%">${idx+1}</td>
+      <td style="width:13%;text-align:center;font-weight:700">${invAuditEscape(r.artist)}</td>
+      <td class="goods" style="width:43%">${invAuditEscape(r.name)}</td>
+      <td class="num" style="width:13%">${Number(r.stock || 0).toLocaleString()}</td>
+      <td class="write-cell" style="width:14%"><input inputmode="numeric" aria-label="${invAuditEscape(r.name)} 실사수량"></td>
+      <td style="width:10%"></td>
+    </tr>
+  `).join('');
+  area.innerHTML = `
+    <div class="audit-sheet">
+      <div class="audit-head">
+        <div>
+          <div class="audit-title">스탠드업 재고실사표</div>
+          <div style="font-size:10px;color:#555;margin-top:2px">행사 종료 후 재고실 실사 확인용</div>
+        </div>
+        <div class="audit-meta">
+          출력일시: ${printedAt}<br>
+          품목 수: ${rows.length.toLocaleString()}종 · PR 실재고 합계: ${totalStock.toLocaleString()}개
+        </div>
+      </div>
+      <div class="audit-note">
+        <span>작성 방법: 실물 수량 확인 후 ‘직원 실사수량’ 칸에 기입하고, 차이가 있으면 비고에 사유를 적어주세요.</span>
+        <span>단위: 개</span>
+      </div>
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>작가</th>
+            <th>굿즈명</th>
+            <th>PR 실재고</th>
+            <th>직원 실사수량</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>${rowHtml || '<tr><td colspan="6" style="text-align:center;height:32px">등록된 재고 항목이 없습니다.</td></tr>'}</tbody>
+      </table>
+      <div class="audit-sign">
+        <div>실사자:　　　　　(서명)</div>
+        <div>검토자:　　　　　(서명)</div>
+        <div>확인일:　　　　　</div>
+      </div>
+    </div>
+  `;
+}
+function openInventoryAuditSheet(){
+  renderInventoryAuditSheet();
+  document.getElementById('modal-inv-audit')?.classList.add('open');
+}
+function closeInventoryAuditSheet(){
+  document.getElementById('modal-inv-audit')?.classList.remove('open');
+}
+function printInventoryAuditSheet(){
+  renderInventoryAuditSheet();
+  setTimeout(()=>window.print(), 50);
 }
 
 // ── kanban ──────────────
