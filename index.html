@@ -937,8 +937,41 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
   align-items:center;
   justify-content:center;
 }
+/* 재고 수량별 행 색상 */
+.audit-table tr.stock-zero td{background:#ffd6d6!important}   /* 0개 — 빨강 */
+.audit-table tr.stock-low  td{background:#fff3cd!important}   /* 1~4개 — 노랑 */
+.audit-table tr.stock-mid  td{background:#d4edda!important}   /* 5~9개 — 초록 */
+.audit-table tr.stock-ok   td{background:#cce5ff!important}   /* 10~14개 — 파랑 */
+/* 15개 이상은 흰색(기본) */
+/* 범례 */
+.audit-legend{
+  display:flex;
+  gap:10px;
+  margin:4px 0 6px;
+  font-size:9px;
+  flex-wrap:wrap;
+}
+.audit-legend-item{
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.audit-legend-dot{
+  width:12px;
+  height:12px;
+  border:1px solid #bbb;
+  border-radius:2px;
+  flex-shrink:0;
+}
 @media print{
   @page{size:A4 portrait;margin:8mm}
+  /* 인쇄 시 색상 강제 출력 */
+  .audit-table tr.stock-zero td{background:#ffd6d6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .audit-table tr.stock-low  td{background:#fff3cd!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .audit-table tr.stock-mid  td{background:#d4edda!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .audit-table tr.stock-ok   td{background:#cce5ff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .audit-legend{display:flex!important}
+  .audit-legend-dot{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   html,body{
     background:#fff!important;
     margin:0!important;
@@ -4193,8 +4226,16 @@ function renderInventoryAuditSheet(){
     String(a.name||'').localeCompare(String(b.name||''),'ko')
   );
   const totalStock = rows.reduce((sum, r)=>sum + Number(r.stock || 0), 0);
+  const auditStockClass = (s) => {
+    const n = Number(s || 0);
+    if(n === 0) return 'stock-zero';
+    if(n <= 4)  return 'stock-low';
+    if(n <= 9)  return 'stock-mid';
+    if(n <= 14) return 'stock-ok';
+    return '';
+  };
   const rowHtml = rows.map((r, idx)=>`
-    <tr>
+    <tr class="${auditStockClass(r.stock)}">
       <td class="num" style="width:7%">${idx+1}</td>
       <td style="width:13%;text-align:center;font-weight:700">${invAuditEscape(r.artist)}</td>
       <td class="goods" style="width:43%">${invAuditEscape(r.name)}</td>
@@ -4218,6 +4259,14 @@ function renderInventoryAuditSheet(){
       <div class="audit-note">
         <span>작성 방법: 실물 수량 확인 후 ‘직원 실사수량’ 칸에 기입하고, 차이가 있으면 비고에 사유를 적어주세요.</span>
         <span>단위: 개</span>
+      </div>
+      <div class="audit-legend">
+        <span style="font-weight:700;margin-right:6px">색상 범례:</span>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#ffd6d6"></div>0개</div>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#fff3cd"></div>1~4개</div>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#d4edda"></div>5~9개</div>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#cce5ff"></div>10~14개</div>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#fff;border-color:#999"></div>15개 이상</div>
       </div>
       <table class="audit-table">
         <thead>
@@ -4351,9 +4400,17 @@ function renderSurplusAuditSheet(){
     String(a.artist||'').localeCompare(String(b.artist||''),'ko') ||
     String(a.name||'').localeCompare(String(b.name||''),'ko')
   );
+  const auditStockClass = (s) => {
+    const n = Number(s || 0);
+    if(n === 0) return 'stock-zero';
+    if(n <= 4)  return 'stock-low';
+    if(n <= 9)  return 'stock-mid';
+    if(n <= 14) return 'stock-ok';
+    return '';
+  };
   const totalStock = rows.reduce((sum, r)=>sum + Number(r.stock || 0), 0);
   const rowHtml = rows.map((r, idx)=>`
-    <tr>
+    <tr class="${auditStockClass(r.stock)}">
       <td class="num" style="width:7%">${idx+1}</td>
       <td style="width:14%;text-align:center;font-weight:700">${invAuditEscape(r.artist)}</td>
       <td class="goods" style="width:39%">${invAuditEscape(r.name)}</td>
@@ -4377,6 +4434,14 @@ function renderSurplusAuditSheet(){
       <div class="audit-note">
         <span>작성 방법: 실물 수량 확인 후 ‘직원 실사수량’ 칸에 기입하고, 차이가 있으면 비고에 사유를 추가로 적어주세요.</span>
         <span>단위: 개</span>
+      </div>
+      <div class="audit-legend">
+        <span style="font-weight:700;margin-right:6px">색상 범례:</span>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#ffd6d6"></div>0개</div>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#fff3cd"></div>1~4개</div>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#d4edda"></div>5~9개</div>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#cce5ff"></div>10~14개</div>
+        <div class="audit-legend-item"><div class="audit-legend-dot" style="background:#fff;border-color:#999"></div>15개 이상</div>
       </div>
       <table class="audit-table">
         <thead>
