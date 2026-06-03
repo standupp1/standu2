@@ -4306,9 +4306,10 @@ function renderSurplus(){
 function openSurplusModal(idx=-1){
   const isEdit = idx >= 0;
   const r = isEdit ? surplusData[idx] : {artist:'', name:'', stock:0, note:''};
+  const currentArtist = r.artist || artistList[0] || '';
   openEdit(isEdit ? '잉여재고 수정' : '잉여재고 추가', `
     <div class="mf-row">
-      <div class="mf"><label>작가</label><input id="sp-artist" value="${invAuditEscape(r.artist || '')}" placeholder="예: 양초"></div>
+      <div class="mf"><label>작가</label><select id="sp-artist" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--amber)'" onblur="this.style.borderColor='var(--border)'">${getArtistOptions(currentArtist)}</select></div>
       <div class="mf"><label>굿즈명</label><input id="sp-name" value="${invAuditEscape(r.name || '')}" placeholder="예: LD스탠드 유니"></div>
     </div>
     <div class="mf-row">
@@ -4316,14 +4317,14 @@ function openSurplusModal(idx=-1){
       <div class="mf"><label>비고</label><input id="sp-note" value="${invAuditEscape(r.note || '')}" placeholder="예: PR 사이트 보관분"></div>
     </div>
   `, ()=>saveSurplusModal(idx));
-  setTimeout(()=>document.getElementById('sp-artist')?.focus(), 50);
+  setTimeout(()=>document.getElementById('sp-name')?.focus(), 50);
 }
 function saveSurplusModal(idx){
   const artist = document.getElementById('sp-artist')?.value.trim() || '';
   const name = document.getElementById('sp-name')?.value.trim() || '';
   const stock = Math.max(0, parseInt(document.getElementById('sp-stock')?.value || '0', 10) || 0);
   const note = document.getElementById('sp-note')?.value.trim() || '';
-  if(!artist){ alert('작가를 입력해주세요.'); return; }
+  if(!artist){ alert('작가를 선택해주세요.'); return; }
   if(!name){ alert('굿즈명을 입력해주세요.'); return; }
   const row = {artist, name, stock, note};
   if(idx >= 0) surplusData[idx] = row;
@@ -6834,7 +6835,7 @@ function removeArtist(idx) {
 
 // 작가 select 동적 업데이트
 function updateArtistSelects() {
-  const selectIds = ['ai-artist','ord-artist','kb-artist'];
+  const selectIds = ['ai-artist','ord-artist','kb-artist','sp-artist'];
   selectIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
