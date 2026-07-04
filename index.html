@@ -1043,6 +1043,227 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 }
 
 
+/* ── 가격표 미리보기/인쇄 ── */
+.price-summary-note{
+  font-size:12px;
+  color:var(--text3);
+  line-height:1.7;
+  margin-bottom:12px;
+}
+.price-table{
+  width:100%;
+  border-collapse:collapse;
+}
+.price-table th{
+  font-size:11px;
+  color:var(--text3);
+  font-weight:500;
+  padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  text-align:left;
+  letter-spacing:.4px;
+}
+.price-table td{
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+  vertical-align:middle;
+}
+.price-table tr:last-child td{border-bottom:none}
+.price-table tr:hover td{background:var(--bg3)}
+.price-table .price-name-cell{font-weight:700;color:var(--text);word-break:keep-all;overflow-wrap:anywhere}
+.price-table .price-value-cell{text-align:right;font-family:'DM Mono',monospace;font-weight:800;color:var(--amber)}
+.price-table .price-action-cell{width:78px;text-align:right}
+.price-table .price-action-cell .row-actions{justify-content:flex-end;opacity:1}
+.price-label-sheet-wrap{
+  background:#f5f5f5;
+  color:#111;
+  border-radius:12px;
+  padding:16px;
+  max-height:68vh;
+  overflow:auto;
+}
+.price-label-sheet{
+  width:297mm;
+  min-height:210mm;
+  margin:0 auto 16px;
+  padding:10mm;
+  background:#fff;
+  color:#111;
+  font-family:'Noto Sans KR', sans-serif;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+}
+.price-label-page-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:6mm;
+  padding-bottom:3mm;
+  border-bottom:1px solid #111;
+}
+.price-label-title{
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:-.4px;
+}
+.price-label-meta{
+  font-size:8.5px;
+  color:#555;
+  text-align:right;
+  line-height:1.45;
+}
+.price-label-grid{
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  grid-auto-rows:42mm;
+  gap:0;
+  border-left:1px dashed #b9b9b9;
+  border-top:1px dashed #b9b9b9;
+}
+.price-label-card{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4mm;
+  padding:5mm 4mm 4mm;
+  border-right:1px dashed #b9b9b9;
+  border-bottom:1px dashed #b9b9b9;
+  page-break-inside:avoid;
+  break-inside:avoid;
+}
+.price-label-card::before,
+.price-label-card::after{
+  content:'';
+  position:absolute;
+  width:3mm;
+  height:3mm;
+  opacity:.4;
+}
+.price-label-card::before{left:1.5mm;top:1.5mm;border-left:1px solid #999;border-top:1px solid #999}
+.price-label-card::after{right:1.5mm;bottom:1.5mm;border-right:1px solid #999;border-bottom:1px solid #999}
+.price-label-name{
+  width:100%;
+  text-align:center;
+  font-size:12.5px;
+  font-weight:900;
+  line-height:1.28;
+  letter-spacing:-.4px;
+  word-break:keep-all;
+  overflow-wrap:anywhere;
+}
+.price-label-price{
+  text-align:center;
+  font-size:27px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:-1.2px;
+}
+.price-label-price.empty{
+  font-size:18px;
+  color:#777;
+  letter-spacing:-.5px;
+}
+.price-label-cut-guide{
+  position:absolute;
+  left:4mm;
+  bottom:3mm;
+  font-size:7px;
+  color:#999;
+}
+@media (max-width:768px){
+  .price-table thead{display:none}
+  .price-table,
+  .price-table tbody{display:block;width:100%}
+  .price-table tr{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:4px;
+    margin:10px;
+    padding:13px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:var(--bg2);
+  }
+  .price-table td{display:block;border:0;padding:0;background:transparent!important}
+  .price-table .price-name-cell{font-size:15px;font-weight:800;color:var(--text)}
+  .price-table .price-value-cell{font-family:'DM Mono',monospace;font-size:16px;font-weight:800;color:var(--amber);text-align:left}
+  .price-table .price-action-cell{position:absolute;right:12px;bottom:12px;width:auto;text-align:right}
+  .price-table tr{position:relative;padding-bottom:56px}
+  .price-label-sheet-wrap{max-height:58vh;padding:10px}
+  .price-label-sheet{width:100%;min-width:980px;min-height:auto;padding:10px}
+}
+@media print{
+  @page priceLabels{size:A4 landscape;margin:0}
+  body.printing-price-label > *{display:none!important}
+  body.printing-price-label > #modal-price-label{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    z-index:99999!important;
+    background:#fff!important;
+    overflow:visible!important;
+    height:auto!important;
+    max-height:none!important;
+    backdrop-filter:none!important;
+    align-items:unset!important;
+    justify-content:unset!important;
+  }
+  body.printing-price-label > #modal-price-label .mbox{
+    display:block!important;
+    width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+    padding:0!important;
+    margin:0!important;
+    background:#fff!important;
+  }
+  body.printing-price-label > #modal-price-label .mhead,
+  body.printing-price-label > #modal-price-label .mfoot,
+  body.printing-price-label > #modal-price-label .price-summary-note{
+    display:none!important;
+  }
+  body.printing-price-label .price-label-sheet-wrap{
+    display:block!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding:0!important;
+    border-radius:0!important;
+    background:#fff!important;
+  }
+  body.printing-price-label .price-label-sheet{
+    page:priceLabels;
+    width:297mm!important;
+    min-height:210mm!important;
+    height:210mm!important;
+    margin:0!important;
+    padding:10mm!important;
+    box-shadow:none!important;
+    background:#fff!important;
+    break-after:page;
+    page-break-after:always;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  body.printing-price-label .price-label-sheet:last-child{
+    break-after:auto;
+    page-break-after:auto;
+  }
+  body.printing-price-label .price-label-grid,
+  body.printing-price-label .price-label-card{
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+}
+
+
 
 /* ═══════════════════════════════════════
    모바일 전반 최적화 패치 2026-05-31
@@ -1602,6 +1823,10 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
       재고 현황
     </div>
     <div class="nav-item" onclick="setNav(this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M4 6h8M4 9h8M4 12h5"/><path d="M11.5 10.5L14 13l-2.5 2"/></svg>
+      가격표
+    </div>
+    <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 6h6M5 9h4"/><path d="M3.5 13.5L5 15h6l1.5-1.5"/></svg>
       잉여재고
     </div>
@@ -1683,6 +1908,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 <div class="modal-overlay" id="modal-add-inv" onclick="if(event.target===this)closeAddInvModal()"><div class="mbox"><div class="mhead"><div class="mtitle">재고 항목 추가</div><button class="mclose" onclick="closeAddInvModal()">✕</button></div><div class="mf-row"><div class="mf"><label>작가</label><select id="ai-artist"><option>양초</option><option>맹이</option><option>닐마</option><option>하쿠야</option></select></div><div class="mf"><label>굿즈명</label><input id="ai-name"></div></div><div class="mf-row"><div class="mf"><label>생산수량</label><input type="number" id="ai-prod" value="10"></div><div class="mf"><label>생산단가 (₩)</label><input type="number" id="ai-cost" value="0"></div></div><div class="mf-row"><div class="mf"><label>판매가 (₩)</label><input type="number" id="ai-price" value="0"></div><div class="mf"><label>실재고</label><input type="number" id="ai-stock" value="0"></div></div><div class="mfoot"><button class="btn" onclick="closeAddInvModal()">취소</button><button class="btn btn-primary" onclick="submitAddInv()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-inv-audit" onclick="if(event.target===this)closeInventoryAuditSheet()"><div class="mbox wide" style="width:min(980px,96vw)"><div class="mhead"><div class="mtitle">재고실사표</div><button class="mclose" onclick="closeInventoryAuditSheet()">✕</button></div><div style="font-size:12px;color:var(--text3);margin:-8px 0 12px;line-height:1.7">굿즈명과 PR 실재고는 현재 재고현황 기준으로 자동 표시됩니다. 직원 실사수량 칸은 화면에서 입력하거나, 빈칸으로 인쇄해 수기로 작성할 수 있습니다.</div><div id="inventory-audit-print-area" class="audit-sheet-wrap"></div><div class="mfoot"><button class="btn" onclick="closeInventoryAuditSheet()">닫기</button><button class="btn btn-primary" onclick="printInventoryAuditSheet()">인쇄</button></div></div></div>
 <div class="modal-overlay" id="modal-surplus-audit" onclick="if(event.target===this)closeSurplusAuditSheet()"><div class="mbox wide" style="width:min(980px,96vw)"><div class="mhead"><div class="mtitle">잉여재고 실사표</div><button class="mclose" onclick="closeSurplusAuditSheet()">✕</button></div><div style="font-size:12px;color:var(--text3);margin:-8px 0 12px;line-height:1.7">잉여재고 메뉴에 등록된 항목 기준으로 실사표를 출력합니다. 직원 실사수량 칸은 화면에서 입력하거나, 인쇄 후 수기로 작성할 수 있습니다.</div><div id="surplus-audit-print-area" class="audit-sheet-wrap"></div><div class="mfoot"><button class="btn" onclick="closeSurplusAuditSheet()">닫기</button><button class="btn btn-primary" onclick="printSurplusAuditSheet()">인쇄</button></div></div></div>
+<div class="modal-overlay" id="modal-price-label" onclick="if(event.target===this)closePriceLabelSheet()"><div class="mbox wide" style="width:min(1180px,96vw)"><div class="mhead"><div class="mtitle">가격표 인쇄 미리보기</div><button class="mclose" onclick="closePriceLabelSheet()">✕</button></div><div class="price-summary-note">재고현황의 실재고가 1개 이상인 품목만 불러옵니다. 출력물에는 굿즈명과 판매가만 표시되며, 점선은 절취선 가이드입니다.</div><div id="price-label-print-area" class="price-label-sheet-wrap"></div><div class="mfoot"><button class="btn" onclick="closePriceLabelSheet()">닫기</button><button class="btn btn-primary" onclick="printPriceLabelSheet()">인쇄</button></div></div></div>
 <div class="modal-overlay" id="modal-kanban" onclick="if(event.target===this)closeKanbanModal()"><div class="mbox"><div class="mhead"><div class="mtitle">제작 항목 추가</div><button class="mclose" onclick="closeKanbanModal()">✕</button></div><div class="mf-row"><div class="mf"><label>작가명</label><select id="kb-artist"><option>닐마</option><option>맹이</option><option>양초</option><option>하쿠야</option></select></div><div class="mf"><label>굿즈명</label><input id="kb-goods"></div></div><div class="mf-row"><div class="mf"><label>멤버</label><input id="kb-member"></div><div class="mf"><label>장르</label><select id="kb-genre"><option>미츄</option><option>스텔라이브</option></select></div></div><div class="mf-row"><div class="mf"><label>사이트</label><input id="kb-site"></div><div class="mf"><label>초기 상태</label><select id="kb-status"><option>대기</option><option>제작중</option><option>재생산</option><option>완료</option></select></div></div><div class="mf"><label>비고</label><input id="kb-note"></div><div class="mfoot"><button class="btn" onclick="closeKanbanModal()">취소</button><button class="btn btn-primary" onclick="submitKanbanModal()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-recruit" onclick="if(event.target===this)closeRecruitModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">신청자 추가</div><button class="mclose" onclick="closeRecruitModal()">✕</button></div><div class="mf-row"><div class="mf"><label>날짜</label><input id="rc-date" placeholder="예: 26/4"></div><div class="mf"><label>행사명</label><input id="rc-event"></div></div><div class="mf-row"><div class="mf"><label>이름 (닉네임)</label><input id="rc-name"></div><div class="mf"><label>역할</label><select id="rc-role"><option>작가</option><option>제작업체</option><option>스태프</option></select></div></div><div class="mf-row"><div class="mf"><label>디스코드</label><input id="rc-discord"></div><div class="mf"><label>트위터</label><input id="rc-twitter"></div></div><div class="mf"><label>상태</label><select id="rc-status"><option>검토</option><option>계약완</option><option>활동중</option><option>재계약</option><option>계약만료</option><option>미계약</option></select></div><div class="mfoot"><button class="btn" onclick="closeRecruitModal()">취소</button><button class="btn btn-primary" onclick="submitRecruitModal()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-add-vendor" onclick="if(event.target===this)closeAddVendorModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">업체 추가</div><button class="mclose" onclick="closeAddVendorModal()">✕</button></div><div class="mf-row"><div class="mf"><label>업체명</label><input id="av-name"></div><div class="mf"><label>종류</label><input id="av-type" placeholder="예: 아크릴 등신대"></div></div><div class="mf-row"><div class="mf"><label>개당가격 (₩)</label><input type="number" id="av-price" value="0"></div><div class="mf"><label>협찬 할인율 (%)</label><input type="number" id="av-discount" value="0"></div></div><div class="mf-row"><div class="mf"><label>사이즈</label><input id="av-size"></div><div class="mf"><label>연락처</label><input id="av-contact"></div></div><div class="mf"><label>링크</label><input id="av-link" placeholder="https://..."></div><div class="mf"><label>비고</label><input id="av-note"></div><div class="mfoot"><button class="btn" onclick="closeAddVendorModal()">취소</button><button class="btn btn-primary" onclick="submitAddVendor()">추가</button></div></div></div>
@@ -2101,12 +2327,7 @@ PAGES['orders'] = `<div class="main-header">
 <div class="panel">
   <div class="panel-header">
     <div class="panel-title"><div class="panel-title-dot" style="background:var(--blue)"></div>의뢰 목록</div>
-    <div style="display:flex;gap:6px">
-      <button class="filter-btn on" onclick="filterOrder('all',this)">전체</button>
-      <button class="filter-btn" onclick="filterOrder('닐마',this)">닐마</button>
-      <button class="filter-btn" onclick="filterOrder('맹이',this)">맹이</button>
-      <button class="filter-btn" onclick="filterOrder('양초',this)">양초</button>
-    </div>
+    <div id="order-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
   </div>
   <div class="panel-body" style="padding:0">
     <table class="order-table">
@@ -2144,6 +2365,36 @@ PAGES['inventory'] = `<div class="main-header">
         <th>작가</th><th>굿즈명</th><th style="text-align:center">생산</th><th style="text-align:right">생산단가</th><th style="text-align:right">판매가</th><th style="text-align:center">실재고</th><th style="text-align:right">재고 금액</th><th style="width:70px"></th>
       </tr></thead>
       <tbody id="inv-tbody"></tbody>
+    </table>
+  </div>
+</div>`;
+PAGES['price-list'] = `<div class="main-header">
+  <div>
+    <div class="page-title">가격표</div>
+    <div class="page-sub">재고현황에서 실재고가 1개 이상인 품목의 굿즈명과 판매가만 자동 표시합니다.</div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-primary" onclick="openPriceLabelSheet()">가격표 인쇄</button>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card amber"><div class="kpi-label">출력 대상</div><div class="kpi-value" id="price-count">0<span style="font-family:'Noto Sans KR';font-size:16px">종</span></div><div class="kpi-change neutral">실재고 1개 이상</div></div>
+  <div class="kpi-card teal"><div class="kpi-label">최저 판매가</div><div class="kpi-value" id="price-min"><span>₩</span>0</div><div class="kpi-change neutral">등록 판매가 기준</div></div>
+  <div class="kpi-card blue"><div class="kpi-label">최고 판매가</div><div class="kpi-value" id="price-max"><span>₩</span>0</div><div class="kpi-change neutral">등록 판매가 기준</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>가격표 목록</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn" onclick="openPriceLabelSheet()" style="font-size:11px;padding:5px 12px">인쇄 미리보기</button>
+    </div>
+  </div>
+  <div class="panel-body" style="padding:0">
+    <table class="price-table">
+      <thead><tr><th>굿즈명</th><th style="width:180px;text-align:right">판매가</th><th style="width:78px"></th></tr></thead>
+      <tbody id="price-list-tbody"></tbody>
     </table>
   </div>
 </div>`;
@@ -2445,17 +2696,17 @@ PAGE_INITS['cost'] = function(){
 renderCost('all'); calcSim();
 };
 PAGE_INITS['orders'] = function(){
-renderOrders('all');
+  syncArtistListFromData({ save:false });
+  renderOrderFilters(window._of || 'all');
+  renderOrders(window._of || 'all');
 };
 PAGE_INITS['inventory'] = function(){
-  // 필터 버튼 동적 생성
-  const fb = document.getElementById('inv-filter-btns');
-  if(fb){
-    const artists = [...new Set(invData.map(r=>r.artist))];
-    fb.innerHTML = `<button class="filter-btn on" onclick="filterInv('all',this)">전체</button>`
-      + artists.map(a=>`<button class="filter-btn" onclick="filterInv('${a}',this)">${a}</button>`).join('');
-  }
-  renderInv('all');
+  syncArtistListFromData({ save:false });
+  renderInventoryFilters(window._iv || 'all');
+  renderInv(window._iv || 'all');
+};
+PAGE_INITS['price-list'] = function(){
+  renderPriceList();
 };
 PAGE_INITS['surplus'] = function(){
   renderSurplus();
@@ -2703,6 +2954,10 @@ PAGES['settings'] = `<div class="main-header">
         재고 · 판매 데이터
       </label>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="reset-price" style="width:16px;height:16px;accent-color:var(--coral)">
+        가격표 수정/숨김 데이터
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="reset-surplus" style="width:16px;height:16px;accent-color:var(--coral)">
         잉여재고 데이터
       </label>
@@ -2713,6 +2968,10 @@ PAGES['settings'] = `<div class="main-header">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="reset-expenses" style="width:16px;height:16px;accent-color:var(--coral)">
         경비처리 데이터
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="reset-artist-list" style="width:16px;height:16px;accent-color:var(--coral)">
+        작가 목록 관리 데이터
       </label>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="reset-artists" style="width:16px;height:16px;accent-color:var(--coral)">
@@ -2740,7 +2999,7 @@ PAGES['settings'] = `<div class="main-header">
     </div>
   </div>
 </div>`;
-PAGE_INITS['settings'] = function() { renderUserMgmt(); renderArtistMgmt(); renderExpenseCategoryMgmt(); checkStorageStatus(); };
+PAGE_INITS['settings'] = function() { syncArtistListFromData({ save:false }); renderUserMgmt(); renderArtistMgmt(); renderExpenseCategoryMgmt(); checkStorageStatus(); };
 
 PAGES['sales'] = `<div class="main-header">
   <div>
@@ -3413,7 +3672,7 @@ function estatSubmitManual() {
 }
 
 let currentPage = null;
-const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','surplus':'잉여재고','kanban':'굿즈제작 작업현황','expenses':'경비처리','expense-requests':'내 소명 요청','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','notices':'공지','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
+const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','orders':'제작 의뢰','inventory':'재고 현황','price-list':'가격표','surplus':'잉여재고','kanban':'굿즈제작 작업현황','expenses':'경비처리','expense-requests':'내 소명 요청','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','notices':'공지','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
 
 function navigate(pageKey) {
   const main = document.getElementById('main-content');
@@ -4113,11 +4372,15 @@ var orderData = [
 ];
 const artistColor={'닐마':'var(--coral)','맹이':'var(--teal)','양초':'var(--amber)','하쿠야':'var(--purple)'};
 function renderOrders(filter){
+  const artists = getManagedArtistList(orderData);
+  if(filter !== 'all' && !artists.includes(filter)) filter = 'all';
+  window._of = filter || 'all';
+  renderOrderFilters(window._of);
   const data = orderData
     .map((r, ri) => ({ r, ri }))
-    .filter(({ r }) => filter==='all' ? true : r.artist===filter);
-  document.getElementById('order-tbody').innerHTML = data.map(({ r, ri })=>{
-    const ac = artistColor[r.artist]||'var(--text2)';
+    .filter(({ r }) => window._of==='all' ? true : r.artist===window._of);
+  document.getElementById('order-tbody').innerHTML = data.length ? data.map(({ r, ri })=>{
+    const ac = artistColor[r.artist]||getArtistCssColor(r.artist)||'var(--text2)';
     return `<tr>
       <td><span style="font-weight:600;color:${ac}">${r.artist}</span></td>
       <td style="font-weight:500">${r.goods}</td>
@@ -4128,7 +4391,7 @@ function renderOrders(filter){
       <td><span class="pkg-tag ${r.pkg==='O'?'pkg-o':'pkg-x'}">포장 ${r.pkg}</span></td>
       <td style="font-size:11px;color:var(--text3);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.spec}</td>
       <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editOrder(${ri})' title='수정'>✎</button><button class='act-btn del' onclick='deleteOrder(${ri})' title='삭제'>✕</button></div></td></tr>`;
-  }).join('');
+  }).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">조회된 제작 의뢰가 없습니다.</td></tr>`;
 
   const totalCount = orderData.length;
   const packagedCount = orderData.filter(r => r.pkg === 'O').length;
@@ -4145,10 +4408,20 @@ function renderOrders(filter){
   const stelliveEl = document.getElementById('order-kpi-stellive');
   if(stelliveEl) stelliveEl.innerHTML = `${stelliveCount}${countSuffix}`;
 }
+function renderOrderFilters(active='all'){
+  const wrap = document.getElementById('order-filter-btns');
+  if(!wrap) return;
+  const artists = getManagedArtistList(orderData);
+  if(active !== 'all' && !artists.includes(active)) active = 'all';
+  wrap.innerHTML = `<button class="filter-btn ${active==='all'?'on':''}" onclick="filterOrder('all',this)">전체</button>` +
+    artists.map(a => `<button class="filter-btn ${active===a?'on':''}" onclick="filterOrder(${jsString(a)},this)">${escHtml(a)}</button>`).join('');
+}
 function filterOrder(f,btn){
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  renderOrders(f);
+  window._of = f || 'all';
+  const wrap = document.getElementById('order-filter-btns');
+  (wrap ? wrap.querySelectorAll('.filter-btn') : document.querySelectorAll('.filter-btn')).forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  renderOrders(window._of);
 }
 
 // ── inventory ──────────────
@@ -4176,12 +4449,25 @@ var invData = [
 ];
 const acInv={'양초':'var(--amber)','맹이':'var(--teal)'};
 
+function renderInventoryFilters(active='all'){
+  const wrap = document.getElementById('inv-filter-btns');
+  if(!wrap) return;
+  const artists = getManagedArtistList(invData);
+  if(active !== 'all' && !artists.includes(active)) active = 'all';
+  wrap.innerHTML = `<button class="filter-btn ${active==='all'?'on':''}" onclick="filterInv('all',this)">전체</button>` +
+    artists.map(a => `<button class="filter-btn ${active===a?'on':''}" onclick="filterInv(${jsString(a)},this)">${escHtml(a)}</button>`).join('');
+}
+
 function renderInv(filter){
+  const artists = getManagedArtistList(invData);
+  if(filter !== 'all' && !artists.includes(filter)) filter = 'all';
+  window._iv = filter || 'all';
+  renderInventoryFilters(window._iv);
   const data = invData
     .map((r, ii) => ({ r, ii }))
-    .filter(({ r }) => filter==='all' ? true : r.artist===filter);
-  document.getElementById('inv-tbody').innerHTML = data.map(({ r, ii })=>{
-    const color = acInv[r.artist]||'var(--text2)';
+    .filter(({ r }) => window._iv==='all' ? true : r.artist===window._iv);
+  document.getElementById('inv-tbody').innerHTML = data.length ? data.map(({ r, ii })=>{
+    const color = acInv[r.artist]||getArtistCssColor(r.artist)||'var(--text2)';
     const stockValue = r.stock * r.cost;
     const stockColor = r.stock<=0?'var(--coral)':r.stock<=2?'var(--amber)':'var(--blue)';
     return `<tr>
@@ -4193,7 +4479,7 @@ function renderInv(filter){
       <td style="text-align:center;font-family:'DM Mono';font-weight:700;color:${stockColor}">${r.stock}</td>
       <td style="text-align:right;font-family:'DM Mono';font-weight:600;color:var(--blue)">₩${stockValue.toLocaleString()}</td>
       <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editInv(${ii})' title='수정'>✎</button><button class='act-btn del' onclick='deleteInv(${ii})' title='삭제'>✕</button></div></td></tr>`;
-  }).join('');
+  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">조회된 재고가 없습니다.</td></tr>`;
 
   // KPI 업데이트
   const totalStock = invData.reduce((s,r)=>s+r.stock,0);
@@ -4302,6 +4588,184 @@ function printInventoryAuditSheet(){
   setTimeout(()=>{
     window.print();
     document.body.classList.remove('printing-inv-audit');
+  }, 80);
+}
+
+
+// ── price list from inventory ──────────────
+const PRICE_LIST_STORAGE_KEY = 'standup_price_list_custom_v1';
+var priceListData = { hiddenKeys: [], overrides: {} };
+function priceLabelEscape(v){
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function normalizePriceListData(data){
+  const out = { hiddenKeys: [], overrides: {} };
+  if(data && typeof data === 'object'){
+    out.hiddenKeys = Array.isArray(data.hiddenKeys) ? data.hiddenKeys.map(String) : [];
+    out.overrides = data.overrides && typeof data.overrides === 'object' ? data.overrides : {};
+  }
+  return out;
+}
+function loadPriceListData(){
+  try{
+    const raw = localStorage.getItem(PRICE_LIST_STORAGE_KEY);
+    if(raw) priceListData = normalizePriceListData(JSON.parse(raw));
+  }catch(e){ console.warn('가격표 설정 로드 실패', e); }
+  window.priceListData = priceListData;
+}
+function savePriceListData(){
+  priceListData = normalizePriceListData(priceListData);
+  window.priceListData = priceListData;
+  try{ localStorage.setItem(PRICE_LIST_STORAGE_KEY, JSON.stringify(priceListData)); }
+  catch(e){ console.warn('가격표 설정 저장 실패', e); }
+  if(typeof setNavUpdateTs === 'function') setNavUpdateTs('price-list');
+  if(window.fbSave) window.fbSave('priceListData');
+}
+loadPriceListData();
+function makePriceListKey(name, price){
+  return `${String(name || '').trim()}||${Number(price || 0)}`;
+}
+function getPriceListState(){
+  priceListData = normalizePriceListData(window.priceListData || priceListData);
+  window.priceListData = priceListData;
+  return priceListData;
+}
+function formatPriceLabelValue(price){
+  const n = Number(price || 0);
+  return n > 0 ? `${n.toLocaleString()}원` : '판매가 미입력';
+}
+function getPriceListItems(){
+  const source = Array.isArray(window.invData) ? window.invData : invData;
+  const state = getPriceListState();
+  const hidden = new Set(state.hiddenKeys || []);
+  const grouped = new Map();
+  source.forEach(r => {
+    const stock = Number(r?.stock || 0);
+    if(stock <= 0) return;
+    const sourceName = String(r?.name || '').trim();
+    if(!sourceName) return;
+    const sourcePrice = Number(r?.price || 0);
+    const key = makePriceListKey(sourceName, sourcePrice);
+    if(hidden.has(key)) return;
+    if(!grouped.has(key)) grouped.set(key, { key, sourceName, sourcePrice, name: sourceName, price: sourcePrice, stock: 0 });
+    grouped.get(key).stock += stock;
+  });
+  const items = [...grouped.values()].map(item => {
+    const override = state.overrides?.[item.key];
+    if(override && typeof override === 'object'){
+      const nextName = String(override.name || '').trim();
+      item.name = nextName || item.sourceName;
+      item.price = Number(override.price || 0);
+      item.isEdited = true;
+    }
+    return item;
+  });
+  return items.sort((a,b)=>
+    String(a.name).localeCompare(String(b.name),'ko') || Number(a.price||0) - Number(b.price||0)
+  );
+}
+function renderPriceList(){
+  const tbody = document.getElementById('price-list-tbody');
+  if(!tbody) return;
+  const items = getPriceListItems();
+  window._priceListItems = items;
+  tbody.innerHTML = items.length ? items.map((item, i) => `
+    <tr>
+      <td class="price-name-cell">${priceLabelEscape(item.name)}${item.isEdited ? '<span style="margin-left:6px;font-size:10px;color:var(--text3);font-weight:500">수정됨</span>' : ''}</td>
+      <td class="price-value-cell">${priceLabelEscape(formatPriceLabelValue(item.price))}</td>
+      <td class="price-action-cell"><div class="row-actions"><button class="act-btn edit" onclick="editPriceListItem(${i})" title="수정">✎</button><button class="act-btn del" onclick="deletePriceListItem(${i})" title="삭제">✕</button></div></td>
+    </tr>
+  `).join('') : `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:28px">실재고가 있는 품목이 없습니다.</td></tr>`;
+
+  const prices = items.map(i=>Number(i.price||0)).filter(n=>n>0);
+  const countEl = document.getElementById('price-count');
+  const minEl = document.getElementById('price-min');
+  const maxEl = document.getElementById('price-max');
+  if(countEl) countEl.innerHTML = `${items.length}<span style="font-family:'Noto Sans KR';font-size:16px">종</span>`;
+  if(minEl) minEl.innerHTML = '<span>₩</span>' + (prices.length ? Math.min(...prices).toLocaleString() : '0');
+  if(maxEl) maxEl.innerHTML = '<span>₩</span>' + (prices.length ? Math.max(...prices).toLocaleString() : '0');
+}
+window.editPriceListItem = function(idx){
+  const items = window._priceListItems || getPriceListItems();
+  const item = items[idx];
+  if(!item) return;
+  openEdit('가격표 항목 수정', mfields(
+    {l:'굿즈명', id:'n', val:item.name, ph:'가격표에 표시할 이름'},
+    {l:'판매가(₩)', id:'p', type:'number', val:Number(item.price || 0)}
+  ), () => {
+    const name = gv('n').trim();
+    const price = gn('p');
+    if(!name){ alert('굿즈명을 입력해주세요.'); return; }
+    const state = getPriceListState();
+    state.overrides[item.key] = { name, price };
+    priceListData = state;
+    savePriceListData();
+    closeEdit();
+    renderPriceList();
+    if(document.getElementById('modal-price-label')?.classList.contains('open')) renderPriceLabelSheet();
+  });
+};
+window.deletePriceListItem = function(idx){
+  const items = window._priceListItems || getPriceListItems();
+  const item = items[idx];
+  if(!item) return;
+  openConfirm(`<b>${priceLabelEscape(item.name)}</b> 항목을 가격표에서 숨길까요?<br><span style="font-size:12px;color:var(--text3)">재고현황 데이터는 삭제되지 않고, 설정의 가격표 초기화로 다시 불러올 수 있어요.</span>`, () => {
+    const state = getPriceListState();
+    if(!state.hiddenKeys.includes(item.key)) state.hiddenKeys.push(item.key);
+    if(state.overrides?.[item.key]) delete state.overrides[item.key];
+    priceListData = state;
+    savePriceListData();
+    renderPriceList();
+    if(document.getElementById('modal-price-label')?.classList.contains('open')) renderPriceLabelSheet();
+  });
+};
+function chunkPriceItems(items, size){
+  const chunks = [];
+  for(let i=0;i<items.length;i+=size) chunks.push(items.slice(i, i+size));
+  return chunks.length ? chunks : [[]];
+}
+function renderPriceLabelSheet(){
+  const area = document.getElementById('price-label-print-area');
+  if(!area) return;
+  const items = getPriceListItems();
+  const now = new Date();
+  const printedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const pages = chunkPriceItems(items, 16);
+  area.innerHTML = pages.map((pageItems, pageIdx) => {
+    const cards = [...pageItems];
+    while(cards.length < 16) cards.push(null);
+    return `<section class="price-label-sheet">
+      <div class="price-label-page-head">
+        <div>
+          <div class="price-label-title">스탠드업 가격표</div>
+          <div style="font-size:8.5px;color:#555;margin-top:1mm">실재고 있는 품목 기준 · 절취선 가이드 포함</div>
+        </div>
+        <div class="price-label-meta">출력일시: ${printedAt}<br>대상 품목: ${items.length.toLocaleString()}종 · ${pageIdx+1}/${pages.length}페이지</div>
+      </div>
+      <div class="price-label-grid">
+        ${cards.map(item => item ? `<div class="price-label-card">
+          <div class="price-label-name">${priceLabelEscape(item.name)}</div>
+          <div class="price-label-price ${Number(item.price||0)>0 ? '' : 'empty'}">${priceLabelEscape(formatPriceLabelValue(item.price))}</div>
+          <div class="price-label-cut-guide">절취선</div>
+        </div>` : `<div class="price-label-card" style="background:#fff"></div>`).join('')}
+      </div>
+    </section>`;
+  }).join('');
+}
+function openPriceLabelSheet(){
+  renderPriceList();
+  renderPriceLabelSheet();
+  document.getElementById('modal-price-label')?.classList.add('open');
+}
+function closePriceLabelSheet(){
+  document.getElementById('modal-price-label')?.classList.remove('open');
+}
+function printPriceLabelSheet(){
+  renderPriceLabelSheet();
+  document.body.classList.add('printing-price-label');
+  setTimeout(()=>{
+    window.print();
+    document.body.classList.remove('printing-price-label');
   }, 80);
 }
 
@@ -4557,13 +5021,14 @@ function renderKanbanFilters(){
   const artistWrap = document.getElementById('kanban-artist-filters');
   const genreWrap = document.getElementById('kanban-genre-filters');
   if(!artistWrap || !genreWrap) return;
-  const artists = [...new Set(tasks.map(t=>t.artist))];
+  const artists = getManagedArtistList(tasks);
   const f = window._kf || { artist:'all', genre:'all' };
+  if(f.artist !== 'all' && !artists.includes(f.artist)) f.artist = 'all';
 
   artistWrap.innerHTML =
     `<span class="kanban-filter-label">작가</span>` +
     `<button class="filter-btn ${f.artist==='all'?'on':''}" onclick="setKanbanArtistFilter('all')">전체</button>` +
-    artists.map(a=>`<button class="filter-btn ${f.artist===a?'on':''}" onclick="setKanbanArtistFilter('${a}')">${a}</button>`).join('');
+    artists.map(a=>`<button class="filter-btn ${f.artist===a?'on':''}" onclick="setKanbanArtistFilter(${jsString(a)})">${escHtml(a)}</button>`).join('');
 
   genreWrap.innerHTML =
     `<span class="kanban-filter-label">장르</span>` +
@@ -4614,7 +5079,7 @@ function renderBoard(){
       <div class="drop-zone" id="col-${col.key}">
         ${items.map(t=>`
           <div class="kanban-card-full" data-id="${t.id}" style="${col.border?'border-color:'+col.border:''}">
-            <div style='display:flex;justify-content:space-between;align-items:flex-start;gap:4px'><div style='min-width:0'><div class="kc-title" style="color:${acKanban[t.artist]||'var(--text)'}">${t.artist}</div>
+            <div style='display:flex;justify-content:space-between;align-items:flex-start;gap:4px'><div style='min-width:0'><div class="kc-title" style="color:${acKanban[t.artist]||getArtistCssColor(t.artist)||'var(--text)'}">${t.artist}</div>
             <div class="kc-goods">${t.goods} · ${t.member}</div>
             <div class="kc-meta">
               <span class="status-tag ${t.genre==='미츄'?'tag-warn':'tag-making'}" style="margin:0;font-size:9px">${t.genre}</span>
@@ -4791,21 +5256,21 @@ window.deleteOrder=function(idx){openConfirm(`<b>${orderData[idx].artist} — ${
 function openOrderModal(){document.getElementById('modal-order').classList.add('open');}
 function closeOrderModal(){document.getElementById('modal-order').classList.remove('open');}
 document.addEventListener('change',function(e){if(e.target.id==='ord-goods'){document.getElementById('ord-goods-custom-wrap').style.display=e.target.value==='직접입력'?'block':'none';}});
-function submitOrderModal(){const gSel=document.getElementById('ord-goods').value;const goods=gSel==='직접입력'?document.getElementById('ord-goods-custom').value.trim():gSel;const member=document.getElementById('ord-member').value.trim();if(!goods||!member){alert('굿즈명과 멤버 입력');return;}orderData.unshift({artist:document.getElementById('ord-artist').value,goods,member,qty:+document.getElementById('ord-qty').value,genre:document.getElementById('ord-genre').value,concept:document.getElementById('ord-concept').value,pkg:document.getElementById('ord-pkg').value,site:document.getElementById('ord-site').value,spec:document.getElementById('ord-spec').value});renderOrders('all');if(window.fbSave)fbSave('orderData');closeOrderModal();['ord-member','ord-qty','ord-concept','ord-site','ord-spec','ord-goods-custom'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});}
+function submitOrderModal(){const gSel=document.getElementById('ord-goods').value;const goods=gSel==='직접입력'?document.getElementById('ord-goods-custom').value.trim():gSel;const member=document.getElementById('ord-member').value.trim();if(!goods||!member){alert('굿즈명과 멤버 입력');return;}orderData.unshift({artist:document.getElementById('ord-artist').value,goods,member,qty:+document.getElementById('ord-qty').value,genre:document.getElementById('ord-genre').value,concept:document.getElementById('ord-concept').value,pkg:document.getElementById('ord-pkg').value,site:document.getElementById('ord-site').value,spec:document.getElementById('ord-spec').value});syncArtistListFromData({ save:false });renderOrders('all');if(window.fbSave)fbSave('orderData');closeOrderModal();['ord-member','ord-qty','ord-concept','ord-site','ord-spec','ord-goods-custom'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});}
 
 // 재고/판매
 window.editInv=function(idx){const r=invData[idx];openEdit('재고/판매 수정',mfields({l:'작가',id:'a',type:'select',val:r.artist,opts:artistList},{l:'굿즈명',id:'n',val:r.name},{l:'생산수량',id:'p',type:'number',val:r.prod},{l:'생산단가(₩)',id:'c',type:'number',val:r.cost},{l:'판매가(₩)',id:'pr',type:'number',val:r.price},{l:'실재고',id:'st',type:'number',val:r.stock},{l:'정산완료수량',id:'so',type:'number',val:r.sold},{l:'배분율(%)',id:'d',type:'number',val:r.distPct}),()=>{invData[idx]={...r,artist:gv('a'),name:gv('n'),prod:gn('p'),cost:gn('c'),price:gn('pr'),stock:gn('st'),sold:gn('so'),distPct:gn('d')};closeEdit();renderInv(window._iv||'all');if(window.fbSave)fbSave('invData');});};
 window.deleteInv=function(idx){openConfirm(`<b>${invData[idx].name}</b> 삭제?`,()=>{invData.splice(idx,1);renderInv(window._iv||'all');if(window.fbSave)fbSave('invData');});};
 function openAddInvModal(){document.getElementById('modal-add-inv').classList.add('open');}
 function closeAddInvModal(){document.getElementById('modal-add-inv').classList.remove('open');}
-function submitAddInv(){const name=document.getElementById('ai-name').value.trim();if(!name){alert('굿즈명 입력');return;}invData.unshift({artist:document.getElementById('ai-artist').value,name,prod:+document.getElementById('ai-prod').value,cost:+document.getElementById('ai-cost').value,price:+(document.getElementById('ai-price')?.value||0),stock:+document.getElementById('ai-stock').value,sold:0,distPct:0});renderInv(window._iv||'all');if(window.fbSave)fbSave('invData');closeAddInvModal();document.getElementById('ai-name').value='';}
+function submitAddInv(){const name=document.getElementById('ai-name').value.trim();if(!name){alert('굿즈명 입력');return;}invData.unshift({artist:document.getElementById('ai-artist').value,name,prod:+document.getElementById('ai-prod').value,cost:+document.getElementById('ai-cost').value,price:+(document.getElementById('ai-price')?.value||0),stock:+document.getElementById('ai-stock').value,sold:0,distPct:0});syncArtistListFromData({ save:false });renderInv(window._iv||'all');if(window.fbSave)fbSave('invData');closeAddInvModal();document.getElementById('ai-name').value='';}
 
 // 칸반
 window.editTask=function(id){const t=tasks.find(t=>t.id===id);if(!t)return;openEdit('항목 수정',mfields({l:'작가',id:'a',type:'select',val:t.artist,opts:artistList},{l:'굿즈명',id:'g',val:t.goods},{l:'멤버',id:'m',val:t.member},{l:'장르',id:'ge',type:'select',val:t.genre,opts:GENRES},{l:'사이트',id:'s',val:t.site},{l:'상태',id:'st',type:'select',val:t.status,opts:['대기','제작중','재생산','완료']},{l:'비고',id:'n',val:t.note||''}),()=>{Object.assign(t,{artist:gv('a'),goods:gv('g'),member:gv('m'),genre:gv('ge'),site:gv('s'),status:gv('st'),note:gv('n')});closeEdit();renderBoard();if(window.fbSave)fbSave('tasks');});};
 window.deleteTask=function(id){const t=tasks.find(t=>t.id===id);if(!t)return;openConfirm(`<b>${t.artist} — ${t.goods}</b> 삭제?`,()=>{tasks.splice(tasks.findIndex(x=>x.id===id),1);renderBoard();if(window.fbSave)fbSave('tasks');});};
 function openKanbanAddModal(){document.getElementById('modal-kanban').classList.add('open');}
 function closeKanbanModal(){document.getElementById('modal-kanban').classList.remove('open');}
-function submitKanbanModal(){const goods=document.getElementById('kb-goods').value.trim(),member=document.getElementById('kb-member').value.trim();if(!goods||!member){alert('굿즈명과 멤버 입력');return;}const newId=tasks.length?Math.max(...tasks.map(t=>t.id))+1:1;tasks.push({id:newId,artist:document.getElementById('kb-artist').value,goods,member,genre:document.getElementById('kb-genre').value,site:document.getElementById('kb-site').value,status:document.getElementById('kb-status').value,note:document.getElementById('kb-note').value});renderBoard();if(window.fbSave)fbSave('tasks');closeKanbanModal();['kb-goods','kb-member','kb-site','kb-note'].forEach(id=>{document.getElementById(id).value='';});}
+function submitKanbanModal(){const goods=document.getElementById('kb-goods').value.trim(),member=document.getElementById('kb-member').value.trim();if(!goods||!member){alert('굿즈명과 멤버 입력');return;}const newId=tasks.length?Math.max(...tasks.map(t=>t.id))+1:1;tasks.push({id:newId,artist:document.getElementById('kb-artist').value,goods,member,genre:document.getElementById('kb-genre').value,site:document.getElementById('kb-site').value,status:document.getElementById('kb-status').value,note:document.getElementById('kb-note').value});syncArtistListFromData({ save:false });renderBoard();if(window.fbSave)fbSave('tasks');closeKanbanModal();['kb-goods','kb-member','kb-site','kb-note'].forEach(id=>{document.getElementById(id).value='';});}
 
 // 경비처리
 const EXPENSE_CATEGORIES_DEFAULT = ['소프트웨어','행사비','제작/원재료','사무/비품','배송/운송','식비/접대','수수료','기타'];
@@ -4911,7 +5376,7 @@ function normalizeExpenseRows(){
   return changed;
 }
 function expenseSelectOptions(values, selected, allLabel){
-  return `<option value="all" ${selected==='all'?'selected':''}>${allLabel}</option>` + values.map(v=>`<option value="${v}" ${selected===v?'selected':''}>${v}</option>`).join('');
+  return `<option value="all" ${selected==='all'?'selected':''}>${allLabel}</option>` + values.map(v=>`<option value="${escHtml(v)}" ${selected===v?'selected':''}>${escHtml(v)}</option>`).join('');
 }
 function getFilteredExpenses(){
   const f = window._expenseFilter || {year:'none',month:'none',category:'all',status:'all'};
@@ -5309,7 +5774,8 @@ function formatNavDate(dateStr) {
 function getPageUpdateKey(pageKey) {
   const alias = {
     'expense-requests': 'expenses',
-    'settlement': 'sales'
+    'settlement': 'sales',
+    'price-list': 'inventory'
   };
   return alias[pageKey] || pageKey;
 }
@@ -5907,7 +6373,7 @@ function renderIllustStatus(){
   const tbody = document.getElementById('illust-tbody');
   if(!tbody) return;
   const f = window._illustFilter || {artist:'all',goods:'all',genre:'all',status:'all'};
-  const artists = [...new Set(illustTasks.map(t=>t.artist).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
+  const artists = getManagedArtistList(illustTasks).sort((a,b)=>a.localeCompare(b,'ko'));
   const goods = [...new Set(illustTasks.map(t=>t.goods).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
   const genres = [...new Set(illustTasks.map(t=>t.genre).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
   const artistSel = document.getElementById('illust-filter-artist');
@@ -6167,8 +6633,8 @@ window.deletePnlEvent=function(key){
 // Filter state
 window.filterTx=function(t,b){window._tf=t;let d=document.querySelectorAll('.filter-btn');d.forEach(x=>x.classList.remove('on'));b.classList.add('on');renderTable(t);};
 window.filterCost=function(f,b){window._cf=f;let d=document.querySelectorAll('.filter-btn');d.forEach(x=>x.classList.remove('on'));b.classList.add('on');renderCost(f);};
-window.filterOrder=function(f,b){window._of=f;let d=document.querySelectorAll('.filter-btn');d.forEach(x=>x.classList.remove('on'));b.classList.add('on');renderOrders(f);};
-window.filterInv=function(f,b){window._iv=f;let d=document.querySelectorAll('.filter-btn');d.forEach(x=>x.classList.remove('on'));b.classList.add('on');renderInv(f);};
+window.filterOrder=function(f,b){window._of=f||'all';const wrap=document.getElementById('order-filter-btns');let d=(wrap?wrap.querySelectorAll('.filter-btn'):document.querySelectorAll('.filter-btn'));d.forEach(x=>x.classList.remove('on'));if(b)b.classList.add('on');renderOrders(window._of);};
+window.filterInv=function(f,b){window._iv=f||'all';const wrap=document.getElementById('inv-filter-btns');let d=(wrap?wrap.querySelectorAll('.filter-btn'):document.querySelectorAll('.filter-btn'));d.forEach(x=>x.classList.remove('on'));if(b)b.classList.add('on');renderInv(window._iv);};
 window.filterVendor=function(f,b){window._vf=f;let d=document.querySelectorAll('.filter-btn');d.forEach(x=>x.classList.remove('on'));b.classList.add('on');renderVendors(f);};
 
 // ESC
@@ -6403,6 +6869,7 @@ const MENU_LIST = [
   { key: 'cost',        label: '원가 관리',          icon: '📦' },
   { key: 'orders',      label: '제작 의뢰',          icon: '≡' },
   { key: 'inventory',   label: '재고 현황',          icon: '📅' },
+  { key: 'price-list',  label: '가격표',            icon: '🏷️' },
   { key: 'surplus',     label: '잉여재고',          icon: '📦' },
   { key: 'kanban',      label: '굿즈제작 작업현황',  icon: '▦' },
   { key: 'expenses',    label: '경비처리',          icon: '🧾' },
@@ -6817,22 +7284,86 @@ function updateUserSelects() {
 }
 
 // ══ 작가 목록 관리 ════════════════════════════════════════════════
-let artistList = ['양초', '맹이', '닐마', '하쿠야'];
+const DEFAULT_ARTIST_LIST = ['양초', '맹이', '닐마', '하쿠야', '쿠라'];
+let artistList = [...DEFAULT_ARTIST_LIST];
+window.artistList = artistList;
+
+function normalizeArtistList(list){
+  const source = Array.isArray(list) ? list : [];
+  const arr = source.map(v => String(v || '').trim()).filter(Boolean);
+  const merged = arr.length ? arr : [...DEFAULT_ARTIST_LIST];
+  return [...new Set(merged)];
+}
+
+function collectArtistsFromRows(rows, key='artist'){
+  if(!Array.isArray(rows)) return [];
+  return rows.map(r => String(r?.[key] || '').trim()).filter(Boolean);
+}
+
+function getManagedArtistList(rows=[], key='artist'){
+  return normalizeArtistList([
+    ...artistList,
+    ...collectArtistsFromRows(rows, key)
+  ]);
+}
+
+function syncArtistListFromData(options={}){
+  const before = JSON.stringify(artistList);
+  const merged = normalizeArtistList([
+    ...artistList,
+    ...collectArtistsFromRows(window.orderData || orderData),
+    ...collectArtistsFromRows(window.invData || invData),
+    ...collectArtistsFromRows(window.surplusData || surplusData),
+    ...collectArtistsFromRows(window.tasks || tasks),
+    ...collectArtistsFromRows(window.illustTasks || illustTasks)
+  ]);
+  artistList = merged;
+  window.artistList = artistList;
+  if(before !== JSON.stringify(artistList) && options.save && typeof saveArtistList === 'function') saveArtistList();
+  return artistList;
+}
+
+function jsString(value){
+  return JSON.stringify(String(value || ''));
+}
+
+function getArtistCssColor(name){
+  return getArtistColor(name);
+}
+
+function refreshArtistDependentViews(){
+  updateArtistSelects();
+  if(window.currentPage === 'orders'){ renderOrderFilters(window._of || 'all'); renderOrders(window._of || 'all'); }
+  if(window.currentPage === 'inventory'){ renderInventoryFilters(window._iv || 'all'); renderInv(window._iv || 'all'); }
+  if(window.currentPage === 'kanban' && typeof renderBoard === 'function') renderBoard();
+  if(window.currentPage === 'illust' && typeof renderIllustStatus === 'function') renderIllustStatus();
+}
 
 // Firebase에서 작가 목록 로드
 async function loadArtistList() {
   try {
-    if (!window.fbDb) return;
+    const local = localStorage.getItem('standup_artist_list_v1');
+    if(local){ artistList = normalizeArtistList(JSON.parse(local)); window.artistList = artistList; }
+  } catch(e) {}
+  try {
+    if (!window.fbDb) { syncArtistListFromData({ save:false }); return; }
     const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const snap = await getDoc(doc(window.fbDb, 'standup_app', 'artist_list'));
     if (snap.exists()) {
-      artistList = JSON.parse(snap.data().data);
+      artistList = normalizeArtistList(JSON.parse(snap.data().data));
+      window.artistList = artistList;
     }
+    syncArtistListFromData({ save:false });
   } catch(e) {}
 }
 
 // Firebase에 작가 목록 저장
 async function saveArtistList() {
+  artistList = normalizeArtistList(artistList);
+  window.artistList = artistList;
+  try {
+    localStorage.setItem('standup_artist_list_v1', JSON.stringify(artistList));
+  } catch(e) {}
   try {
     if (!window.fbDb) return;
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
@@ -6844,13 +7375,15 @@ async function saveArtistList() {
 
 // 모든 작가 select 드롭다운 동적 생성
 function getArtistOptions(selected) {
-  return artistList.map(a =>
-    `<option value="${a}" ${a === selected ? 'selected' : ''}>${a}</option>`
+  const opts = normalizeArtistList([...(artistList || []), selected].filter(Boolean));
+  return opts.map(a =>
+    `<option value="${escHtml(a)}" ${a === selected ? 'selected' : ''}>${escHtml(a)}</option>`
   ).join('');
 }
 
 // 설정 페이지 작가 목록 렌더
 function renderArtistMgmt() {
+  syncArtistListFromData({ save:false });
   const el = document.getElementById('artist-mgmt-list');
   if (!el) return;
   el.innerHTML = artistList.map((a, i) => `
@@ -6860,9 +7393,9 @@ function renderArtistMgmt() {
         background:${getArtistColor(a)}22;color:${getArtistColor(a)};
         display:flex;align-items:center;justify-content:center;
         font-weight:700;font-size:14px;flex-shrink:0">
-        ${a[0]}
+        ${escHtml(a[0] || '?')}
       </div>
-      <span style="flex:1;font-size:14px;font-weight:500;color:var(--text)">${a}</span>
+      <span style="flex:1;font-size:14px;font-weight:500;color:var(--text)">${escHtml(a)}</span>
       <button class="act-btn del" onclick="removeArtist(${i})" title="삭제"
         style="opacity:1;width:28px;height:28px">✕</button>
     </div>`).join('');
@@ -6870,8 +7403,11 @@ function renderArtistMgmt() {
 
 function getArtistColor(name) {
   const colors = ['#f0a830','#3ecfaa','#f06060','#a78bfa','#5b9cf6','#5bcf7e','#f0a0f0','#f0c060'];
-  const idx = artistList.indexOf(name) % colors.length;
-  return colors[idx];
+  let idx = artistList.indexOf(name);
+  if(idx < 0){
+    idx = String(name || '').split('').reduce((sum,ch)=>sum + ch.charCodeAt(0), 0);
+  }
+  return colors[idx % colors.length] || colors[0];
 }
 
 function addArtist() {
@@ -6880,8 +7416,11 @@ function addArtist() {
   if (!name) { alert('작가 이름을 입력해주세요.'); return; }
   if (artistList.includes(name)) { alert('이미 있는 작가예요.'); return; }
   artistList.push(name);
+  artistList = normalizeArtistList(artistList);
+  window.artistList = artistList;
   saveArtistList();
   renderArtistMgmt();
+  refreshArtistDependentViews();
   if (input) input.value = '';
 }
 
@@ -6892,8 +7431,11 @@ function removeArtist(idx) {
      <span style="font-size:12px;color:var(--text3)">기존 데이터는 유지돼요.</span>`,
     () => {
       artistList.splice(idx, 1);
+      artistList = normalizeArtistList(artistList);
+      window.artistList = artistList;
       saveArtistList();
       renderArtistMgmt();
+      refreshArtistDependentViews();
     }
   );
 }
@@ -7961,9 +8503,11 @@ function backupData() {
       txData:      window.txData      || [],
       memberShares: window.memberShares || [],
       userList:     window.userList     || userList || [],
+      artistList:   window.artistList   || artistList || [],
       costData:    window.costData    || [],
       orderData:   window.orderData   || [],
       invData:     window.invData     || [],
+      priceListData: window.priceListData || priceListData || { hiddenKeys: [], overrides: {} },
       surplusData: window.surplusData || [],
       tasks:       window.tasks       || [],
       expenseData: window.expenseData || [],
@@ -8006,9 +8550,11 @@ function restoreData(input) {
           if (d.txData)      { window.txData      = d.txData;      if(window.fbSave) await fbSave('txData'); }
           if (Object.prototype.hasOwnProperty.call(d, 'memberShares')) { window.memberShares = d.memberShares; if(window.fbSave) await fbSave('memberShares'); }
           if (Object.prototype.hasOwnProperty.call(d, 'userList')) { userList = d.userList; window.userList = userList; await saveUserList(); }
+          if (Object.prototype.hasOwnProperty.call(d, 'artistList')) { artistList = normalizeArtistList(d.artistList); window.artistList = artistList; await saveArtistList(); }
           if (d.costData)    { window.costData    = d.costData;    if(window.fbSave) await fbSave('costData'); }
           if (d.orderData)   { window.orderData   = d.orderData;   if(window.fbSave) await fbSave('orderData'); }
           if (d.invData)     { window.invData      = d.invData;     if(window.fbSave) await fbSave('invData'); }
+          if (Object.prototype.hasOwnProperty.call(d, 'priceListData')) { priceListData = normalizePriceListData(d.priceListData); window.priceListData = priceListData; savePriceListData(); }
           if (d.surplusData) { surplusData = d.surplusData; window.surplusData = surplusData; if(window.fbSave) await fbSave('surplusData'); }
           if (d.tasks)       { window.tasks       = d.tasks;       if(window.fbSave) await fbSave('tasks'); }
           if (d.expenseData) { expenseData = d.expenseData; window.expenseData = expenseData; if(window.fbSave) await fbSave('expenseData'); }
@@ -8024,6 +8570,7 @@ function restoreData(input) {
               await setDoc(doc(window.fbDb, 'standup_app', 'sales'), { data: JSON.stringify(d.salesData) });
             }
           }
+          syncArtistListFromData({ save:true });
 
           alert(`✓ 복원 완료!\n백업 날짜: ${backup.date?.slice(0,10) || '알 수 없음'}`);
           navigate('dashboard');
@@ -8037,7 +8584,7 @@ function restoreData(input) {
 }
 
 function selectAllReset(val) {
-  ['accounting','cost','orders','inventory','surplus','kanban','artists','vendors','events','sales'].forEach(id => {
+  ['accounting','cost','orders','inventory','price','surplus','kanban','expenses','artist-list','artists','vendors','events','sales'].forEach(id => {
     const el = document.getElementById('reset-' + id);
     if (el) el.checked = val;
   });
@@ -8049,9 +8596,11 @@ function confirmReset() {
     { id: 'reset-cost',       key: 'costData',    label: '원가 관리',        empty: [], fbKey: 'cost' },
     { id: 'reset-orders',     key: 'orderData',   label: '제작 의뢰',        empty: [], fbKey: 'orders' },
     { id: 'reset-inventory',  key: 'invData',     label: '재고 현황',        empty: [], fbKey: 'inventory' },
+    { id: 'reset-price',      key: 'priceListData', label: '가격표 수정/숨김', empty: { hiddenKeys: [], overrides: {} }, fbKey: 'price-list' },
     { id: 'reset-surplus',    key: 'surplusData', label: '잉여재고',          empty: [], fbKey: 'surplus' },
     { id: 'reset-kanban',     key: 'tasks',       label: '칸반',             empty: [], fbKey: 'kanban' },
     { id: 'reset-expenses',   key: 'expenseData', label: '경비처리',         empty: [], fbKey: 'expenses' },
+    { id: 'reset-artist-list', key: 'artistList', label: '작가 목록 관리',    empty: [...DEFAULT_ARTIST_LIST], fbKey: 'settings' },
     { id: 'reset-artists',    key: 'recruitData', label: '작가/모집',        empty: [], fbKey: 'artists' },
     { id: 'reset-vendors',    key: 'vendors',     label: '제작 업체',        empty: [], fbKey: 'vendors' },
     { id: 'reset-events',     key: 'eventList',   label: '행사 일정',        empty: [], fbKey: 'events' },
@@ -8082,6 +8631,16 @@ function confirmReset() {
         if (t.key === 'surplusData') {
           try { localStorage.removeItem(SURPLUS_STORAGE_KEY); } catch(e) {}
         }
+        if (t.key === 'priceListData') {
+          priceListData = normalizePriceListData(t.empty);
+          window.priceListData = priceListData;
+          try { localStorage.removeItem(PRICE_LIST_STORAGE_KEY); } catch(e) {}
+        }
+        if (t.key === 'artistList') {
+          artistList = normalizeArtistList(t.empty);
+          window.artistList = artistList;
+          await saveArtistList();
+        }
         if (Array.isArray(t.companions)) {
           for (const c of t.companions) {
             window[c.key] = c.empty;
@@ -8094,7 +8653,7 @@ function confirmReset() {
             const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
             await setDoc(doc(window.fbDb, 'standup_app', 'sales'), { data: JSON.stringify({}) });
           }
-        } else if (window.fbSave) {
+        } else if (window.fbSave && t.key !== 'artistList') {
           await fbSave(t.key);
           if (Array.isArray(t.companions)) {
             for (const c of t.companions) {
@@ -8114,9 +8673,11 @@ function confirmReset() {
 window.txData      = txData;
 window.memberShares = memberShares;
 window.userList = userList;
+window.artistList = artistList;
 window.costData    = costData;
 window.orderData   = orderData;
 window.invData     = invData;
+window.priceListData = priceListData;
 window.surplusData = surplusData;
 window.tasks       = tasks;
 window.expenseData = expenseData;
@@ -8176,6 +8737,7 @@ const COLLECTIONS = {
   costData:    'cost',
   orderData:   'orders',
   invData:     'inventory',
+  priceListData:'priceList',
   surplusData:'surplus',
   tasks:       'kanban',
   expenseData: 'expenses',
@@ -8201,7 +8763,7 @@ window.fbSave = async function(key) {
     showSaveIndicator();
     const keyToPage = {
       txData:'accounting', memberShares:'accounting', userList:'settings',
-      costData:'cost', orderData:'orders', invData:'inventory', surplusData:'surplus',
+      costData:'cost', orderData:'orders', invData:'inventory', priceListData:'price-list', surplusData:'surplus',
       tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
       vendors:'vendors', notices:'notices'
     };
@@ -8311,7 +8873,7 @@ async function initFirebase() {
   }
 
   // 모든 데이터 병렬 로드
-  const keys = ['txData','memberShares','userList','costData','orderData','invData','surplusData','tasks','expenseData','illustTasks','recruitData','vendors','eventList','notices'];
+  const keys = ['txData','memberShares','userList','costData','orderData','invData','priceListData','surplusData','tasks','expenseData','illustTasks','recruitData','vendors','eventList','notices'];
   await Promise.all(keys.map(k => fbLoad(k)));
   if (typeof initPnlEventsRemote === 'function') await initPnlEventsRemote();
   if (typeof initEstatRemote === 'function') await initEstatRemote();
@@ -8321,7 +8883,7 @@ async function initFirebase() {
   // (최초 1회)
   for (const k of keys) {
     const snap = await getDoc(doc(db, COL, COLLECTIONS[k]));
-    if (!snap.exists() && window[k] && window[k].length > 0) {
+    if (!snap.exists() && window[k] && ((Array.isArray(window[k]) && window[k].length > 0) || (k === 'priceListData' && typeof window[k] === 'object'))) {
       await setDoc(doc(db, COL, COLLECTIONS[k]), { data: JSON.stringify(window[k]) });
       console.log(`초기 업로드: ${k}`);
     }
@@ -8333,12 +8895,13 @@ async function initFirebase() {
     memberShares:() => { if(typeof renderMemberShares==='function') renderMemberShares(); },
     userList:    () => { if(Array.isArray(window.userList)) userList = window.userList; if(typeof renderUserMgmt==='function') renderUserMgmt(); if(typeof updateUserSelects==='function') updateUserSelects(); },
     costData:    () => { if(typeof renderCost==='function')  renderCost(window._cf||'all'); },
-    orderData:   () => { if(typeof renderOrders==='function') renderOrders(window._of||'all'); },
-    invData:     () => { if(typeof renderInv==='function')   renderInv(window._iv||'all'); },
-    surplusData: () => { if(typeof renderSurplus==='function') renderSurplus(); },
-    tasks:       () => { if(typeof renderBoard==='function') renderBoard(); },
+    orderData:   () => { if(typeof syncArtistListFromData==='function') syncArtistListFromData({ save:false }); if(typeof renderOrders==='function') renderOrders(window._of||'all'); },
+    invData:     () => { if(typeof syncArtistListFromData==='function') syncArtistListFromData({ save:false }); if(typeof renderInv==='function') renderInv(window._iv||'all'); if(typeof renderPriceList==='function') renderPriceList(); if(document.getElementById('modal-price-label')?.classList.contains('open') && typeof renderPriceLabelSheet==='function') renderPriceLabelSheet(); },
+    priceListData: () => { priceListData = normalizePriceListData(window.priceListData); try{ localStorage.setItem(PRICE_LIST_STORAGE_KEY, JSON.stringify(priceListData)); }catch(e){} if(typeof renderPriceList==='function') renderPriceList(); if(document.getElementById('modal-price-label')?.classList.contains('open') && typeof renderPriceLabelSheet==='function') renderPriceLabelSheet(); },
+    surplusData: () => { if(typeof syncArtistListFromData==='function') syncArtistListFromData({ save:false }); if(typeof renderSurplus==='function') renderSurplus(); },
+    tasks:       () => { if(typeof syncArtistListFromData==='function') syncArtistListFromData({ save:false }); if(typeof renderBoard==='function') renderBoard(); },
     expenseData: () => { if(typeof renderExpenses==='function') renderExpenses(); if(typeof renderExpenseRequests==='function' && window.currentPage==='expense-requests') renderExpenseRequests(); if(typeof updateExpenseRequestBadge==='function') updateExpenseRequestBadge(); },
-    illustTasks: () => { if(typeof renderIllustStatus==='function') renderIllustStatus(); },
+    illustTasks: () => { if(typeof syncArtistListFromData==='function') syncArtistListFromData({ save:false }); if(typeof renderIllustStatus==='function') renderIllustStatus(); },
     recruitData: () => { if(typeof renderRecruitList==='function') renderRecruitList(); },
     vendors:     () => { if(typeof renderVendors==='function') renderVendors(window._vf||'all'); },
     eventList:   () => { if(typeof renderEventListPanel==='function') renderEventListPanel(); },
@@ -8350,10 +8913,10 @@ async function initFirebase() {
       // 현재 해당 페이지가 열려있을 때만 리렌더
       const pageMap = {
         txData:'accounting', memberShares:'accounting', userList:'settings', costData:'cost', orderData:'orders',
-        invData:'inventory', surplusData:'surplus', tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
+        invData:'inventory', priceListData:'price-list', surplusData:'surplus', tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
         vendors:'vendors', eventList:'dashboard', notices:'notices'
       };
-      if (window.currentPage === pageMap[key] || window.currentPage === 'dashboard') {
+      if (window.currentPage === pageMap[key] || window.currentPage === 'dashboard' || (key === 'invData' && window.currentPage === 'price-list')) {
         renderMap[key]?.();
       }
     });
@@ -8363,6 +8926,7 @@ async function initFirebase() {
   await loadUserList();
   window.userList = userList;
   await loadArtistList();
+  syncArtistListFromData({ save:true });
   // 매출 데이터 로드
   await loadSalesDataFb();
 
