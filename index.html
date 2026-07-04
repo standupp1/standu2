@@ -1908,7 +1908,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 <div class="modal-overlay" id="modal-add-inv" onclick="if(event.target===this)closeAddInvModal()"><div class="mbox"><div class="mhead"><div class="mtitle">재고 항목 추가</div><button class="mclose" onclick="closeAddInvModal()">✕</button></div><div class="mf-row"><div class="mf"><label>작가</label><select id="ai-artist"><option>양초</option><option>맹이</option><option>닐마</option><option>하쿠야</option></select></div><div class="mf"><label>굿즈명</label><input id="ai-name"></div></div><div class="mf-row"><div class="mf"><label>생산수량</label><input type="number" id="ai-prod" value="10"></div><div class="mf"><label>생산단가 (₩)</label><input type="number" id="ai-cost" value="0"></div></div><div class="mf-row"><div class="mf"><label>판매가 (₩)</label><input type="number" id="ai-price" value="0"></div><div class="mf"><label>실재고</label><input type="number" id="ai-stock" value="0"></div></div><div class="mfoot"><button class="btn" onclick="closeAddInvModal()">취소</button><button class="btn btn-primary" onclick="submitAddInv()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-inv-audit" onclick="if(event.target===this)closeInventoryAuditSheet()"><div class="mbox wide" style="width:min(980px,96vw)"><div class="mhead"><div class="mtitle">재고실사표</div><button class="mclose" onclick="closeInventoryAuditSheet()">✕</button></div><div style="font-size:12px;color:var(--text3);margin:-8px 0 12px;line-height:1.7">굿즈명과 PR 실재고는 현재 재고현황 기준으로 자동 표시됩니다. 직원 실사수량 칸은 화면에서 입력하거나, 빈칸으로 인쇄해 수기로 작성할 수 있습니다.</div><div id="inventory-audit-print-area" class="audit-sheet-wrap"></div><div class="mfoot"><button class="btn" onclick="closeInventoryAuditSheet()">닫기</button><button class="btn btn-primary" onclick="printInventoryAuditSheet()">인쇄</button></div></div></div>
 <div class="modal-overlay" id="modal-surplus-audit" onclick="if(event.target===this)closeSurplusAuditSheet()"><div class="mbox wide" style="width:min(980px,96vw)"><div class="mhead"><div class="mtitle">잉여재고 실사표</div><button class="mclose" onclick="closeSurplusAuditSheet()">✕</button></div><div style="font-size:12px;color:var(--text3);margin:-8px 0 12px;line-height:1.7">잉여재고 메뉴에 등록된 항목 기준으로 실사표를 출력합니다. 직원 실사수량 칸은 화면에서 입력하거나, 인쇄 후 수기로 작성할 수 있습니다.</div><div id="surplus-audit-print-area" class="audit-sheet-wrap"></div><div class="mfoot"><button class="btn" onclick="closeSurplusAuditSheet()">닫기</button><button class="btn btn-primary" onclick="printSurplusAuditSheet()">인쇄</button></div></div></div>
-<div class="modal-overlay" id="modal-price-label" onclick="if(event.target===this)closePriceLabelSheet()"><div class="mbox wide" style="width:min(1180px,96vw)"><div class="mhead"><div class="mtitle">가격표 인쇄 미리보기</div><button class="mclose" onclick="closePriceLabelSheet()">✕</button></div><div class="price-summary-note">재고현황의 실재고가 1개 이상인 품목만 불러옵니다. 출력물에는 굿즈명과 판매가만 표시되며, 점선은 절취선 가이드입니다.</div><div id="price-label-print-area" class="price-label-sheet-wrap"></div><div class="mfoot"><button class="btn" onclick="closePriceLabelSheet()">닫기</button><button class="btn btn-primary" onclick="printPriceLabelSheet()">인쇄</button></div></div></div>
+<div class="modal-overlay" id="modal-price-label" onclick="if(event.target===this)closePriceLabelSheet()"><div class="mbox wide" style="width:min(1180px,96vw)"><div class="mhead"><div class="mtitle">가격표 인쇄 미리보기</div><button class="mclose" onclick="closePriceLabelSheet()">✕</button></div><div class="price-summary-note">재고현황에서 불러온 품목과 직접 추가한 품목을 출력합니다. 출력물에는 굿즈명과 판매가만 표시되며, 점선은 절취선 가이드입니다.</div><div id="price-label-print-area" class="price-label-sheet-wrap"></div><div class="mfoot"><button class="btn" onclick="closePriceLabelSheet()">닫기</button><button class="btn btn-primary" onclick="printPriceLabelSheet()">인쇄</button></div></div></div>
 <div class="modal-overlay" id="modal-kanban" onclick="if(event.target===this)closeKanbanModal()"><div class="mbox"><div class="mhead"><div class="mtitle">제작 항목 추가</div><button class="mclose" onclick="closeKanbanModal()">✕</button></div><div class="mf-row"><div class="mf"><label>작가명</label><select id="kb-artist"><option>닐마</option><option>맹이</option><option>양초</option><option>하쿠야</option></select></div><div class="mf"><label>굿즈명</label><input id="kb-goods"></div></div><div class="mf-row"><div class="mf"><label>멤버</label><input id="kb-member"></div><div class="mf"><label>장르</label><select id="kb-genre"><option>미츄</option><option>스텔라이브</option></select></div></div><div class="mf-row"><div class="mf"><label>사이트</label><input id="kb-site"></div><div class="mf"><label>초기 상태</label><select id="kb-status"><option>대기</option><option>제작중</option><option>재생산</option><option>완료</option></select></div></div><div class="mf"><label>비고</label><input id="kb-note"></div><div class="mfoot"><button class="btn" onclick="closeKanbanModal()">취소</button><button class="btn btn-primary" onclick="submitKanbanModal()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-recruit" onclick="if(event.target===this)closeRecruitModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">신청자 추가</div><button class="mclose" onclick="closeRecruitModal()">✕</button></div><div class="mf-row"><div class="mf"><label>날짜</label><input id="rc-date" placeholder="예: 26/4"></div><div class="mf"><label>행사명</label><input id="rc-event"></div></div><div class="mf-row"><div class="mf"><label>이름 (닉네임)</label><input id="rc-name"></div><div class="mf"><label>역할</label><select id="rc-role"><option>작가</option><option>제작업체</option><option>스태프</option></select></div></div><div class="mf-row"><div class="mf"><label>디스코드</label><input id="rc-discord"></div><div class="mf"><label>트위터</label><input id="rc-twitter"></div></div><div class="mf"><label>상태</label><select id="rc-status"><option>검토</option><option>계약완</option><option>활동중</option><option>재계약</option><option>계약만료</option><option>미계약</option></select></div><div class="mfoot"><button class="btn" onclick="closeRecruitModal()">취소</button><button class="btn btn-primary" onclick="submitRecruitModal()">추가</button></div></div></div>
 <div class="modal-overlay" id="modal-add-vendor" onclick="if(event.target===this)closeAddVendorModal()"><div class="mbox wide"><div class="mhead"><div class="mtitle">업체 추가</div><button class="mclose" onclick="closeAddVendorModal()">✕</button></div><div class="mf-row"><div class="mf"><label>업체명</label><input id="av-name"></div><div class="mf"><label>종류</label><input id="av-type" placeholder="예: 아크릴 등신대"></div></div><div class="mf-row"><div class="mf"><label>개당가격 (₩)</label><input type="number" id="av-price" value="0"></div><div class="mf"><label>협찬 할인율 (%)</label><input type="number" id="av-discount" value="0"></div></div><div class="mf-row"><div class="mf"><label>사이즈</label><input id="av-size"></div><div class="mf"><label>연락처</label><input id="av-contact"></div></div><div class="mf"><label>링크</label><input id="av-link" placeholder="https://..."></div><div class="mf"><label>비고</label><input id="av-note"></div><div class="mfoot"><button class="btn" onclick="closeAddVendorModal()">취소</button><button class="btn btn-primary" onclick="submitAddVendor()">추가</button></div></div></div>
@@ -2371,9 +2371,10 @@ PAGES['inventory'] = `<div class="main-header">
 PAGES['price-list'] = `<div class="main-header">
   <div>
     <div class="page-title">가격표</div>
-    <div class="page-sub">재고현황에서 실재고가 1개 이상인 품목의 굿즈명과 판매가만 자동 표시합니다.</div>
+    <div class="page-sub">재고현황 품목과 직접 추가한 품목의 굿즈명과 판매가를 표시합니다.</div>
   </div>
   <div class="header-right">
+    <button class="btn" onclick="openAddPriceListItem()">+ 가격표 추가</button>
     <button class="btn btn-primary" onclick="openPriceLabelSheet()">가격표 인쇄</button>
   </div>
 </div>
@@ -2388,6 +2389,7 @@ PAGES['price-list'] = `<div class="main-header">
   <div class="panel-header">
     <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>가격표 목록</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="openAddPriceListItem()" style="font-size:11px;padding:5px 12px">+ 추가</button>
       <button class="btn" onclick="openPriceLabelSheet()" style="font-size:11px;padding:5px 12px">인쇄 미리보기</button>
     </div>
   </div>
@@ -2955,7 +2957,7 @@ PAGES['settings'] = `<div class="main-header">
       </label>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="reset-price" style="width:16px;height:16px;accent-color:var(--coral)">
-        가격표 수정/숨김 데이터
+        가격표 추가/수정/숨김 데이터
       </label>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="reset-surplus" style="width:16px;height:16px;accent-color:var(--coral)">
@@ -4592,17 +4594,24 @@ function printInventoryAuditSheet(){
 }
 
 
-// ── price list from inventory ──────────────
+// ── price list from inventory + manual items ──────────────
 const PRICE_LIST_STORAGE_KEY = 'standup_price_list_custom_v1';
-var priceListData = { hiddenKeys: [], overrides: {} };
+var priceListData = { hiddenKeys: [], overrides: {}, customItems: [] };
 function priceLabelEscape(v){
   return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 function normalizePriceListData(data){
-  const out = { hiddenKeys: [], overrides: {} };
+  const out = { hiddenKeys: [], overrides: {}, customItems: [] };
   if(data && typeof data === 'object'){
     out.hiddenKeys = Array.isArray(data.hiddenKeys) ? data.hiddenKeys.map(String) : [];
     out.overrides = data.overrides && typeof data.overrides === 'object' ? data.overrides : {};
+    out.customItems = Array.isArray(data.customItems)
+      ? data.customItems.map((item, idx) => ({
+          id: String(item?.id || `manual-${Date.now()}-${idx}`),
+          name: String(item?.name || '').trim(),
+          price: Number(item?.price || 0)
+        })).filter(item => item.name)
+      : [];
   }
   return out;
 }
@@ -4624,6 +4633,12 @@ function savePriceListData(){
 loadPriceListData();
 function makePriceListKey(name, price){
   return `${String(name || '').trim()}||${Number(price || 0)}`;
+}
+function makeCustomPriceListKey(id){
+  return `custom::${String(id || '')}`;
+}
+function createPriceListCustomId(){
+  return `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 function getPriceListState(){
   priceListData = normalizePriceListData(window.priceListData || priceListData);
@@ -4647,10 +4662,10 @@ function getPriceListItems(){
     const sourcePrice = Number(r?.price || 0);
     const key = makePriceListKey(sourceName, sourcePrice);
     if(hidden.has(key)) return;
-    if(!grouped.has(key)) grouped.set(key, { key, sourceName, sourcePrice, name: sourceName, price: sourcePrice, stock: 0 });
+    if(!grouped.has(key)) grouped.set(key, { key, type:'inventory', sourceName, sourcePrice, name: sourceName, price: sourcePrice, stock: 0 });
     grouped.get(key).stock += stock;
   });
-  const items = [...grouped.values()].map(item => {
+  const inventoryItems = [...grouped.values()].map(item => {
     const override = state.overrides?.[item.key];
     if(override && typeof override === 'object'){
       const nextName = String(override.name || '').trim();
@@ -4660,7 +4675,18 @@ function getPriceListItems(){
     }
     return item;
   });
-  return items.sort((a,b)=>
+  const customItems = (state.customItems || []).map(item => ({
+    key: makeCustomPriceListKey(item.id),
+    id: item.id,
+    type: 'custom',
+    sourceName: item.name,
+    sourcePrice: Number(item.price || 0),
+    name: item.name,
+    price: Number(item.price || 0),
+    stock: 0,
+    isCustom: true
+  }));
+  return [...inventoryItems, ...customItems].sort((a,b)=>
     String(a.name).localeCompare(String(b.name),'ko') || Number(a.price||0) - Number(b.price||0)
   );
 }
@@ -4671,11 +4697,11 @@ function renderPriceList(){
   window._priceListItems = items;
   tbody.innerHTML = items.length ? items.map((item, i) => `
     <tr>
-      <td class="price-name-cell">${priceLabelEscape(item.name)}${item.isEdited ? '<span style="margin-left:6px;font-size:10px;color:var(--text3);font-weight:500">수정됨</span>' : ''}</td>
+      <td class="price-name-cell">${priceLabelEscape(item.name)}${item.isCustom ? '<span style="margin-left:6px;font-size:10px;color:var(--blue);font-weight:700">직접추가</span>' : ''}${item.isEdited ? '<span style="margin-left:6px;font-size:10px;color:var(--text3);font-weight:500">수정됨</span>' : ''}</td>
       <td class="price-value-cell">${priceLabelEscape(formatPriceLabelValue(item.price))}</td>
       <td class="price-action-cell"><div class="row-actions"><button class="act-btn edit" onclick="editPriceListItem(${i})" title="수정">✎</button><button class="act-btn del" onclick="deletePriceListItem(${i})" title="삭제">✕</button></div></td>
     </tr>
-  `).join('') : `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:28px">실재고가 있는 품목이 없습니다.</td></tr>`;
+  `).join('') : `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:28px">가격표에 표시할 품목이 없습니다. 우측의 + 추가 버튼으로 직접 등록할 수 있습니다.</td></tr>`;
 
   const prices = items.map(i=>Number(i.price||0)).filter(n=>n>0);
   const countEl = document.getElementById('price-count');
@@ -4685,6 +4711,23 @@ function renderPriceList(){
   if(minEl) minEl.innerHTML = '<span>₩</span>' + (prices.length ? Math.min(...prices).toLocaleString() : '0');
   if(maxEl) maxEl.innerHTML = '<span>₩</span>' + (prices.length ? Math.max(...prices).toLocaleString() : '0');
 }
+window.openAddPriceListItem = function(){
+  openEdit('가격표 항목 추가', mfields(
+    {l:'굿즈명', id:'n', ph:'예: 미츄 아크릴 스탠드'},
+    {l:'판매가(₩)', id:'p', type:'number', val:0}
+  ), () => {
+    const name = gv('n').trim();
+    const price = gn('p');
+    if(!name){ alert('굿즈명을 입력해주세요.'); return; }
+    const state = getPriceListState();
+    state.customItems.push({ id:createPriceListCustomId(), name, price });
+    priceListData = state;
+    savePriceListData();
+    closeEdit();
+    renderPriceList();
+    if(document.getElementById('modal-price-label')?.classList.contains('open')) renderPriceLabelSheet();
+  });
+};
 window.editPriceListItem = function(idx){
   const items = window._priceListItems || getPriceListItems();
   const item = items[idx];
@@ -4697,7 +4740,12 @@ window.editPriceListItem = function(idx){
     const price = gn('p');
     if(!name){ alert('굿즈명을 입력해주세요.'); return; }
     const state = getPriceListState();
-    state.overrides[item.key] = { name, price };
+    if(item.type === 'custom'){
+      const target = state.customItems.find(x => String(x.id) === String(item.id));
+      if(target){ target.name = name; target.price = price; }
+    }else{
+      state.overrides[item.key] = { name, price };
+    }
     priceListData = state;
     savePriceListData();
     closeEdit();
@@ -4709,10 +4757,17 @@ window.deletePriceListItem = function(idx){
   const items = window._priceListItems || getPriceListItems();
   const item = items[idx];
   if(!item) return;
-  openConfirm(`<b>${priceLabelEscape(item.name)}</b> 항목을 가격표에서 숨길까요?<br><span style="font-size:12px;color:var(--text3)">재고현황 데이터는 삭제되지 않고, 설정의 가격표 초기화로 다시 불러올 수 있어요.</span>`, () => {
+  const msg = item.type === 'custom'
+    ? `<b>${priceLabelEscape(item.name)}</b> 항목을 가격표에서 삭제할까요?<br><span style="font-size:12px;color:var(--text3)">직접 추가한 가격표 항목만 삭제됩니다.</span>`
+    : `<b>${priceLabelEscape(item.name)}</b> 항목을 가격표에서 숨길까요?<br><span style="font-size:12px;color:var(--text3)">재고현황 데이터는 삭제되지 않고, 설정의 가격표 초기화로 다시 불러올 수 있어요.</span>`;
+  openConfirm(msg, () => {
     const state = getPriceListState();
-    if(!state.hiddenKeys.includes(item.key)) state.hiddenKeys.push(item.key);
-    if(state.overrides?.[item.key]) delete state.overrides[item.key];
+    if(item.type === 'custom'){
+      state.customItems = state.customItems.filter(x => String(x.id) !== String(item.id));
+    }else{
+      if(!state.hiddenKeys.includes(item.key)) state.hiddenKeys.push(item.key);
+      if(state.overrides?.[item.key]) delete state.overrides[item.key];
+    }
     priceListData = state;
     savePriceListData();
     renderPriceList();
@@ -8507,7 +8562,7 @@ function backupData() {
       costData:    window.costData    || [],
       orderData:   window.orderData   || [],
       invData:     window.invData     || [],
-      priceListData: window.priceListData || priceListData || { hiddenKeys: [], overrides: {} },
+      priceListData: window.priceListData || priceListData || { hiddenKeys: [], overrides: {}, customItems: [] },
       surplusData: window.surplusData || [],
       tasks:       window.tasks       || [],
       expenseData: window.expenseData || [],
@@ -8596,7 +8651,7 @@ function confirmReset() {
     { id: 'reset-cost',       key: 'costData',    label: '원가 관리',        empty: [], fbKey: 'cost' },
     { id: 'reset-orders',     key: 'orderData',   label: '제작 의뢰',        empty: [], fbKey: 'orders' },
     { id: 'reset-inventory',  key: 'invData',     label: '재고 현황',        empty: [], fbKey: 'inventory' },
-    { id: 'reset-price',      key: 'priceListData', label: '가격표 수정/숨김', empty: { hiddenKeys: [], overrides: {} }, fbKey: 'price-list' },
+    { id: 'reset-price',      key: 'priceListData', label: '가격표 추가/수정/숨김', empty: { hiddenKeys: [], overrides: {}, customItems: [] }, fbKey: 'price-list' },
     { id: 'reset-surplus',    key: 'surplusData', label: '잉여재고',          empty: [], fbKey: 'surplus' },
     { id: 'reset-kanban',     key: 'tasks',       label: '칸반',             empty: [], fbKey: 'kanban' },
     { id: 'reset-expenses',   key: 'expenseData', label: '경비처리',         empty: [], fbKey: 'expenses' },
