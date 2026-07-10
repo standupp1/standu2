@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>스탠드업 — 통합 앱</title>
+<title>스탠드업 — PR 관리</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0e0f11;--bg2:#161719;--bg3:#1e2023;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0f0ee;--text2:#9a9a96;--text3:#5e5e5a;--amber:#f0a830;--amber-dim:rgba(240,168,48,0.12);--teal:#3ecfaa;--teal-dim:rgba(62,207,170,0.1);--coral:#f06060;--coral-dim:rgba(240,96,96,0.1);--blue:#5b9cf6;--blue-dim:rgba(91,156,246,0.1);--green:#5bcf7e;--green-dim:rgba(91,207,126,0.1);--purple:#a78bfa;--purple-dim:rgba(167,139,250,0.1)}
@@ -1743,6 +1743,395 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
   .kanban-col-wrap { flex-basis: 86vw; }
 }
 
+
+
+/* ═══════════════════════════════════════════════════════════════
+   STAND UP PR — 브랜드 다크 리디자인
+   기존 기능/구조는 유지하고 시각 계층과 가독성만 보강합니다.
+═══════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#090d12;
+  --bg2:#101720;
+  --bg3:#17212c;
+  --border:rgba(173,214,239,.09);
+  --border2:rgba(173,214,239,.18);
+  --text:#eef6fb;
+  --text2:#a9bac7;
+  --text3:#708391;
+  --amber:#7cb7df;
+  --amber-dim:rgba(124,183,223,.14);
+  --teal:#58d5c1;
+  --teal-dim:rgba(88,213,193,.12);
+  --coral:#ff7f83;
+  --coral-dim:rgba(255,127,131,.12);
+  --blue:#70aef8;
+  --blue-dim:rgba(112,174,248,.12);
+  --green:#67d98a;
+  --green-dim:rgba(103,217,138,.12);
+  --purple:#b79af6;
+  --purple-dim:rgba(183,154,246,.12);
+  --surface-glow:0 18px 45px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.025);
+  --brand-glow:0 0 0 1px rgba(124,183,223,.11), 0 14px 32px rgba(21,66,95,.18);
+}
+
+html{background:var(--bg)}
+body{
+  background:
+    radial-gradient(circle at 18% -5%, rgba(124,183,223,.11), transparent 28rem),
+    radial-gradient(circle at 92% 12%, rgba(88,213,193,.045), transparent 24rem),
+    linear-gradient(180deg,#090d12 0%,#0b1016 55%,#090d12 100%);
+  color:var(--text);
+  letter-spacing:-.01em;
+}
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  opacity:.22;
+  background-image:
+    linear-gradient(rgba(124,183,223,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,183,223,.035) 1px,transparent 1px);
+  background-size:42px 42px;
+  mask-image:linear-gradient(to bottom,black,transparent 72%);
+}
+
+::selection{background:rgba(124,183,223,.32);color:#fff}
+
+/* 사이드바 */
+.sidebar{
+  width:236px;
+  background:linear-gradient(180deg,rgba(16,23,32,.98),rgba(11,16,23,.98));
+  border-right:1px solid rgba(124,183,223,.13);
+  box-shadow:16px 0 44px rgba(0,0,0,.18);
+}
+.sidebar-logo{
+  padding:24px 18px 20px;
+  border-bottom:1px solid rgba(124,183,223,.11);
+  background:linear-gradient(135deg,rgba(124,183,223,.08),transparent 62%);
+}
+.logo-mark{gap:12px}
+.logo-icon,.login-logo-icon{
+  background:linear-gradient(145deg,#9bd2ef 0%,#7cb7df 58%,#5f9dcc 100%);
+  color:#07121a;
+  box-shadow:0 10px 24px rgba(86,157,204,.25),inset 0 1px 0 rgba(255,255,255,.5);
+}
+.logo-icon{border-radius:10px;font-weight:800}
+.logo-text{font-size:16px;letter-spacing:-.45px}
+.logo-sub,.login-logo-sub{
+  color:#7395aa;
+  letter-spacing:1.25px;
+  font-weight:500;
+}
+.sidebar-section{padding:15px 11px 6px}
+.sidebar-label{
+  color:#5f7888;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:1.5px;
+  padding:0 11px;
+  margin-bottom:7px;
+}
+.nav-item{
+  position:relative;
+  min-height:39px;
+  padding:9px 11px;
+  border-radius:10px;
+  color:#91a5b3;
+  transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s ease;
+}
+.nav-item:hover{
+  color:#ddecf5;
+  background:linear-gradient(90deg,rgba(124,183,223,.09),rgba(124,183,223,.025));
+  border-color:rgba(124,183,223,.09);
+  transform:translateX(2px);
+}
+.nav-item.active{
+  color:#bfe5fb;
+  border-color:rgba(124,183,223,.2);
+  background:linear-gradient(90deg,rgba(124,183,223,.19),rgba(124,183,223,.055));
+  box-shadow:inset 3px 0 0 #7cb7df,0 8px 18px rgba(0,0,0,.13);
+}
+.nav-item.active::after{
+  content:'';
+  position:absolute;
+  right:10px;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:#9bd2ef;
+  box-shadow:0 0 10px rgba(155,210,239,.85);
+}
+.nav-icon{width:17px;height:17px}
+.nav-badge{
+  background:rgba(255,127,131,.13);
+  border:1px solid rgba(255,127,131,.16);
+  font-weight:700;
+}
+.sidebar-bottom{
+  background:rgba(7,11,16,.3);
+  border-top:1px solid rgba(124,183,223,.1);
+}
+.member-avatar{box-shadow:0 0 0 2px rgba(9,13,18,.9)}
+
+/* 메인 영역 */
+.main{padding:34px 38px 48px}
+.main-header{
+  position:relative;
+  margin-bottom:27px;
+  padding:4px 2px 19px;
+  border-bottom:1px solid rgba(124,183,223,.105);
+}
+.main-header::after{
+  content:'';
+  position:absolute;
+  left:0;
+  bottom:-1px;
+  width:92px;
+  height:2px;
+  border-radius:4px;
+  background:linear-gradient(90deg,#7cb7df,rgba(124,183,223,0));
+}
+.page-title{font-size:23px;letter-spacing:-.7px}
+.page-sub{color:#7d91a0;font-weight:400}
+.page-update-badge{
+  background:rgba(124,183,223,.07);
+  border-color:rgba(124,183,223,.13);
+  color:#8fa8b8;
+}
+.event-badge{
+  background:linear-gradient(135deg,rgba(88,213,193,.13),rgba(88,213,193,.055));
+  border-color:rgba(88,213,193,.23);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+/* 버튼 */
+.btn{
+  min-height:36px;
+  border-color:rgba(173,214,239,.14);
+  background:linear-gradient(180deg,rgba(28,39,51,.95),rgba(20,29,39,.95));
+  color:#d9e7ef;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 5px 13px rgba(0,0,0,.12);
+}
+.btn:hover{
+  background:linear-gradient(180deg,#233240,#1a2732);
+  border-color:rgba(124,183,223,.28);
+  color:#fff;
+  transform:translateY(-1px);
+}
+.btn-primary{
+  background:linear-gradient(135deg,#9bd2ef 0%,#7cb7df 62%,#659fca 100%);
+  color:#07121a;
+  border-color:rgba(188,228,249,.35);
+  box-shadow:0 9px 22px rgba(64,130,174,.24),inset 0 1px 0 rgba(255,255,255,.48);
+}
+.btn-primary:hover{
+  background:linear-gradient(135deg,#b2e0f5,#89c3e7 62%,#70a9d2);
+  color:#061017;
+}
+.filter-btn,.event-chip{
+  background:rgba(20,29,39,.76);
+  border-color:rgba(173,214,239,.11);
+}
+.filter-btn.on,.event-chip.on{
+  color:#bfe6fb;
+  background:linear-gradient(135deg,rgba(124,183,223,.18),rgba(124,183,223,.07));
+  border-color:rgba(124,183,223,.29);
+}
+
+/* 카드 / 패널 */
+.kpi-grid{gap:15px}
+.kpi-card,.panel,.artist-card,.vendor-card{
+  background:linear-gradient(145deg,rgba(18,27,37,.96),rgba(14,21,29,.96));
+  border-color:rgba(173,214,239,.095);
+  box-shadow:var(--surface-glow);
+}
+.kpi-card{
+  border-radius:15px;
+  padding:19px 20px;
+}
+.kpi-card::after{
+  content:'';
+  position:absolute;
+  right:-34px;
+  top:-42px;
+  width:112px;
+  height:112px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(124,183,223,.11),transparent 66%);
+  pointer-events:none;
+}
+.kpi-card:hover,.panel:hover,.artist-card:hover,.vendor-card:hover{
+  border-color:rgba(124,183,223,.2);
+}
+.kpi-card.amber::before{background:linear-gradient(90deg,#7cb7df,#b8def3)}
+.kpi-card.teal::before{background:linear-gradient(90deg,#58d5c1,#8fe9d9)}
+.kpi-card.coral::before{background:linear-gradient(90deg,#ff7f83,#ffaaa5)}
+.kpi-card.blue::before{background:linear-gradient(90deg,#70aef8,#9bc7ff)}
+.kpi-label{color:#78909f;font-weight:600}
+.kpi-value{color:#f5fbff;text-shadow:0 1px 0 rgba(255,255,255,.02)}
+.panel{border-radius:15px}
+.panel-header{
+  padding:16px 19px;
+  background:linear-gradient(90deg,rgba(124,183,223,.055),transparent 55%);
+  border-bottom-color:rgba(173,214,239,.085);
+}
+.panel-title{font-weight:700;color:#edf7fc}
+.panel-title-dot{box-shadow:0 0 8px currentColor}
+.panel-body{padding:17px 19px}
+.balance-display,.sim-panel,.event-cal,.kanban-col-wrap,.notice-popup-item{
+  background:linear-gradient(145deg,rgba(24,35,47,.94),rgba(18,27,37,.94));
+  border-color:rgba(173,214,239,.1);
+}
+.balance-display{box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+.balance-value,.vendor-price,.share-total-value,.price-table .price-value-cell{color:#9bd2ef}
+
+/* 목록 / 테이블 */
+.tx-item,.event-row,.applicant-item,.recruit-row{border:1px solid transparent}
+.tx-item:hover,.event-row:hover,.applicant-item:hover,.recruit-row:hover{
+  background:rgba(124,183,223,.055);
+  border-color:rgba(124,183,223,.08);
+}
+.tx-table th,.cost-table th,.order-table th,.inv-table th,.price-table th{
+  color:#718795;
+  background:rgba(7,12,17,.18);
+  border-bottom-color:rgba(173,214,239,.1);
+}
+.tx-table td,.cost-table td,.order-table td,.inv-table td,.price-table td{
+  border-bottom-color:rgba(173,214,239,.07);
+}
+.tx-table tr:hover td,.cost-table tr:hover td,.order-table tr:hover td,.inv-table tr:hover td,.price-table tr:hover td{
+  background:rgba(124,183,223,.045);
+}
+.goods-item,.kanban-card,.kanban-card-full{
+  background:linear-gradient(145deg,rgba(24,35,47,.9),rgba(17,25,34,.92));
+  border-color:rgba(173,214,239,.09);
+}
+.goods-item:hover,.kanban-card:hover,.kanban-card-full:hover{
+  border-color:rgba(124,183,223,.24);
+  box-shadow:0 10px 24px rgba(0,0,0,.16);
+}
+.progress-bar,.stock-bar,.rate-bar-bg,.margin-bar{background:rgba(173,214,239,.09)}
+
+/* 입력 요소 */
+.input-field,.form-select,.mf input,.mf select,.mf textarea,
+.form-field input,.form-field select,.form-field textarea,.sim-input{
+  background:rgba(9,15,21,.72);
+  border-color:rgba(173,214,239,.12);
+  color:#eef7fc;
+}
+.input-field:hover,.form-select:hover,.mf input:hover,.mf select:hover,.mf textarea:hover,
+.form-field input:hover,.form-field select:hover,.form-field textarea:hover,.sim-input:hover{
+  border-color:rgba(124,183,223,.23);
+}
+.input-field:focus,.form-select:focus,.mf input:focus,.mf select:focus,.mf textarea:focus,
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus,.sim-input:focus{
+  border-color:#7cb7df;
+  box-shadow:0 0 0 3px rgba(124,183,223,.11);
+}
+select option{background:#111923;color:#eaf4fa}
+
+/* 모달 */
+.modal-overlay{
+  background:rgba(2,6,10,.72);
+  backdrop-filter:blur(7px) saturate(.9);
+}
+.mbox,.modal{
+  background:linear-gradient(145deg,#121b25,#0e151d);
+  border-color:rgba(124,183,223,.19);
+  box-shadow:0 28px 85px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.035);
+}
+.mhead{border-bottom:1px solid rgba(173,214,239,.08);padding-bottom:13px}
+.mclose{background:rgba(124,183,223,.07);border-color:rgba(124,183,223,.12)}
+
+/* 로그인 */
+#login-screen{
+  background:
+    radial-gradient(circle at 50% 13%,rgba(124,183,223,.15),transparent 27rem),
+    linear-gradient(180deg,#090d12,#0b1118);
+}
+#login-screen::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.24;
+  background-image:
+    linear-gradient(rgba(124,183,223,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,183,223,.04) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:radial-gradient(circle at 50% 35%,black,transparent 68%);
+}
+.login-logo,.login-title,.member-cards,.login-btn{position:relative;z-index:1}
+.login-logo{margin-bottom:40px}
+.login-logo-icon{border-radius:15px}
+.login-logo-text{font-size:27px;letter-spacing:-.7px}
+.login-title{color:#91a6b4}
+.member-card{
+  background:linear-gradient(145deg,rgba(19,29,40,.98),rgba(13,20,28,.98));
+  border-color:rgba(173,214,239,.1);
+  box-shadow:0 16px 34px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.025);
+}
+.member-card:hover{
+  border-color:rgba(124,183,223,.29);
+  box-shadow:0 19px 40px rgba(0,0,0,.24),0 0 0 1px rgba(124,183,223,.05);
+}
+.member-card.active{
+  background:linear-gradient(145deg,rgba(28,44,58,.98),rgba(16,28,38,.98));
+  box-shadow:0 0 0 2px var(--accent-color),0 22px 48px rgba(0,0,0,.3);
+}
+.login-btn{
+  background:linear-gradient(135deg,#9bd2ef,#7cb7df 64%,#659fca);
+  color:#07121a;
+  box-shadow:0 12px 30px rgba(64,130,174,.24),inset 0 1px 0 rgba(255,255,255,.48);
+}
+.login-btn.ready:hover{background:linear-gradient(135deg,#b4e1f5,#8bc5e8 64%,#72acd4)}
+
+/* 스크롤바 */
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:rgba(4,8,12,.34)}
+::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,rgba(124,183,223,.3),rgba(124,183,223,.17));
+  border-radius:999px;
+  border:2px solid transparent;
+  background-clip:padding-box;
+}
+::-webkit-scrollbar-thumb:hover{background-color:rgba(124,183,223,.42)}
+
+/* 모바일: 기존 하단 탭 구조 유지 + 브랜드 톤 보강 */
+@media (max-width:768px){
+  .sidebar{
+    width:100%;
+    background:rgba(10,16,23,.96);
+    border-top:1px solid rgba(124,183,223,.17);
+    box-shadow:0 -14px 35px rgba(0,0,0,.38);
+  }
+  .nav-item:hover{transform:none}
+  .nav-item.active{
+    color:#bfe6fb;
+    background:linear-gradient(180deg,rgba(124,183,223,.17),rgba(124,183,223,.045));
+    box-shadow:inset 0 2px 0 #7cb7df;
+  }
+  .nav-item.active::after{background:#a7d9f2;box-shadow:0 0 8px rgba(167,217,242,.75)}
+  .main{padding-top:18px}
+  .main-header{padding-bottom:14px}
+  .kpi-card,.panel{box-shadow:0 12px 28px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.02)}
+  .tx-table tr,.cost-table tr,.order-table tr,.inv-table tr,.price-table tr{
+    background:linear-gradient(145deg,rgba(18,27,37,.97),rgba(13,20,28,.97));
+    border-color:rgba(173,214,239,.1);
+  }
+  .mhead,.mfoot{background:#111923}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
+@media print{
+  body::before,#login-screen::before{display:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -1752,7 +2141,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
     <div class="login-logo-icon">S↑</div>
     <div>
       <div class="login-logo-text">스탠드업</div>
-      <div class="login-logo-sub">STAND UP</div>
+      <div class="login-logo-sub">PR MANAGEMENT</div>
     </div>
   </div>
   <div class="login-title">접속할 멤버를 선택하세요</div>
@@ -1790,7 +2179,7 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
   <div class="sidebar-logo">
     <div class="logo-mark">
       <div class="logo-icon">S↑</div>
-      <div><div class="logo-text">스탠드업</div><div class="logo-sub">STAND UP</div></div>
+      <div><div class="logo-text">스탠드업</div><div class="logo-sub">PR MANAGEMENT</div></div>
     </div>
   </div>
   <div class="sidebar-section">
