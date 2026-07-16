@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>스탠드업 — PR 관리</title>
+<meta name="standup-build" content="2026-07-16-filter-debug-fix">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0e0f11;--bg2:#161719;--bg3:#1e2023;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0f0ee;--text2:#9a9a96;--text3:#5e5e5a;--amber:#f0a830;--amber-dim:rgba(240,168,48,0.12);--teal:#3ecfaa;--teal-dim:rgba(62,207,170,0.1);--coral:#f06060;--coral-dim:rgba(240,96,96,0.1);--blue:#5b9cf6;--blue-dim:rgba(91,156,246,0.1);--green:#5bcf7e;--green-dim:rgba(91,207,126,0.1);--purple:#a78bfa;--purple-dim:rgba(167,139,250,0.1)}
@@ -4764,30 +4765,38 @@ var orderData = [
 const artistColor={'닐마':'var(--coral)','맹이':'var(--teal)','양초':'var(--amber)','하쿠야':'var(--purple)'};
 function renderOrders(filter){
   const artists = getManagedArtistList(orderData);
-  if(filter !== 'all' && !artists.includes(filter)) filter = 'all';
-  window._of = filter || 'all';
+  window._of = resolveArtistFilter(filter, artists);
   renderOrderFilters(window._of);
+
+  const tbody = document.getElementById('order-tbody');
+  if(!tbody) return;
+
   const data = orderData
     .map((r, ri) => ({ r, ri }))
-    .filter(({ r }) => window._of==='all' ? true : r.artist===window._of);
-  document.getElementById('order-tbody').innerHTML = data.length ? data.map(({ r, ri })=>{
-    const ac = artistColor[r.artist]||getArtistCssColor(r.artist)||'var(--text2)';
-    return `<tr>
-      <td><span style="font-weight:600;color:${ac}">${r.artist}</span></td>
-      <td style="font-weight:500">${r.goods}</td>
-      <td>${r.member}</td>
-      <td style="font-family:'DM Mono';text-align:center">${r.qty}</td>
-      <td><span class="status-tag ${r.genre==='미츄'?'tag-warn':'tag-making'}" style="margin:0">${r.genre}</span></td>
-      <td style="color:var(--text2)">${r.concept}</td>
-      <td><span class="pkg-tag ${r.pkg==='O'?'pkg-o':'pkg-x'}">포장 ${r.pkg}</span></td>
-      <td style="font-size:11px;color:var(--text3);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.spec}</td>
-      <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editOrder(${ri})' title='수정'>✎</button><button class='act-btn del' onclick='deleteOrder(${ri})' title='삭제'>✕</button></div></td></tr>`;
-  }).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">조회된 제작 의뢰가 없습니다.</td></tr>`;
+    .filter(({ r }) => window._of === 'all' || sameArtistName(r.artist, window._of));
+
+  tbody.innerHTML = data.length ? data.map(({ r, ri })=>{
+    const artist = normalizeArtistName(r.artist) || '미지정';
+    const ac = artistColor[artist] || getArtistCssColor(artist) || 'var(--text2)';
+    const qty = Number(r.qty) || 0;
+    const genre = String(r.genre || '기타');
+    const pkg = String(r.pkg || 'X').toUpperCase() === 'O' ? 'O' : 'X';
+    return `<tr data-artist="${escHtml(artist)}">
+      <td><span style="font-weight:600;color:${ac}">${escHtml(artist)}</span></td>
+      <td style="font-weight:500">${escHtml(r.goods || '—')}</td>
+      <td>${escHtml(r.member || '—')}</td>
+      <td style="font-family:'DM Mono';text-align:center">${qty.toLocaleString()}</td>
+      <td><span class="status-tag ${genre==='미츄'?'tag-warn':'tag-making'}" style="margin:0">${escHtml(genre)}</span></td>
+      <td style="color:var(--text2)">${escHtml(r.concept || '—')}</td>
+      <td><span class="pkg-tag ${pkg==='O'?'pkg-o':'pkg-x'}">포장 ${pkg}</span></td>
+      <td style="font-size:11px;color:var(--text3);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(r.spec || '')}">${escHtml(r.spec || '—')}</td>
+      <td class='act-col'><div class='row-actions'><button type="button" class='act-btn edit' onclick='editOrder(${ri})' title='수정'>✎</button><button type="button" class='act-btn del' onclick='deleteOrder(${ri})' title='삭제'>✕</button></div></td></tr>`;
+  }).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">${window._of==='all'?'등록된 제작 의뢰가 없습니다.':`‘${escHtml(window._of)}’ 작가의 제작 의뢰가 없습니다.`}</td></tr>`;
 
   const totalCount = orderData.length;
-  const packagedCount = orderData.filter(r => r.pkg === 'O').length;
-  const michuCount = orderData.filter(r => r.genre === '미츄').length;
-  const stelliveCount = orderData.filter(r => r.genre === '스텔라이브').length;
+  const packagedCount = orderData.filter(r => String(r.pkg || '').toUpperCase() === 'O').length;
+  const michuCount = orderData.filter(r => String(r.genre || '') === '미츄').length;
+  const stelliveCount = orderData.filter(r => String(r.genre || '') === '스텔라이브').length;
   const countSuffix = '<span style="font-family:\'Noto Sans KR\';font-size:16px">건</span>';
 
   const totalEl = document.getElementById('order-kpi-total');
@@ -4799,19 +4808,19 @@ function renderOrders(filter){
   const stelliveEl = document.getElementById('order-kpi-stellive');
   if(stelliveEl) stelliveEl.innerHTML = `${stelliveCount}${countSuffix}`;
 }
+
 function renderOrderFilters(active='all'){
   const wrap = document.getElementById('order-filter-btns');
   if(!wrap) return;
   const artists = getManagedArtistList(orderData);
-  if(active !== 'all' && !artists.includes(active)) active = 'all';
-  wrap.innerHTML = `<button class="filter-btn ${active==='all'?'on':''}" onclick="filterOrder('all',this)">전체</button>` +
-    artists.map(a => `<button class="filter-btn ${active===a?'on':''}" onclick="filterOrder(${jsString(a)},this)">${escHtml(a)}</button>`).join('');
+  active = resolveArtistFilter(active, artists);
+  wrap.innerHTML = `<button type="button" class="filter-btn ${active==='all'?'on':''}" onclick="filterOrder('all',this)">전체</button>` +
+    artists.map(a => `<button type="button" class="filter-btn ${sameArtistName(active,a)?'on':''}" onclick="filterOrder(${jsString(a)},this)">${escHtml(a)}</button>`).join('');
 }
-function filterOrder(f,btn){
-  window._of = f || 'all';
-  const wrap = document.getElementById('order-filter-btns');
-  (wrap ? wrap.querySelectorAll('.filter-btn') : document.querySelectorAll('.filter-btn')).forEach(b=>b.classList.remove('on'));
-  if(btn) btn.classList.add('on');
+
+function filterOrder(filter){
+  const artists = getManagedArtistList(orderData);
+  window._of = resolveArtistFilter(filter, artists);
   renderOrders(window._of);
 }
 
@@ -4844,50 +4853,59 @@ function renderInventoryFilters(active='all'){
   const wrap = document.getElementById('inv-filter-btns');
   if(!wrap) return;
   const artists = getManagedArtistList(invData);
-  if(active !== 'all' && !artists.includes(active)) active = 'all';
-  wrap.innerHTML = `<button class="filter-btn ${active==='all'?'on':''}" onclick="filterInv('all',this)">전체</button>` +
-    artists.map(a => `<button class="filter-btn ${active===a?'on':''}" onclick="filterInv(${jsString(a)},this)">${escHtml(a)}</button>`).join('');
+  active = resolveArtistFilter(active, artists);
+  wrap.innerHTML = `<button type="button" class="filter-btn ${active==='all'?'on':''}" onclick="filterInv('all',this)">전체</button>` +
+    artists.map(a => `<button type="button" class="filter-btn ${sameArtistName(active,a)?'on':''}" onclick="filterInv(${jsString(a)},this)">${escHtml(a)}</button>`).join('');
 }
 
 function renderInv(filter){
   const artists = getManagedArtistList(invData);
-  if(filter !== 'all' && !artists.includes(filter)) filter = 'all';
-  window._iv = filter || 'all';
+  window._iv = resolveArtistFilter(filter, artists);
   renderInventoryFilters(window._iv);
+
+  const tbody = document.getElementById('inv-tbody');
+  if(!tbody) return;
+
   const data = invData
     .map((r, ii) => ({ r, ii }))
-    .filter(({ r }) => window._iv==='all' ? true : r.artist===window._iv);
-  document.getElementById('inv-tbody').innerHTML = data.length ? data.map(({ r, ii })=>{
-    const color = acInv[r.artist]||getArtistCssColor(r.artist)||'var(--text2)';
-    const stockValue = r.stock * r.cost;
-    const stockColor = r.stock<=0?'var(--coral)':r.stock<=2?'var(--amber)':'var(--blue)';
-    return `<tr>
-      <td><span style="font-weight:600;color:${color}">${r.artist}</span></td>
-      <td style="font-weight:500">${r.name}</td>
-      <td style="text-align:center;font-family:'DM Mono';color:var(--blue)">${r.prod}</td>
-      <td style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--text3)">₩${r.cost.toLocaleString()}</td>
-      <td style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--blue)">₩${(r.price||0).toLocaleString()}</td>
-      <td style="text-align:center;font-family:'DM Mono';font-weight:700;color:${stockColor}">${r.stock}</td>
-      <td style="text-align:right;font-family:'DM Mono';font-weight:600;color:var(--blue)">₩${stockValue.toLocaleString()}</td>
-      <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editInv(${ii})' title='수정'>✎</button><button class='act-btn del' onclick='deleteInv(${ii})' title='삭제'>✕</button></div></td></tr>`;
-  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">조회된 재고가 없습니다.</td></tr>`;
+    .filter(({ r }) => window._iv === 'all' || sameArtistName(r.artist, window._iv));
 
-  // KPI 업데이트
-  const totalStock = invData.reduce((s,r)=>s+r.stock,0);
-  const totalValue = invData.reduce((s,r)=>s+(r.stock*r.cost),0);
-  const totalSalesValue = invData.reduce((s,r)=>s+(r.stock*(r.price||0)),0);
+  tbody.innerHTML = data.length ? data.map(({ r, ii })=>{
+    const artist = normalizeArtistName(r.artist) || '미지정';
+    const color = acInv[artist] || getArtistCssColor(artist) || 'var(--text2)';
+    const prod = Number(r.prod) || 0;
+    const cost = Number(r.cost) || 0;
+    const price = Number(r.price) || 0;
+    const stock = Number(r.stock) || 0;
+    const stockValue = stock * cost;
+    const stockColor = stock<=0?'var(--coral)':stock<=2?'var(--amber)':'var(--blue)';
+    return `<tr data-artist="${escHtml(artist)}">
+      <td><span style="font-weight:600;color:${color}">${escHtml(artist)}</span></td>
+      <td style="font-weight:500">${escHtml(r.name || '—')}</td>
+      <td style="text-align:center;font-family:'DM Mono';color:var(--blue)">${prod.toLocaleString()}</td>
+      <td style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--text3)">₩${cost.toLocaleString()}</td>
+      <td style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--blue)">₩${price.toLocaleString()}</td>
+      <td style="text-align:center;font-family:'DM Mono';font-weight:700;color:${stockColor}">${stock.toLocaleString()}</td>
+      <td style="text-align:right;font-family:'DM Mono';font-weight:600;color:var(--blue)">₩${stockValue.toLocaleString()}</td>
+      <td class='act-col'><div class='row-actions'><button type="button" class='act-btn edit' onclick='editInv(${ii})' title='수정'>✎</button><button type="button" class='act-btn del' onclick='deleteInv(${ii})' title='삭제'>✕</button></div></td></tr>`;
+  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">${window._iv==='all'?'등록된 재고가 없습니다.':`‘${escHtml(window._iv)}’ 작가의 재고가 없습니다.`}</td></tr>`;
+
+  // KPI는 필터와 무관하게 전체 재고 기준으로 유지합니다.
+  const totalStock = invData.reduce((s,r)=>s+(Number(r.stock)||0),0);
+  const totalValue = invData.reduce((s,r)=>s+((Number(r.stock)||0)*(Number(r.cost)||0)),0);
+  const totalSalesValue = invData.reduce((s,r)=>s+((Number(r.stock)||0)*(Number(r.price)||0)),0);
   const tsEl = document.getElementById('inv-total-stock');
-  if(tsEl) tsEl.innerHTML = totalStock+'<span style=\"font-family:\'Noto Sans KR\';font-size:16px\">개</span>';
+  if(tsEl) tsEl.innerHTML = totalStock.toLocaleString()+'<span style="font-family:\'Noto Sans KR\';font-size:16px">개</span>';
   const tvEl = document.getElementById('inv-total-value');
   if(tvEl) tvEl.innerHTML = '<span>₩</span>'+totalValue.toLocaleString();
   const svEl = document.getElementById('inv-sales-value');
   if(svEl) svEl.innerHTML = '<span>₩</span>'+totalSalesValue.toLocaleString();
 }
-function filterInv(f,btn){
-  window._iv=f;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  renderInv(f);
+
+function filterInv(filter){
+  const artists = getManagedArtistList(invData);
+  window._iv = resolveArtistFilter(filter, artists);
+  renderInv(window._iv);
 }
 
 function invAuditEscape(v){
@@ -5443,7 +5461,7 @@ window._ksort = window._ksort || { '대기':'기본', '제작중':'기본', '재
 function getFilteredTasks(){
   const f = window._kf || { artist:'all', genre:'all' };
   return tasks.filter(t =>
-    (f.artist === 'all' || t.artist === f.artist) &&
+    (f.artist === 'all' || sameArtistName(t.artist, f.artist)) &&
     (f.genre === 'all' || t.genre === f.genre)
   );
 }
@@ -7077,8 +7095,8 @@ window.deletePnlEvent=function(key){
 // Filter state
 window.filterTx=function(t,b){window._tf=t;let d=document.querySelectorAll('.filter-btn');d.forEach(x=>x.classList.remove('on'));b.classList.add('on');renderTable(t);};
 window.filterCost=function(f,b){window._cf=f;let d=document.querySelectorAll('.filter-btn');d.forEach(x=>x.classList.remove('on'));b.classList.add('on');renderCost(f);};
-window.filterOrder=function(f,b){window._of=f||'all';const wrap=document.getElementById('order-filter-btns');let d=(wrap?wrap.querySelectorAll('.filter-btn'):document.querySelectorAll('.filter-btn'));d.forEach(x=>x.classList.remove('on'));if(b)b.classList.add('on');renderOrders(window._of);};
-window.filterInv=function(f,b){window._iv=f||'all';const wrap=document.getElementById('inv-filter-btns');let d=(wrap?wrap.querySelectorAll('.filter-btn'):document.querySelectorAll('.filter-btn'));d.forEach(x=>x.classList.remove('on'));if(b)b.classList.add('on');renderInv(window._iv);};
+window.filterOrder=filterOrder;
+window.filterInv=filterInv;
 window.filterVendor=function(f,b){window._vf=f;let d=document.querySelectorAll('.filter-btn');d.forEach(x=>x.classList.remove('on'));b.classList.add('on');renderVendors(f);};
 
 // ESC
@@ -7739,16 +7757,30 @@ function normalizeArtistList(list){
   return [...new Set(merged)];
 }
 
+function normalizeArtistName(value){
+  return String(value ?? '').normalize('NFC').trim().replace(/\s+/g, ' ');
+}
+
+function sameArtistName(a, b){
+  return normalizeArtistName(a) === normalizeArtistName(b);
+}
+
 function collectArtistsFromRows(rows, key='artist'){
   if(!Array.isArray(rows)) return [];
-  return rows.map(r => String(r?.[key] || '').trim()).filter(Boolean);
+  return rows.map(r => normalizeArtistName(r?.[key])).filter(Boolean);
 }
 
 function getManagedArtistList(rows=[], key='artist'){
   return normalizeArtistList([
-    ...artistList,
+    ...artistList.map(normalizeArtistName),
     ...collectArtistsFromRows(rows, key)
   ]);
+}
+
+function resolveArtistFilter(filter, artists){
+  const wanted = normalizeArtistName(filter || 'all');
+  if(wanted === 'all') return 'all';
+  return artists.find(a => sameArtistName(a, wanted)) || 'all';
 }
 
 function syncArtistListFromData(options={}){
@@ -7768,7 +7800,11 @@ function syncArtistListFromData(options={}){
 }
 
 function jsString(value){
-  return JSON.stringify(String(value || ''));
+  // Dynamic values are inserted into double-quoted inline event attributes.
+  // URI-encode the value first so quotes, angle brackets and line breaks cannot
+  // terminate the HTML attribute or the JavaScript string.
+  const encoded = encodeURIComponent(String(value ?? '')).replace(/'/g, '%27');
+  return `decodeURIComponent('${encoded}')`;
 }
 
 function getArtistCssColor(name){
@@ -8187,9 +8223,9 @@ function loadSalesEvent(key) {
   syncSalesMetaFromInventory(key, currentSalesArtist);
   tabs.innerHTML = artists.map(a => `
     <button class="filter-btn ${a===currentSalesArtist?'on':''}"
-      onclick="switchSalesArtist('${a}')"
+      onclick="switchSalesArtist(${jsString(a)})"
       style="font-size:12px">${a}</button>`).join('') +
-    `<button class="btn" onclick="addSalesArtist('${key}')" style="font-size:11px;padding:5px 10px">+ 작가 추가</button>`;
+    `<button class="btn" onclick="addSalesArtist(${jsString(key)})" style="font-size:11px;padding:5px 10px">+ 작가 추가</button>`;
 
   renderSalesTable(key, currentSalesArtist);
 }
@@ -8230,7 +8266,7 @@ function renderSalesTable(eventKey, artist) {
           <div class="panel-title-dot" style="background:var(--amber)"></div>
           ${artist} 작가 · ${event.name}
         </div>
-        <button class="btn" onclick="addSalesItem('${eventKey}','${artist}')">+ 굿즈 추가</button>
+        <button class="btn" onclick="addSalesItem(${jsString(eventKey)},${jsString(artist)})">+ 굿즈 추가</button>
       </div>
       <div class="panel-body" style="padding:0;overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;min-width:700px">
@@ -8292,19 +8328,19 @@ function salesRow(r, i, eventKey, artist) {
     <td style="padding:8px 14px;font-weight:500;font-size:13px">${r.name}</td>
     <td style="text-align:center"><input type="number" value="${prod}" min="0"
       style="width:50px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;text-align:center;color:var(--text);font-size:12px;font-family:'DM Mono'"
-      oninput="updateSalesField('${eventKey}','${artist}',${i},'prod',this.value)"></td>
+      oninput="updateSalesField(${jsString(eventKey)},${jsString(artist)},${i},'prod',this.value)"></td>
     <td style="text-align:center"><input type="number" value="${sample}" min="0"
       style="width:50px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;text-align:center;color:var(--text);font-size:12px;font-family:'DM Mono'"
-      oninput="updateSalesField('${eventKey}','${artist}',${i},'sample',this.value)"></td>
+      oninput="updateSalesField(${jsString(eventKey)},${jsString(artist)},${i},'sample',this.value)"></td>
     <td style="text-align:center"><input type="number" value="${presale}" min="0"
       style="width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;text-align:center;color:var(--text);font-size:12px;font-family:'DM Mono'"
-      oninput="updateSalesField('${eventKey}','${artist}',${i},'presale',this.value)"></td>
+      oninput="updateSalesField(${jsString(eventKey)},${jsString(artist)},${i},'presale',this.value)"></td>
     <td style="text-align:center"><input type="number" value="${onsite}" min="0"
       style="width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;text-align:center;color:var(--text);font-size:12px;font-family:'DM Mono'"
-      oninput="updateSalesField('${eventKey}','${artist}',${i},'onsite',this.value)"></td>
+      oninput="updateSalesField(${jsString(eventKey)},${jsString(artist)},${i},'onsite',this.value)"></td>
     <td style="text-align:center"><input type="number" value="${gift}" min="0"
       style="width:50px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;text-align:center;color:var(--text);font-size:12px;font-family:'DM Mono'"
-      oninput="updateSalesField('${eventKey}','${artist}',${i},'gift',this.value)"></td>
+      oninput="updateSalesField(${jsString(eventKey)},${jsString(artist)},${i},'gift',this.value)"></td>
     <td style="text-align:center;font-family:'DM Mono';font-weight:700;color:var(--amber)">${sold}</td>
     <td style="text-align:center;font-family:'DM Mono';${stockColor}">${remain}</td>
     <td style="text-align:center;font-family:'DM Mono';color:var(--text2)">${settledQty}</td>
@@ -8313,12 +8349,12 @@ function salesRow(r, i, eventKey, artist) {
     <td style="text-align:center;font-family:'DM Mono';font-size:11px;color:var(--blue)">₩${(+r.price||0).toLocaleString()}</td>
     <td style="text-align:center"><input type="number" value="${+r.distPct||30}" min="0" max="100"
       style="width:46px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;text-align:center;color:var(--text);font-size:11px;font-family:'DM Mono'"
-      oninput="updateSalesField('${eventKey}','${artist}',${i},'distPct',this.value)"></td>
+      oninput="updateSalesField(${jsString(eventKey)},${jsString(artist)},${i},'distPct',this.value)"></td>
     <td><input type="text" value="${r.note||''}" placeholder="비고"
       style="width:56px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;color:${r.note?'var(--coral)':'var(--text3)'};font-size:11px"
-      oninput="updateSalesField('${eventKey}','${artist}',${i},'note',this.value)"></td>
+      oninput="updateSalesField(${jsString(eventKey)},${jsString(artist)},${i},'note',this.value)"></td>
     <td style="text-align:right;padding-right:10px">
-      <button class="act-btn del" onclick="deleteSalesItem('${eventKey}','${artist}',${i})" style="opacity:1">✕</button>
+      <button class="act-btn del" onclick="deleteSalesItem(${jsString(eventKey)},${jsString(artist)},${i})" style="opacity:1">✕</button>
     </td>
   </tr>`;
 }
