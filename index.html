@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>스탠드업 — PR 관리</title>
-<meta name="standup-build" content="2026-07-16-filter-debug-fix">
+<meta name="standup-build" content="2026-07-20-event-stats-price-label-fix">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0e0f11;--bg2:#161719;--bg3:#1e2023;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0f0ee;--text2:#9a9a96;--text3:#5e5e5a;--amber:#f0a830;--amber-dim:rgba(240,168,48,0.12);--teal:#3ecfaa;--teal-dim:rgba(62,207,170,0.1);--coral:#f06060;--coral-dim:rgba(240,96,96,0.1);--blue:#5b9cf6;--blue-dim:rgba(91,156,246,0.1);--green:#5bcf7e;--green-dim:rgba(91,207,126,0.1);--purple:#a78bfa;--purple-dim:rgba(167,139,250,0.1)}
@@ -1128,8 +1128,8 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:4mm;
-  padding:5mm 4mm 4mm;
+  gap:1.5mm;
+  padding:3mm 4mm 3mm;
   border-right:1px dashed #b9b9b9;
   border-bottom:1px dashed #b9b9b9;
   page-break-inside:avoid;
@@ -1148,12 +1148,13 @@ td.act-col{width:70px;text-align:right;padding-right:14px}
 .price-label-name{
   width:100%;
   text-align:center;
-  font-size:12.5px;
+  font-size:30px;
   font-weight:900;
-  line-height:1.28;
-  letter-spacing:-.4px;
+  line-height:1.05;
+  letter-spacing:-1px;
   word-break:keep-all;
   overflow-wrap:anywhere;
+  text-wrap:balance;
 }
 .price-label-price{
   text-align:center;
@@ -3675,7 +3676,7 @@ function estatUpdateKpi() {
     document.getElementById('estat-kpi-avg-atv').textContent = '0';
     return;
   }
-  const avgRev = Math.round(estatData.reduce((s,d)=>s+(d.rev||0)+(d.pre||0),0)/n);
+  const avgRev = Math.round(estatData.reduce((s,d)=>s+(d.rev||0),0)/n);
   const avgTx  = Math.round(estatData.reduce((s,d)=>s+(d.tx||0),0)/n);
   const avgAtv = Math.round(estatData.reduce((s,d)=>s+(d.atv||0),0)/n);
   document.getElementById('estat-kpi-avg-rev').textContent = avgRev.toLocaleString();
@@ -3737,7 +3738,7 @@ function estatDrawChart() {
   const labels = sorted.map(d => d.name || d.date || '?');
   const METRIC_KEY = { rev:'rev', tx:'tx', atv:'atv', qty:'qty' };
   const vals = sorted.map(d => {
-    if (estatMetric === 'rev') return (d.rev||0) + (d.pre||0);
+    if (estatMetric === 'rev') return d.rev || 0;
     return d[METRIC_KEY[estatMetric]] || 0;
   });
   const METRIC_LABEL = { rev:'총매출 (₩)', tx:'거래건수 (건)', atv:'객단가 (₩)', qty:'판매량 (개)' };
