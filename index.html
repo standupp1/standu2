@@ -8142,6 +8142,23 @@ function getSettlementSettledQty(r) {
   return +r.settledQty || 0;
 }
 
+// 정산내역서 생산단가: PR 재고 현황의 동일 작가 + 굿즈명을 최우선으로 사용
+// 재고 현황에 항목이 없을 때만 매출 저장 당시의 생산단가(r.cost)를 사용합니다.
+function getSettlementUnitCost(r, artist) {
+  const matched = findInvItem(r.name, artist);
+  if (matched && matched.cost !== undefined && matched.cost !== null) {
+    return +matched.cost || 0;
+  }
+  return getSalesCost(r);
+}
+
+function calcSettlementDist(r, soldCount, artist) {
+  const price = +r.price || 0;
+  const cost = getSettlementUnitCost(r, artist);
+  const distRate = parsePctToDecimal(r.distPct);
+  return Math.round((price - cost) * distRate * soldCount);
+}
+
 function getSettlementRemain(r) {
   return (+r.prod || 0) - getSettlementSettledQty(r) - getSalesCoeff(r);
 }
@@ -8626,7 +8643,7 @@ function renderSettlement() {
   }
   const items  = event.artists[artist] || [];
   const totalRev  = items.reduce((s,r) => s+(getSalesCoeff(r)*(+r.price||0)), 0);
-  const totalDist = items.reduce((s,r)=>s+calcDist(r,getSalesCoeff(r)), 0);
+  const totalDist = items.reduce((s,r)=>s+calcSettlementDist(r,getSalesCoeff(r),artist), 0);
 
   el.innerHTML = `
     <div id="settle-print-area" style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:32px;max-width:800px;margin:0 auto">
@@ -8654,6 +8671,7 @@ function renderSettlement() {
             <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--text3);font-weight:600;width:60px">생산</th>
             <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--text3);font-weight:600;width:60px">판매</th>
             <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--text3);font-weight:600;width:60px">재고</th>
+            <th style="padding:10px 8px;text-align:right;font-size:11px;color:var(--amber);font-weight:600;width:90px">생산단가</th>
             <th style="padding:10px 8px;text-align:right;font-size:11px;color:var(--blue);font-weight:600;width:100px">판매매출액</th>
             <th style="padding:10px 8px;text-align:right;font-size:11px;color:var(--teal);font-weight:600;width:100px">배분금액</th>
             <th style="padding:10px 8px;text-align:center;font-size:11px;color:var(--text3);font-weight:600;width:70px">정산완료수량</th>
@@ -8664,14 +8682,16 @@ function renderSettlement() {
           ${items.map(r => {
             const sold = getSalesCoeff(r);
             const remain = getSettlementRemain(r);
+            const unitCost = getSettlementUnitCost(r, artist);
             const rev = sold*(+r.price||0);
-            const dist = calcDist(r, sold);
+            const dist = calcSettlementDist(r, sold, artist);
             const settled = getSettlementSettledQty(r);
             return `<tr style="border-bottom:1px solid var(--border)">
               <td style="padding:9px 14px;font-size:13px;font-weight:500">${r.name}</td>
               <td style="padding:9px 8px;text-align:center;font-family:'DM Mono';font-size:12px">${r.prod||0}</td>
               <td style="padding:9px 8px;text-align:center;font-family:'DM Mono';font-size:12px;color:var(--blue)">${sold}</td>
               <td style="padding:9px 8px;text-align:center;font-family:'DM Mono';font-size:12px;color:${remain<0?'var(--coral)':'var(--text2)'}">${remain}</td>
+              <td style="padding:9px 8px;text-align:right;font-family:'DM Mono';font-size:12px;color:var(--amber)">₩${unitCost.toLocaleString()}</td>
               <td style="padding:9px 8px;text-align:right;font-family:'DM Mono';font-size:12px;color:var(--blue)">₩${rev.toLocaleString()}</td>
               <td style="padding:9px 8px;text-align:right;font-family:'DM Mono';font-size:12px;color:var(--teal)">₩${dist.toLocaleString()}</td>
               <td style="padding:9px 8px;text-align:center;font-family:'DM Mono';font-size:12px">${settled}</td>
@@ -8685,12 +8705,15 @@ function renderSettlement() {
             <td></td>
             <td style="padding:12px 8px;text-align:center;font-weight:700;font-family:'DM Mono';color:var(--blue)">${items.reduce((s,r)=>s+getSalesCoeff(r),0)}</td>
             <td></td>
+            <td></td>
             <td style="padding:12px 8px;text-align:right;font-weight:700;font-family:'DM Mono';color:var(--blue)">₩${totalRev.toLocaleString()}</td>
             <td style="padding:12px 8px;text-align:right;font-weight:700;font-family:'DM Mono';color:var(--teal)">₩${totalDist.toLocaleString()}</td>
             <td colspan="2"></td>
           </tr>
         </tfoot>
       </table>
+
+      <div style="font-size:10px;color:var(--text3);margin:-8px 0 16px;line-height:1.6">※ 생산단가는 PR 재고 현황의 동일 작가·굿즈명을 기준으로 자동 반영됩니다. 재고 현황에 일치 항목이 없으면 매출 저장 당시 단가를 사용합니다.</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
         <div style="text-align:center">
@@ -8722,19 +8745,21 @@ function printSettlement() {
   if (!event) { alert('저장된 매출 데이터가 없습니다. 매출 입력에서 저장 후 다시 확인해주세요'); return; }
   const items = event.artists[artist] || [];
   const totalRev  = items.reduce((s,r) => s+(getSalesCoeff(r)*(+r.price||0)), 0);
-  const totalDist = items.reduce((s,r) => s+calcDist(r,getSalesCoeff(r)), 0);
+  const totalDist = items.reduce((s,r) => s+calcSettlementDist(r,getSalesCoeff(r),artist), 0);
 
   const rows = items.map(r => {
     const sold    = getSalesCoeff(r);
     const remain  = getSettlementRemain(r);
+    const unitCost = getSettlementUnitCost(r, artist);
     const rev     = sold*(+r.price||0);
-    const dist    = calcDist(r, sold);
+    const dist    = calcSettlementDist(r, sold, artist);
     const settled = getSettlementSettledQty(r);
     return `<tr>
       <td class="left">${r.name}</td>
       <td class="center">${r.prod||0}</td>
       <td class="center">${sold}</td>
       <td class="center">${remain}</td>
+      <td class="right">₩${unitCost.toLocaleString()}</td>
       <td class="right">₩${rev.toLocaleString()}</td>
       <td class="right">₩${dist.toLocaleString()}</td>
       <td class="center">${settled}</td>
@@ -8922,14 +8947,15 @@ function printSettlement() {
   <table>
     <thead>
       <tr>
-        <th class="left"  style="width:22%">항목</th>
-        <th class="center" style="width:7%">생산</th>
-        <th class="center" style="width:7%">판매</th>
-        <th class="center" style="width:7%">재고</th>
-        <th class="right"  style="width:14%">판매매출액</th>
-        <th class="right"  style="width:14%">배분금액</th>
+        <th class="left"  style="width:19%">항목</th>
+        <th class="center" style="width:6%">생산</th>
+        <th class="center" style="width:6%">판매</th>
+        <th class="center" style="width:6%">재고</th>
+        <th class="right"  style="width:11%">생산단가</th>
+        <th class="right"  style="width:13%">판매매출액</th>
+        <th class="right"  style="width:13%">배분금액</th>
         <th class="center" style="width:11%">정산완료수량</th>
-        <th class="center" style="width:18%">비고</th>
+        <th class="center" style="width:15%">비고</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>
@@ -8939,12 +8965,15 @@ function printSettlement() {
         <td></td>
         <td class="center">${items.reduce((s,r)=>s+getSalesCoeff(r),0)}</td>
         <td></td>
+        <td></td>
         <td class="right">₩${totalRev.toLocaleString()}</td>
         <td class="right">₩${totalDist.toLocaleString()}</td>
         <td colspan="2"></td>
       </tr>
     </tfoot>
   </table>
+
+  <div style="font-size:8.5px;color:#777;margin:-4px 0 9px;line-height:1.45">※ 생산단가는 PR 재고 현황의 동일 작가·굿즈명을 기준으로 자동 반영됩니다. 재고 현황에 일치 항목이 없으면 매출 저장 당시 단가를 사용합니다.</div>
 
   <div class="sign-grid">
     <div class="sign-box">
