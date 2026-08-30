@@ -9307,6 +9307,295 @@ setTimeout(() => {
     }
   }
 }, 800);
+
+/* ===== 계약 대응 최종 패치: 평균단가 수동입력 + 단가 변경 이력만 기록 ===== */
+(function(){
+  const CONTRACT_FINAL_PATCH = '2026-08-30-final-cost-history-v2';
+  function n(v){ return Number(v) || 0; }
+  function today(){ return new Date().toISOString().slice(0,10); }
+  function uid(){ return 'C-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+  function h(v){ return (window.escHtml ? escHtml(v ?? '') : String(v ?? '').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))); }
+
+  function normalizeCostHistoryItem(x){
+    const oldCost = x?.oldCost === '' || x?.oldCost == null ? null : n(x.oldCost);
+    const newCost = x?.newCost === '' || x?.newCost == null ? null : n(x.newCost);
+    return {
+      id: x?.id || uid(),
+      type: '평균단가 변경',
+      date: x?.date || '',
+      oldCost,
+      newCost,
+      oldProd: x?.oldProd == null ? null : n(x.oldProd),
+      newProd: x?.newProd == null ? (x?.qty == null ? null : n(x.qty)) : n(x.newProd),
+      evidence: x?.evidence || '',
+      note: x?.note || '',
+      by: x?.by || ''
+    };
+  }
+
+  function isRealCostChange(x){
+    if(!x || typeof x !== 'object') return false;
+    const oldCost = x.oldCost === '' || x.oldCost == null ? null : n(x.oldCost);
+    const newCost = x.newCost === '' || x.newCost == null ? null : n(x.newCost);
+    return oldCost != null && newCost != null && oldCost !== newCost;
+  }
+
+  function normalizeInvRow(r){
+    if(!r || typeof r!=='object') r={};
+    // 이전 시험 버전의 최초생산/재생산/수량변경 이력은 제외하고,
+    // 실제 적용 평균단가가 변경된 기록만 유지합니다.
+    const sourceHistory = Array.isArray(r.costHistory)
+      ? r.costHistory
+      : (Array.isArray(r.productionHistory) ? r.productionHistory : []);
+    const costHistory = sourceHistory.filter(isRealCostChange).map(normalizeCostHistoryItem);
+    const next = { ...r, costHistory, _contractPatch: CONTRACT_FINAL_PATCH };
+    // 최종 버전에서는 productionHistory를 더 이상 사용하지 않습니다.
+    delete next.productionHistory;
+    return next;
+  }
+
+  function normalizeInventory(){
+    invData = (Array.isArray(window.invData) ? window.invData : invData || []).map(normalizeInvRow);
+    window.invData = invData;
+    return invData;
+  }
+  function saveInventory(){
+    window.invData = invData;
+    if(window.fbSave) fbSave('invData');
+  }
+  function addCostHistory(row, entry){
+    row.costHistory = Array.isArray(row.costHistory) ? row.costHistory : [];
+    row.costHistory.push(normalizeCostHistoryItem(entry));
+  }
+
+  PAGES['inventory'] = `<div class="main-header">
+    <div>
+      <div class="page-title">재고 현황</div>
+      <div class="page-sub">재고 수량 · 적용 평균단가 · 단가 변경 이력</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card amber"><div class="kpi-label">총 재고 수량</div><div class="kpi-value" id="inv-total-stock">0<span style="font-family:'Noto Sans KR';font-size:16px">개</span></div><div class="kpi-change neutral">보유 실재고</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">재고 금액 (적용단가)</div><div class="kpi-value" id="inv-total-value"><span>₩</span>0</div><div class="kpi-change neutral">적용 평균단가 × 실재고</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">예상 매출</div><div class="kpi-value" id="inv-sales-value"><span>₩</span>0</div><div class="kpi-change neutral">판매가 × 실재고</div></div>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>운영 기준</div></div>
+    <div class="panel-body" style="font-size:12px;color:var(--text2);line-height:1.8">
+      적용 평균단가는 회계 담당자가 계산한 값을 직접 입력합니다. <b style="color:var(--text)">누적 생산수량·실재고만 변경한 경우에는 이력이 생성되지 않으며, 적용 평균단가가 실제로 변경된 경우에만 변경 전·후 금액을 자동 기록</b>합니다. 정산내역서 구조와 계산 방식은 기존 기능을 그대로 사용합니다.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>재고 현황 상세</div>
+      <div style="display:flex;gap:6px">
+        <div id="inv-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        <button class="btn" onclick="openInventoryAuditSheet()" style="font-size:11px;padding:5px 12px;margin-left:6px">재고실사표</button>
+        <button class="btn" onclick="exportInventoryCsv()" style="font-size:11px;padding:5px 12px">CSV</button>
+        <button class="btn btn-primary" onclick="openAddInvModal()" style="font-size:11px;padding:5px 12px">+ 추가</button>
+      </div>
+    </div>
+    <div class="panel-body" style="padding:0;overflow:auto">
+      <table class="inv-table" style="min-width:980px">
+        <thead><tr>
+          <th>작가</th><th>굿즈명</th><th style="text-align:center">누적 생산</th><th style="text-align:right">적용 평균단가</th><th style="text-align:right">판매가</th><th style="text-align:center">실재고</th><th style="text-align:right">재고 금액</th><th style="width:120px"></th>
+        </tr></thead>
+        <tbody id="inv-tbody"></tbody>
+      </table>
+    </div>
+  </div>`;
+
+  renderInv = function(filter){
+    normalizeInventory();
+    const artists = getManagedArtistList(invData);
+    window._iv = resolveArtistFilter(filter, artists);
+    renderInventoryFilters(window._iv);
+    const tbody = document.getElementById('inv-tbody');
+    if(!tbody) return;
+    const data = invData.map((r,ii)=>({r,ii})).filter(({r})=>window._iv==='all'||sameArtistName(r.artist,window._iv));
+    tbody.innerHTML = data.length ? data.map(({r,ii})=>{
+      const artist = normalizeArtistName(r.artist) || '미지정';
+      const color = acInv[artist] || getArtistCssColor(artist) || 'var(--text2)';
+      const prod=n(r.prod), cost=n(r.cost), price=n(r.price), stock=n(r.stock);
+      const stockValue=stock*cost;
+      const stockColor=stock<=0?'var(--coral)':stock<=2?'var(--amber)':'var(--blue)';
+      const historyCount=(r.costHistory||[]).length;
+      return `<tr data-artist="${h(artist)}">
+        <td><span style="font-weight:600;color:${color}">${h(artist)}</span></td>
+        <td style="font-weight:500">${h(r.name||'—')}</td>
+        <td style="text-align:center;font-family:'DM Mono';color:var(--blue)">${prod.toLocaleString()}</td>
+        <td style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--amber)">₩${cost.toLocaleString()}</td>
+        <td style="text-align:right;font-family:'DM Mono';font-size:12px;color:var(--blue)">₩${price.toLocaleString()}</td>
+        <td style="text-align:center;font-family:'DM Mono';font-weight:700;color:${stockColor}">${stock.toLocaleString()}</td>
+        <td style="text-align:right;font-family:'DM Mono';font-weight:600;color:var(--blue)">₩${stockValue.toLocaleString()}</td>
+        <td class="act-col"><div class="row-actions" style="display:flex;gap:4px;justify-content:flex-end">
+          <button type="button" class="act-btn" onclick="openInvCostHistory(${ii})" title="단가 변경 이력" style="background:var(--teal-dim);color:var(--teal)">≡${historyCount?`<span style='font-size:8px;margin-left:2px'>${historyCount}</span>`:''}</button>
+          <button type="button" class="act-btn edit" onclick="editInv(${ii})" title="수정">✎</button>
+          <button type="button" class="act-btn del" onclick="deleteInv(${ii})" title="삭제">✕</button>
+        </div></td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">${window._iv==='all'?'등록된 재고가 없습니다.':`‘${h(window._iv)}’ 작가의 재고가 없습니다.`}</td></tr>`;
+    const totalStock=invData.reduce((s,r)=>s+n(r.stock),0);
+    const totalValue=invData.reduce((s,r)=>s+n(r.stock)*n(r.cost),0);
+    const totalSalesValue=invData.reduce((s,r)=>s+n(r.stock)*n(r.price),0);
+    const ts=document.getElementById('inv-total-stock'); if(ts) ts.innerHTML=totalStock.toLocaleString()+'<span style="font-family:\'Noto Sans KR\';font-size:16px">개</span>';
+    const tv=document.getElementById('inv-total-value'); if(tv) tv.innerHTML='<span>₩</span>'+totalValue.toLocaleString();
+    const sv=document.getElementById('inv-sales-value'); if(sv) sv.innerHTML='<span>₩</span>'+totalSalesValue.toLocaleString();
+  };
+
+  editInv = function(idx){
+    normalizeInventory();
+    const r=normalizeInvRow(invData[idx]);
+    openEdit('재고/판매 수정', mfields(
+      {l:'작가',id:'a',type:'select',val:r.artist,opts:artistList},
+      {l:'굿즈명',id:'n',val:r.name},
+      {l:'누적 생산수량',id:'p',type:'number',val:r.prod},
+      {l:'적용 평균단가(₩)',id:'c',type:'number',val:r.cost},
+      {l:'판매가(₩)',id:'pr',type:'number',val:r.price},
+      {l:'실재고',id:'st',type:'number',val:r.stock},
+      {l:'정산완료수량',id:'so',type:'number',val:r.sold},
+      {l:'배분율(%)',id:'d',type:'number',val:r.distPct},
+      {l:'단가 변경 근거/증빙',id:'ev',val:'',ph:'단가 변경 시 주문내역/영수증 링크 등'},
+      {l:'단가 변경 비고',id:'note',type:'textarea',h:76,val:'',ph:'단가 변경 사유 또는 참고사항'}
+    ),()=>{
+      const oldCost=n(r.cost), newCost=gn('c');
+      const oldProd=n(r.prod), newProd=gn('p');
+      const next={...r,artist:gv('a'),name:gv('n'),prod:newProd,cost:newCost,price:gn('pr'),stock:gn('st'),sold:gn('so'),distPct:gn('d')};
+      // 수량/재고만 바뀐 경우에는 이력을 생성하지 않습니다.
+      // 적용 평균단가가 바뀐 경우에만 한 건의 변경 이력을 남깁니다.
+      if(oldCost!==newCost){
+        addCostHistory(next,{
+          date: today(),
+          oldCost,
+          newCost,
+          oldProd,
+          newProd,
+          evidence: gv('ev'),
+          note: gv('note'),
+          by: window.currentMember || ''
+        });
+      }
+      invData[idx]=normalizeInvRow(next);
+      closeEdit(); renderInv(window._iv||'all'); saveInventory();
+    });
+  };
+
+  submitAddInv = function(){
+    const name=document.getElementById('ai-name')?.value.trim();
+    if(!name){alert('굿즈명 입력');return;}
+    const row=normalizeInvRow({
+      artist:document.getElementById('ai-artist').value,
+      name,
+      prod:+document.getElementById('ai-prod').value||0,
+      cost:+document.getElementById('ai-cost').value||0,
+      price:+(document.getElementById('ai-price')?.value||0),
+      stock:+document.getElementById('ai-stock').value||0,
+      sold:0,
+      distPct:0,
+      costHistory:[]
+    });
+    // 최초 등록은 '단가 변경'이 아니므로 이력을 만들지 않습니다.
+    invData.unshift(row); window.invData=invData;
+    syncArtistListFromData({save:false}); renderInv(window._iv||'all'); saveInventory(); closeAddInvModal();
+    document.getElementById('ai-name').value='';
+  };
+
+  openInvCostHistory = function(idx){
+    normalizeInventory();
+    const r=normalizeInvRow(invData[idx]);
+    const rows=[...(r.costHistory||[])].reverse().map(x=>`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:9px;font-family:'DM Mono';font-size:11px">${h(x.date||'—')}</td>
+      <td style="padding:9px;text-align:right;font-family:'DM Mono';font-size:11px">${x.oldCost==null?'—':'₩'+n(x.oldCost).toLocaleString()}</td>
+      <td style="padding:9px;text-align:right;font-family:'DM Mono';font-size:11px;color:var(--amber)">${x.newCost==null?'—':'₩'+n(x.newCost).toLocaleString()}</td>
+      <td style="padding:9px;font-size:11px;color:var(--text3);max-width:220px;word-break:break-all">${h(x.evidence||'—')}</td>
+      <td style="padding:9px;font-size:11px;color:var(--text3)">${h(x.note||'—')}</td>
+      <td style="padding:9px;font-size:11px;color:var(--text3)">${h(x.by||'—')}</td>
+      <td style="padding:9px;text-align:right;white-space:nowrap">
+        <button type="button" class="act-btn edit" onclick="editInvCostHistory(${idx}, '${h(x.id)}')" title="이력 수정">✎</button>
+        <button type="button" class="act-btn del" onclick="deleteInvCostHistory(${idx}, '${h(x.id)}')" title="이력 삭제">✕</button>
+      </td>
+    </tr>`).join('');
+    openEdit(`단가 변경 이력 — ${r.name}`, `
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">
+        현재 적용 평균단가 <b style="color:var(--amber);font-family:'DM Mono'">₩${n(r.cost).toLocaleString()}</b><br>
+        <span style="color:var(--text3)">적용 평균단가를 수정했을 때만 자동 기록됩니다. 누적 생산수량·재고 변경만으로는 이력이 생성되지 않습니다.</span>
+      </div>
+      <div style="overflow:auto;max-height:440px">
+        <table style="width:100%;border-collapse:collapse;min-width:900px">
+          <thead><tr style="background:var(--bg3)"><th style="padding:9px;text-align:left">변경일</th><th style="padding:9px;text-align:right">이전단가</th><th style="padding:9px;text-align:right">적용단가</th><th style="padding:9px;text-align:left">증빙</th><th style="padding:9px;text-align:left">비고</th><th style="padding:9px;text-align:left">수정자</th><th style="padding:9px;text-align:right;width:80px">관리</th></tr></thead>
+          <tbody>${rows||'<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text3)">단가 변경 이력이 없습니다.</td></tr>'}</tbody>
+        </table>
+      </div>
+    `,()=>{});
+    const saveBtn=document.getElementById('edit-save'); if(saveBtn) saveBtn.style.display='none';
+  };
+
+  editInvCostHistory = function(idx, historyId){
+    normalizeInventory();
+    const r=normalizeInvRow(invData[idx]);
+    const item=(r.costHistory||[]).find(x=>String(x.id)===String(historyId));
+    if(!item){ alert('수정할 이력을 찾을 수 없습니다.'); return; }
+    openEdit(`단가 변경 이력 수정 — ${r.name}`, mfields(
+      {l:'변경일',id:'hd',type:'date',val:item.date||''},
+      {l:'이전단가(₩)',id:'ho',type:'number',val:item.oldCost==null?'':item.oldCost},
+      {l:'적용단가(₩)',id:'hn',type:'number',val:item.newCost==null?'':item.newCost},
+      {l:'증빙/링크',id:'he',val:item.evidence||''},
+      {l:'비고',id:'hm',type:'textarea',h:80,val:item.note||''},
+      {l:'수정자',id:'hb',val:item.by||''}
+    ),()=>{
+      const oldCost=gn('ho'), newCost=gn('hn');
+      if(oldCost===newCost){ alert('이전단가와 적용단가가 같습니다. 단가 변경 이력으로 저장할 수 없습니다.'); return; }
+      Object.assign(item,{
+        date:gv('hd')||today(),
+        oldCost,
+        newCost,
+        evidence:gv('he'),
+        note:gv('hm'),
+        by:gv('hb') || window.currentMember || ''
+      });
+      invData[idx]=normalizeInvRow(r);
+      saveInventory();
+      openInvCostHistory(idx);
+    });
+  };
+
+  deleteInvCostHistory = function(idx, historyId){
+    normalizeInventory();
+    const r=normalizeInvRow(invData[idx]);
+    const item=(r.costHistory||[]).find(x=>String(x.id)===String(historyId));
+    if(!item){ alert('삭제할 이력을 찾을 수 없습니다.'); return; }
+    openConfirm(`<b>${h(r.name)}</b>의 단가 변경 이력을 삭제할까요?<br><span style="font-size:12px;color:var(--text3)">${h(item.date||'날짜 미상')} · ${item.oldCost==null?'—':'₩'+n(item.oldCost).toLocaleString()} → ${item.newCost==null?'—':'₩'+n(item.newCost).toLocaleString()}</span>`,()=>{
+      r.costHistory=(r.costHistory||[]).filter(x=>String(x.id)!==String(historyId));
+      invData[idx]=normalizeInvRow(r);
+      saveInventory();
+      openInvCostHistory(idx);
+    });
+  };
+
+  exportInventoryCsv = function(){
+    normalizeInventory();
+    const headers=['데이터구분','작가','굿즈명','누적생산수량','적용평균단가','판매가','실재고','정산완료수량','재고금액_원가','예상매출','배분율','단가변경이력건수'];
+    const rows=invData.map(r=>{const stock=n(r.stock),cost=n(r.cost),price=n(r.price);return ['재고현황',r.artist||'',r.name||'',n(r.prod),cost,price,stock,n(r.sold),stock*cost,stock*price,r.distPct||0,(r.costHistory||[]).length];});
+    downloadCsv(`standup_inventory_${csvDateStamp()}.csv`,headers,rows);
+  };
+
+  // 기존 추가 모달의 표기도 최종 운영 용어에 맞춥니다.
+  const _baseOpenAddInvModal = openAddInvModal;
+  openAddInvModal = function(){
+    _baseOpenAddInvModal();
+    const prodInput=document.getElementById('ai-prod');
+    const costInput=document.getElementById('ai-cost');
+    const prodLabel=prodInput?.closest('.mf')?.querySelector('label');
+    const costLabel=costInput?.closest('.mf')?.querySelector('label');
+    if(prodLabel) prodLabel.textContent='누적 생산수량';
+    if(costLabel) costLabel.textContent='적용 평균단가 (₩)';
+  };
+
+  normalizeInventory();
+})();
 </script>
 <script type="module">
 // ══ Firebase 초기화 ══════════════════════════════════════════════
