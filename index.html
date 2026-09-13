@@ -2134,6 +2134,97 @@ select option{background:#111923;color:#eaf4fa}
   body::before,#login-screen::before{display:none!important}
 }
 
+/* ── 현장 안내문 제작/인쇄 ── */
+.sign-maker-grid{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:16px;align-items:start}
+.sign-editor-panel{position:sticky;top:18px}
+.sign-editor-panel textarea{
+  width:100%;min-height:210px;resize:vertical;border:1px solid var(--border);background:var(--bg3);
+  color:var(--text);border-radius:10px;padding:14px;font:600 16px/1.65 'Noto Sans KR',sans-serif;
+  outline:none;transition:border-color .15s,box-shadow .15s
+}
+.sign-editor-panel textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(124,183,223,.12)}
+.sign-control-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.sign-field label{display:block;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--text3)}
+.sign-field select{
+  width:100%;border:1px solid var(--border);background:var(--bg3);color:var(--text);border-radius:9px;
+  padding:9px 10px;font:500 13px 'Noto Sans KR',sans-serif;outline:none
+}
+.sign-field select:focus{border-color:var(--blue)}
+.sign-editor-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:11px;color:var(--text3)}
+.sign-preview-wrap{
+  min-height:620px;padding:26px;display:flex;align-items:center;justify-content:center;overflow:auto;
+  border-radius:12px;background:#080d12;
+  background-image:linear-gradient(45deg,rgba(255,255,255,.025) 25%,transparent 25%),linear-gradient(-45deg,rgba(255,255,255,.025) 25%,transparent 25%),linear-gradient(45deg,transparent 75%,rgba(255,255,255,.025) 75%),linear-gradient(-45deg,transparent 75%,rgba(255,255,255,.025) 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0
+}
+.sign-paper{
+  --sign-primary:#243b78;--sign-blue:#5b9cf0;--sign-sky:#aeddff;--sign-pale:#eef8ff;
+  position:relative;isolation:isolate;width:min(100%,520px);aspect-ratio:210/297;background:#fff;color:#111;
+  box-shadow:0 16px 50px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto
+}
+.sign-paper[data-size="postcard"]{width:min(100%,430px);aspect-ratio:100/148}
+.sign-paper[data-orientation="landscape"]{aspect-ratio:297/210}
+.sign-paper[data-size="postcard"][data-orientation="landscape"]{aspect-ratio:148/100}
+.sign-paper-content{
+  position:relative;z-index:3;width:100%;height:100%;padding:13%;display:flex;align-items:center;justify-content:center;text-align:center;
+  white-space:pre-wrap;overflow-wrap:anywhere;word-break:keep-all;overflow:hidden;color:#17234a;line-height:1.28;
+  font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif
+}
+.sign-paper::before,.sign-paper::after{content:'';position:absolute;pointer-events:none;z-index:1}
+.sign-paper::before{inset:3.2%;border:2px solid var(--sign-primary);box-shadow:0 0 0 4px #fff,0 0 0 7px var(--sign-sky)}
+.sign-paper::after{left:15%;right:15%;bottom:7%;height:8%;border-bottom:3px solid var(--sign-blue);border-radius:0 0 50% 50%}
+.sign-paper[data-theme="brand"]{
+  background:
+    linear-gradient(135deg,rgba(174,221,255,.72) 0 12%,transparent 12%),
+    linear-gradient(315deg,rgba(91,156,240,.16) 0 12%,transparent 12%),
+    linear-gradient(180deg,#f7fcff 0%,#fff 50%,#edf7ff 100%)
+}
+.sign-paper[data-theme="brand"] .sign-paper-content{text-shadow:0 1px 0 #fff}
+.sign-sparkle{position:absolute;z-index:2;color:var(--sign-blue);font-size:24px;font-weight:900;line-height:1;pointer-events:none;text-shadow:0 0 0 #fff}
+.sign-sparkle.s1{left:7%;top:7%;font-size:18px}.sign-sparkle.s2{right:7%;top:8%}.sign-sparkle.s3{left:8%;bottom:8%}.sign-sparkle.s4{right:9%;bottom:9%;font-size:17px;color:var(--sign-primary)}
+.sign-paper[data-theme="pastel"]{
+  --sign-primary:#4c78ad;--sign-blue:#78b8e8;--sign-sky:#cfeaff;
+  background:
+    radial-gradient(circle at 10% 12%,rgba(149,207,250,.5),transparent 24%),
+    radial-gradient(circle at 90% 88%,rgba(193,221,255,.7),transparent 28%),
+    linear-gradient(145deg,#f6fcff,#eaf6ff)
+}
+.sign-paper[data-theme="pastel"]::before{inset:4%;border:3px solid #86bee7;border-radius:22px;box-shadow:inset 0 0 0 2px #fff,0 0 0 1px #d4edff}
+.sign-paper[data-theme="pastel"]::after{left:9%;right:9%;bottom:8%;height:12%;border-bottom:5px solid rgba(91,156,240,.35)}
+.sign-paper[data-theme="pastel"] .sign-paper-content{color:#24476f}
+.sign-paper[data-theme="line"]{background:#fff}
+.sign-paper[data-theme="line"]::before{inset:4%;border:3px double #243b78;box-shadow:none}
+.sign-paper[data-theme="line"]::after{left:18%;right:18%;bottom:7%;height:7%;border-bottom:2px solid #7cb7df}
+.sign-paper[data-theme="line"] .sign-sparkle.s2,.sign-paper[data-theme="line"] .sign-sparkle.s3{display:none}
+.sign-paper[data-theme="line"] .sign-paper-content{padding:11%;color:#17234a}
+.sign-paper[data-theme="plain"]{background:#fff}
+.sign-paper[data-theme="plain"]::before,.sign-paper[data-theme="plain"]::after,.sign-paper[data-theme="plain"] .sign-sparkle{display:none}
+.sign-paper[data-theme="plain"] .sign-paper-content{padding:10%;color:#111}
+.sign-empty-hint{color:#aaa!important;font-weight:500!important}
+#sign-print-root{display:none}
+@media(max-width:900px){
+  .sign-maker-grid{grid-template-columns:1fr}
+  .sign-editor-panel{position:static}
+  .sign-preview-wrap{min-height:480px;padding:16px}
+}
+@media(max-width:520px){
+  .sign-control-grid{grid-template-columns:1fr}
+  .sign-preview-wrap{min-height:400px;padding:10px}
+}
+@media print{
+  body.printing-sign > *{display:none!important}
+  body.printing-sign > #sign-print-root{display:block!important;position:absolute;inset:0;background:#fff}
+  body.printing-sign #sign-print-root .sign-paper{
+    margin:0!important;max-width:none!important;box-shadow:none!important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact
+  }
+  body.printing-sign .sign-sparkle{font-size:7mm}
+  body.printing-sign .sign-sparkle.s1,body.printing-sign .sign-sparkle.s4{font-size:5mm}
+  body.printing-sign .sign-paper[data-size="postcard"] .sign-sparkle{font-size:5mm}
+  body.printing-sign .sign-paper[data-size="postcard"] .sign-sparkle.s1,
+  body.printing-sign .sign-paper[data-size="postcard"] .sign-sparkle.s4{font-size:3.6mm}
+}
+
 
 
 /* ── 부스 계산기 통합 페이지 ── */
@@ -2256,6 +2347,10 @@ select option{background:#111923;color:#eaf4fa}
       가격표
     </div>
     <div class="nav-item" onclick="setNav(this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 5h6M5 8h6M5 11h4"/></svg>
+      안내문 제작
+    </div>
+    <div class="nav-item" onclick="setNav(this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 6h6M5 9h4"/><path d="M3.5 13.5L5 15h6l1.5-1.5"/></svg>
       잉여재고
     </div>
@@ -2326,6 +2421,8 @@ select option{background:#111923;color:#eaf4fa}
 </aside>
 <main class="main" id="main-content"></main>
 </div>
+
+<div id="sign-print-root" aria-hidden="true"></div>
 
 <div class="modal-overlay" id="modal-edit" onclick="if(event.target===this)closeEdit()"><div class="mbox wide"><div class="mhead"><div class="mtitle" id="edit-title">수정</div><button class="mclose" onclick="closeEdit()">✕</button></div><div id="edit-body"></div><div class="mfoot"><button class="btn" onclick="closeEdit()">취소</button><button class="btn btn-primary" id="edit-save">저장</button></div></div></div>
 <div class="modal-overlay" id="modal-confirm" onclick="if(event.target===this)closeConfirm()"><div class="mbox" style="width:360px"><div class="mhead"><div style="font-size:15px;font-weight:700;color:var(--coral)">삭제 확인</div><button class="mclose" onclick="closeConfirm()">✕</button></div><div id="confirm-msg" style="font-size:14px;color:var(--text2);margin-bottom:8px;line-height:1.8"></div><div class="mfoot"><button class="btn" onclick="closeConfirm()">취소</button><button class="btn" style="background:var(--coral);color:#fff;border:none;font-weight:700" id="confirm-ok">삭제</button></div></div></div>
@@ -2885,6 +2982,87 @@ PAGES['price-list'] = `<div class="main-header">
     </table>
   </div>
 </div>`;
+PAGES['sign-maker'] = `<div class="main-header">
+  <div>
+    <div class="page-title">안내문 제작</div>
+    <div class="page-sub">문구를 입력하면 용지 가운데에 자동 배치하고, 크기에 맞춰 글자를 조절합니다.</div>
+  </div>
+  <div class="header-right">
+    <button class="btn" onclick="resetSignMaker()">내용 지우기</button>
+    <button class="btn btn-primary" onclick="printSignMaker()">안내문 인쇄</button>
+  </div>
+</div>
+
+<div class="sign-maker-grid">
+  <div class="panel sign-editor-panel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--blue)"></div>안내 문구</div>
+    </div>
+    <div class="panel-body">
+      <textarea id="sign-text" maxlength="500" placeholder="예: 잠시 자리를 비웠습니다.\n오후 2시에 돌아오겠습니다." oninput="updateSignMaker()"></textarea>
+      <div class="sign-editor-meta"><span>줄바꿈도 그대로 반영됩니다.</span><span id="sign-char-count">0 / 500</span></div>
+      <div class="sign-control-grid">
+        <div class="sign-field" style="grid-column:1 / -1">
+          <label for="sign-theme">안내문 디자인</label>
+          <select id="sign-theme" onchange="updateSignMaker()">
+            <option value="brand">스탠드업 블루 · 별과 이중 테두리</option>
+            <option value="pastel">파스텔 스카이 · 부드러운 테두리</option>
+            <option value="line">심플 라인 · 잉크 절약형</option>
+            <option value="plain">디자인 없음 · 흰 배경</option>
+          </select>
+        </div>
+        <div class="sign-field">
+          <label for="sign-size">용지 크기</label>
+          <select id="sign-size" onchange="updateSignMaker()">
+            <option value="a4">A4 (210×297mm)</option>
+            <option value="postcard">엽서 (100×148mm)</option>
+          </select>
+        </div>
+        <div class="sign-field">
+          <label for="sign-orientation">방향</label>
+          <select id="sign-orientation" onchange="updateSignMaker()">
+            <option value="portrait">세로</option>
+            <option value="landscape">가로</option>
+          </select>
+        </div>
+        <div class="sign-field">
+          <label for="sign-weight">글자 굵기</label>
+          <select id="sign-weight" onchange="updateSignMaker()">
+            <option value="900">아주 굵게</option>
+            <option value="700">굵게</option>
+            <option value="500">보통</option>
+          </select>
+        </div>
+        <div class="sign-field">
+          <label for="sign-align">문장 정렬</label>
+          <select id="sign-align" onchange="updateSignMaker()">
+            <option value="center">가운데</option>
+            <option value="left">왼쪽</option>
+            <option value="right">오른쪽</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:11px 12px;border-radius:9px;background:var(--blue-dim);color:var(--text2);font-size:12px;line-height:1.65">
+        인쇄 창에서 배율은 <b style="color:var(--text)">100% 또는 실제 크기</b>, 여백은 <b style="color:var(--text)">없음</b>으로 선택하세요. 배경색까지 출력하려면 <b style="color:var(--text)">배경 그래픽</b>도 켜주세요.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--teal)"></div>인쇄 미리보기</div>
+      <span id="sign-size-label" style="font-size:11px;color:var(--text3)">A4 · 세로</span>
+    </div>
+    <div class="panel-body" style="padding:12px">
+      <div class="sign-preview-wrap">
+        <div id="sign-paper" class="sign-paper" data-size="a4" data-orientation="portrait" data-theme="brand">
+          <span class="sign-sparkle s1" aria-hidden="true">✦</span><span class="sign-sparkle s2" aria-hidden="true">✦</span><span class="sign-sparkle s3" aria-hidden="true">✦</span><span class="sign-sparkle s4" aria-hidden="true">✦</span>
+          <div id="sign-paper-content" class="sign-paper-content sign-empty-hint">안내 문구를 입력해주세요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
 PAGES['surplus'] = `<div class="main-header">
   <div>
     <div class="page-title">잉여재고</div>
@@ -3198,6 +3376,9 @@ PAGE_INITS['inventory'] = function(){
 PAGE_INITS['price-list'] = function(){
   renderPriceList();
 };
+PAGE_INITS['sign-maker'] = function(){
+  initSignMaker();
+};
 PAGE_INITS['surplus'] = function(){
   renderSurplus();
 };
@@ -3446,6 +3627,10 @@ PAGES['settings'] = `<div class="main-header">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="reset-price" style="width:16px;height:16px;accent-color:var(--coral)">
         가격표 추가/수정/숨김 데이터
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="reset-sign-maker" style="width:16px;height:16px;accent-color:var(--coral)">
+        안내문 제작 내용 및 설정
       </label>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="reset-surplus" style="width:16px;height:16px;accent-color:var(--coral)">
@@ -4162,7 +4347,7 @@ function estatSubmitManual() {
 }
 
 let currentPage = null;
-const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','booth-calculator':'부스 계산기','orders':'제작 의뢰','inventory':'재고 현황','price-list':'가격표','surplus':'잉여재고','kanban':'굿즈제작 작업현황','expenses':'경비처리','expense-requests':'내 소명 요청','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','notices':'공지','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
+const NAV_MAP = {'dashboard':'대시보드','accounting':'회계 / 모임통장','pnl':'행사 손익','cost':'원가 관리','booth-calculator':'부스 계산기','orders':'제작 의뢰','inventory':'재고 현황','price-list':'가격표','sign-maker':'안내문 제작','surplus':'잉여재고','kanban':'굿즈제작 작업현황','expenses':'경비처리','expense-requests':'내 소명 요청','illust':'일러작업현황','artists':'작가 / 모집','vendors':'제작 업체','permissions':'권한 관리','notices':'공지','settings':'설정','sales':'매출 입력','settlement':'정산내역서','event-stats':'행사 통계'};
 
 function navigate(pageKey) {
   const main = document.getElementById('main-content');
@@ -5328,6 +5513,173 @@ function printPriceLabelSheet(){
     document.body.classList.remove('printing-price-label');
   }, 80);
 }
+
+// ── 현장 안내문 제작 ──────────────────────────────────────
+const SIGN_MAKER_STORAGE_KEY = 'standup_sign_maker_v1';
+const SIGN_MAKER_DEFAULT = { text:'', theme:'brand', size:'a4', orientation:'portrait', weight:'900', align:'center' };
+var signMakerData = { ...SIGN_MAKER_DEFAULT };
+let signMakerSaveTimer = null;
+
+function normalizeSignMakerData(data){
+  const source = data && typeof data === 'object' ? data : {};
+  return {
+    text: String(source.text || '').slice(0, 500),
+    theme: ['brand','pastel','line','plain'].includes(source.theme) ? source.theme : 'brand',
+    size: source.size === 'postcard' ? 'postcard' : 'a4',
+    orientation: source.orientation === 'landscape' ? 'landscape' : 'portrait',
+    weight: ['500','700','900'].includes(String(source.weight)) ? String(source.weight) : '900',
+    align: ['left','center','right'].includes(source.align) ? source.align : 'center'
+  };
+}
+function loadSignMakerData(){
+  try{
+    const raw = localStorage.getItem(SIGN_MAKER_STORAGE_KEY);
+    if(raw) signMakerData = normalizeSignMakerData(JSON.parse(raw));
+  }catch(e){ console.warn('안내문 설정 로드 실패', e); }
+  window.signMakerData = signMakerData;
+}
+function saveSignMakerData(){
+  signMakerData = normalizeSignMakerData(signMakerData);
+  window.signMakerData = signMakerData;
+  try{ localStorage.setItem(SIGN_MAKER_STORAGE_KEY, JSON.stringify(signMakerData)); }
+  catch(e){ console.warn('안내문 설정 저장 실패', e); }
+  if(typeof setNavUpdateTs === 'function') setNavUpdateTs('sign-maker');
+  clearTimeout(signMakerSaveTimer);
+  signMakerSaveTimer = setTimeout(()=>{ if(window.fbSave) window.fbSave('signMakerData'); }, 450);
+}
+loadSignMakerData();
+
+function getSignPaperMm(data = signMakerData){
+  const portrait = data.orientation !== 'landscape';
+  if(data.size === 'postcard') return portrait ? {w:100,h:148,label:'엽서 · 세로'} : {w:148,h:100,label:'엽서 · 가로'};
+  return portrait ? {w:210,h:297,label:'A4 · 세로'} : {w:297,h:210,label:'A4 · 가로'};
+}
+function getSignThemeLabel(theme){
+  return ({brand:'스탠드업 블루',pastel:'파스텔 스카이',line:'심플 라인',plain:'디자인 없음'})[theme] || '스탠드업 블루';
+}
+function fitSignText(content){
+  if(!content) return;
+  const paper = content.parentElement;
+  const width = paper?.clientWidth || 500;
+  const height = paper?.clientHeight || 700;
+  let fontSize = Math.floor(Math.min(width * .18, height * .16));
+  const minSize = Math.max(10, Math.floor(width * .025));
+  content.style.fontSize = fontSize + 'px';
+  while(fontSize > minSize && (content.scrollHeight > content.clientHeight + 1 || content.scrollWidth > content.clientWidth + 1)){
+    fontSize -= 1;
+    content.style.fontSize = fontSize + 'px';
+  }
+}
+function renderSignMakerPreview(){
+  const paper = document.getElementById('sign-paper');
+  const content = document.getElementById('sign-paper-content');
+  if(!paper || !content) return;
+  signMakerData = normalizeSignMakerData(window.signMakerData || signMakerData);
+  window.signMakerData = signMakerData;
+  paper.dataset.size = signMakerData.size;
+  paper.dataset.orientation = signMakerData.orientation;
+  paper.dataset.theme = signMakerData.theme;
+  content.textContent = signMakerData.text || '안내 문구를 입력해주세요.';
+  content.classList.toggle('sign-empty-hint', !signMakerData.text.trim());
+  content.style.fontWeight = signMakerData.weight;
+  content.style.textAlign = signMakerData.align;
+  const info = getSignPaperMm();
+  const label = document.getElementById('sign-size-label');
+  if(label) label.textContent = `${getSignThemeLabel(signMakerData.theme)} · ${info.label} · ${info.w}×${info.h}mm`;
+  requestAnimationFrame(()=>fitSignText(content));
+}
+function initSignMaker(){
+  signMakerData = normalizeSignMakerData(window.signMakerData || signMakerData);
+  const textEl = document.getElementById('sign-text');
+  const themeEl = document.getElementById('sign-theme');
+  const sizeEl = document.getElementById('sign-size');
+  const orientationEl = document.getElementById('sign-orientation');
+  const weightEl = document.getElementById('sign-weight');
+  const alignEl = document.getElementById('sign-align');
+  if(textEl) textEl.value = signMakerData.text;
+  if(themeEl) themeEl.value = signMakerData.theme;
+  if(sizeEl) sizeEl.value = signMakerData.size;
+  if(orientationEl) orientationEl.value = signMakerData.orientation;
+  if(weightEl) weightEl.value = signMakerData.weight;
+  if(alignEl) alignEl.value = signMakerData.align;
+  const counter = document.getElementById('sign-char-count');
+  if(counter) counter.textContent = `${signMakerData.text.length} / 500`;
+  renderSignMakerPreview();
+  if(document.fonts?.ready) document.fonts.ready.then(()=>{ if(window.currentPage === 'sign-maker') renderSignMakerPreview(); });
+}
+function updateSignMaker(){
+  signMakerData = normalizeSignMakerData({
+    text: document.getElementById('sign-text')?.value || '',
+    theme: document.getElementById('sign-theme')?.value || 'brand',
+    size: document.getElementById('sign-size')?.value || 'a4',
+    orientation: document.getElementById('sign-orientation')?.value || 'portrait',
+    weight: document.getElementById('sign-weight')?.value || '900',
+    align: document.getElementById('sign-align')?.value || 'center'
+  });
+  window.signMakerData = signMakerData;
+  const counter = document.getElementById('sign-char-count');
+  if(counter) counter.textContent = `${signMakerData.text.length} / 500`;
+  renderSignMakerPreview();
+  saveSignMakerData();
+}
+function resetSignMaker(){
+  if(!signMakerData.text || confirm('입력한 안내 문구를 지울까요?')){
+    signMakerData = { ...SIGN_MAKER_DEFAULT };
+    window.signMakerData = signMakerData;
+    saveSignMakerData();
+    initSignMaker();
+  }
+}
+function cleanupSignPrint(){
+  document.body.classList.remove('printing-sign');
+  const root = document.getElementById('sign-print-root');
+  if(root) root.innerHTML = '';
+  document.getElementById('sign-dynamic-print-style')?.remove();
+}
+function printSignMaker(){
+  updateSignMaker();
+  if(!signMakerData.text.trim()){
+    alert('인쇄할 안내 문구를 입력해주세요.');
+    document.getElementById('sign-text')?.focus();
+    return;
+  }
+  const root = document.getElementById('sign-print-root');
+  if(!root) return;
+  const mm = getSignPaperMm();
+  root.innerHTML = '';
+  const paper = document.createElement('div');
+  paper.className = 'sign-paper';
+  paper.dataset.size = signMakerData.size;
+  paper.dataset.orientation = signMakerData.orientation;
+  paper.dataset.theme = signMakerData.theme;
+  paper.style.width = mm.w + 'mm';
+  paper.style.height = mm.h + 'mm';
+  ['s1','s2','s3','s4'].forEach(cls => {
+    const sparkle = document.createElement('span');
+    sparkle.className = `sign-sparkle ${cls}`;
+    sparkle.setAttribute('aria-hidden','true');
+    sparkle.textContent = '✦';
+    paper.appendChild(sparkle);
+  });
+  const content = document.createElement('div');
+  content.className = 'sign-paper-content';
+  content.textContent = signMakerData.text;
+  content.style.fontWeight = signMakerData.weight;
+  content.style.textAlign = signMakerData.align;
+  paper.appendChild(content);
+  root.appendChild(paper);
+  const style = document.createElement('style');
+  style.id = 'sign-dynamic-print-style';
+  style.textContent = `@page{size:${mm.w}mm ${mm.h}mm;margin:0}`;
+  document.head.appendChild(style);
+  document.body.classList.add('printing-sign');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    fitSignText(content);
+    window.print();
+    setTimeout(cleanupSignPrint, 100);
+  }));
+}
+window.addEventListener('afterprint', cleanupSignPrint);
 
 
 // ── PR surplus inventory ──────────────
@@ -7431,6 +7783,7 @@ const MENU_LIST = [
   { key: 'orders',      label: '제작 의뢰',          icon: '≡' },
   { key: 'inventory',   label: '재고 현황',          icon: '📅' },
   { key: 'price-list',  label: '가격표',            icon: '🏷️' },
+  { key: 'sign-maker',  label: '안내문 제작',        icon: '🪧' },
   { key: 'surplus',     label: '잉여재고',          icon: '📦' },
   { key: 'kanban',      label: '굿즈제작 작업현황',  icon: '▦' },
   { key: 'expenses',    label: '경비처리',          icon: '🧾' },
@@ -9116,6 +9469,7 @@ function backupData() {
       orderData:   window.orderData   || [],
       invData:     window.invData     || [],
       priceListData: window.priceListData || priceListData || { hiddenKeys: [], overrides: {}, customItems: [] },
+      signMakerData: window.signMakerData || signMakerData || { ...SIGN_MAKER_DEFAULT },
       surplusData: window.surplusData || [],
       tasks:       window.tasks       || [],
       expenseData: window.expenseData || [],
@@ -9163,6 +9517,7 @@ function restoreData(input) {
           if (d.orderData)   { window.orderData   = d.orderData;   if(window.fbSave) await fbSave('orderData'); }
           if (d.invData)     { window.invData      = d.invData;     if(window.fbSave) await fbSave('invData'); }
           if (Object.prototype.hasOwnProperty.call(d, 'priceListData')) { priceListData = normalizePriceListData(d.priceListData); window.priceListData = priceListData; savePriceListData(); }
+          if (Object.prototype.hasOwnProperty.call(d, 'signMakerData')) { signMakerData = normalizeSignMakerData(d.signMakerData); window.signMakerData = signMakerData; saveSignMakerData(); }
           if (d.surplusData) { surplusData = d.surplusData; window.surplusData = surplusData; if(window.fbSave) await fbSave('surplusData'); }
           if (d.tasks)       { window.tasks       = d.tasks;       if(window.fbSave) await fbSave('tasks'); }
           if (d.expenseData) { expenseData = d.expenseData; window.expenseData = expenseData; if(window.fbSave) await fbSave('expenseData'); }
@@ -9192,7 +9547,7 @@ function restoreData(input) {
 }
 
 function selectAllReset(val) {
-  ['accounting','cost','orders','inventory','price','surplus','kanban','expenses','artist-list','artists','vendors','events','sales'].forEach(id => {
+  ['accounting','cost','orders','inventory','price','sign-maker','surplus','kanban','expenses','artist-list','artists','vendors','events','sales'].forEach(id => {
     const el = document.getElementById('reset-' + id);
     if (el) el.checked = val;
   });
@@ -9205,6 +9560,7 @@ function confirmReset() {
     { id: 'reset-orders',     key: 'orderData',   label: '제작 의뢰',        empty: [], fbKey: 'orders' },
     { id: 'reset-inventory',  key: 'invData',     label: '재고 현황',        empty: [], fbKey: 'inventory' },
     { id: 'reset-price',      key: 'priceListData', label: '가격표 추가/수정/숨김', empty: { hiddenKeys: [], overrides: {}, customItems: [] }, fbKey: 'price-list' },
+    { id: 'reset-sign-maker', key: 'signMakerData', label: '안내문 제작',        empty: { ...SIGN_MAKER_DEFAULT }, fbKey: 'sign-maker' },
     { id: 'reset-surplus',    key: 'surplusData', label: '잉여재고',          empty: [], fbKey: 'surplus' },
     { id: 'reset-kanban',     key: 'tasks',       label: '칸반',             empty: [], fbKey: 'kanban' },
     { id: 'reset-expenses',   key: 'expenseData', label: '경비처리',         empty: [], fbKey: 'expenses' },
@@ -9243,6 +9599,11 @@ function confirmReset() {
           priceListData = normalizePriceListData(t.empty);
           window.priceListData = priceListData;
           try { localStorage.removeItem(PRICE_LIST_STORAGE_KEY); } catch(e) {}
+        }
+        if (t.key === 'signMakerData') {
+          signMakerData = normalizeSignMakerData(t.empty);
+          window.signMakerData = signMakerData;
+          try { localStorage.removeItem(SIGN_MAKER_STORAGE_KEY); } catch(e) {}
         }
         if (t.key === 'artistList') {
           artistList = normalizeArtistList(t.empty);
@@ -9286,6 +9647,7 @@ window.costData    = costData;
 window.orderData   = orderData;
 window.invData     = invData;
 window.priceListData = priceListData;
+window.signMakerData = signMakerData;
 window.surplusData = surplusData;
 window.tasks       = tasks;
 window.expenseData = expenseData;
@@ -9635,6 +9997,7 @@ const COLLECTIONS = {
   orderData:   'orders',
   invData:     'inventory',
   priceListData:'priceList',
+  signMakerData:'signMaker',
   surplusData:'surplus',
   tasks:       'kanban',
   expenseData: 'expenses',
@@ -9660,7 +10023,7 @@ window.fbSave = async function(key) {
     showSaveIndicator();
     const keyToPage = {
       txData:'accounting', memberShares:'accounting', userList:'settings',
-      costData:'cost', orderData:'orders', invData:'inventory', priceListData:'price-list', surplusData:'surplus',
+      costData:'cost', orderData:'orders', invData:'inventory', priceListData:'price-list', signMakerData:'sign-maker', surplusData:'surplus',
       tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
       vendors:'vendors', notices:'notices'
     };
@@ -9770,7 +10133,7 @@ async function initFirebase() {
   }
 
   // 모든 데이터 병렬 로드
-  const keys = ['txData','memberShares','userList','costData','orderData','invData','priceListData','surplusData','tasks','expenseData','illustTasks','recruitData','vendors','eventList','notices'];
+  const keys = ['txData','memberShares','userList','costData','orderData','invData','priceListData','signMakerData','surplusData','tasks','expenseData','illustTasks','recruitData','vendors','eventList','notices'];
   await Promise.all(keys.map(k => fbLoad(k)));
   if (typeof initPnlEventsRemote === 'function') await initPnlEventsRemote();
   if (typeof initEstatRemote === 'function') await initEstatRemote();
@@ -9780,7 +10143,7 @@ async function initFirebase() {
   // (최초 1회)
   for (const k of keys) {
     const snap = await getDoc(doc(db, COL, COLLECTIONS[k]));
-    if (!snap.exists() && window[k] && ((Array.isArray(window[k]) && window[k].length > 0) || (k === 'priceListData' && typeof window[k] === 'object'))) {
+    if (!snap.exists() && window[k] && ((Array.isArray(window[k]) && window[k].length > 0) || (['priceListData','signMakerData'].includes(k) && typeof window[k] === 'object'))) {
       await setDoc(doc(db, COL, COLLECTIONS[k]), { data: JSON.stringify(window[k]) });
       console.log(`초기 업로드: ${k}`);
     }
@@ -9795,6 +10158,7 @@ async function initFirebase() {
     orderData:   () => { if(typeof syncArtistListFromData==='function') syncArtistListFromData({ save:false }); if(typeof renderOrders==='function') renderOrders(window._of||'all'); },
     invData:     () => { if(typeof syncArtistListFromData==='function') syncArtistListFromData({ save:false }); if(typeof renderInv==='function') renderInv(window._iv||'all'); if(typeof renderPriceList==='function') renderPriceList(); if(document.getElementById('modal-price-label')?.classList.contains('open') && typeof renderPriceLabelSheet==='function') renderPriceLabelSheet(); },
     priceListData: () => { priceListData = normalizePriceListData(window.priceListData); try{ localStorage.setItem(PRICE_LIST_STORAGE_KEY, JSON.stringify(priceListData)); }catch(e){} if(typeof renderPriceList==='function') renderPriceList(); if(document.getElementById('modal-price-label')?.classList.contains('open') && typeof renderPriceLabelSheet==='function') renderPriceLabelSheet(); },
+    signMakerData: () => { signMakerData = normalizeSignMakerData(window.signMakerData); try{ localStorage.setItem(SIGN_MAKER_STORAGE_KEY, JSON.stringify(signMakerData)); }catch(e){} if(window.currentPage==='sign-maker' && typeof initSignMaker==='function') initSignMaker(); },
     surplusData: () => { if(typeof syncArtistListFromData==='function') syncArtistListFromData({ save:false }); if(typeof renderSurplus==='function') renderSurplus(); },
     tasks:       () => { if(typeof syncArtistListFromData==='function') syncArtistListFromData({ save:false }); if(typeof renderBoard==='function') renderBoard(); },
     expenseData: () => { if(typeof renderExpenses==='function') renderExpenses(); if(typeof renderExpenseRequests==='function' && window.currentPage==='expense-requests') renderExpenseRequests(); if(typeof updateExpenseRequestBadge==='function') updateExpenseRequestBadge(); },
@@ -9810,7 +10174,7 @@ async function initFirebase() {
       // 현재 해당 페이지가 열려있을 때만 리렌더
       const pageMap = {
         txData:'accounting', memberShares:'accounting', userList:'settings', costData:'cost', orderData:'orders',
-        invData:'inventory', priceListData:'price-list', surplusData:'surplus', tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
+        invData:'inventory', priceListData:'price-list', signMakerData:'sign-maker', surplusData:'surplus', tasks:'kanban', expenseData:'expenses', illustTasks:'illust', recruitData:'artists',
         vendors:'vendors', eventList:'dashboard', notices:'notices'
       };
       if (window.currentPage === pageMap[key] || window.currentPage === 'dashboard' || (key === 'invData' && window.currentPage === 'price-list')) {
@@ -9861,6 +10225,9 @@ window.saveSalesData = saveSalesData;
 window.addEventListener('resize', () => {
   if (window.currentPage === 'event-stats') {
     if (typeof estatDrawChart === 'function') estatDrawChart();
+  }
+  if (window.currentPage === 'sign-maker' && typeof renderSignMakerPreview === 'function') {
+    renderSignMakerPreview();
   }
 });
 
