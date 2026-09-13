@@ -243,6 +243,12 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 
 .inv-table{width:100%;border-collapse:collapse}
 .inv-table th{font-size:11px;color:var(--text3);font-weight:500;padding:8px 14px;border-bottom:1px solid var(--border);text-align:left;letter-spacing:.4px}
+.sort-head-btn{display:inline-flex;align-items:center;gap:5px;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;text-align:inherit;cursor:pointer;white-space:nowrap}
+.sort-head-btn.center{justify-content:center}.sort-head-btn.right{justify-content:flex-end}
+.sort-head-btn:hover,.sort-head-btn.active{color:var(--blue)}
+.sort-head-icon{display:inline-flex;align-items:center;justify-content:center;min-width:12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
+.sort-head-btn.active .sort-head-icon{color:var(--blue)}
+.table-sort-help{font-size:10px;color:var(--text3);white-space:nowrap}
 .inv-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
 .inv-table tr:last-child td{border-bottom:none}
 .inv-table tr:hover td{background:var(--bg3)}
@@ -3080,6 +3086,7 @@ PAGES['surplus'] = `<div class="main-header">
   <div class="panel-header">
     <div class="panel-title"><div class="panel-title-dot" style="background:var(--amber)"></div>잉여재고 상세</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <span class="table-sort-help" style="align-self:center;margin-right:4px">열 제목을 누르면 정렬</span>
       <button class="btn" onclick="openSurplusAuditSheet()" style="font-size:11px;padding:5px 12px">재고실사표</button>
       <button class="btn btn-primary" onclick="openSurplusModal()" style="font-size:11px;padding:5px 12px">+ 추가</button>
     </div>
@@ -3087,7 +3094,10 @@ PAGES['surplus'] = `<div class="main-header">
   <div class="panel-body" style="padding:0">
     <table class="inv-table surplus-table">
       <thead><tr>
-        <th>작가</th><th>굿즈명</th><th style="text-align:center">실재고</th><th>비고</th><th style="width:70px"></th>
+        <th><button type="button" class="sort-head-btn" data-sort-table="surplus" data-sort-key="artist" onclick="toggleTableSort('surplus','artist')">작가 <span class="sort-head-icon">↕</span></button></th>
+        <th><button type="button" class="sort-head-btn" data-sort-table="surplus" data-sort-key="name" onclick="toggleTableSort('surplus','name')">굿즈명 <span class="sort-head-icon">↕</span></button></th>
+        <th style="text-align:center"><button type="button" class="sort-head-btn center" data-sort-table="surplus" data-sort-key="stock" onclick="toggleTableSort('surplus','stock')">실재고 <span class="sort-head-icon">↕</span></button></th>
+        <th><button type="button" class="sort-head-btn" data-sort-table="surplus" data-sort-key="note" onclick="toggleTableSort('surplus','note')">비고 <span class="sort-head-icon">↕</span></button></th><th style="width:70px"></th>
       </tr></thead>
       <tbody id="surplus-tbody"></tbody>
     </table>
@@ -5132,6 +5142,58 @@ var invData = [
 ];
 const acInv={'양초':'var(--amber)','맹이':'var(--teal)'};
 
+// 표 열 정렬: 첫 클릭 오름차순, 두 번째 내림차순, 세 번째 기본 순서
+const tableSortState = {
+  inventory: { key:null, direction:null },
+  surplus: { key:null, direction:null }
+};
+const tableSortGetters = {
+  inventory: {
+    artist:r=>normalizeArtistName(r.artist)||'', name:r=>String(r.name||''), prod:r=>Number(r.prod)||0,
+    cost:r=>Number(r.cost)||0, price:r=>Number(r.price)||0, stock:r=>Number(r.stock)||0,
+    stockValue:r=>(Number(r.stock)||0)*(Number(r.cost)||0)
+  },
+  surplus: {
+    artist:r=>normalizeArtistName(r.artist)||'', name:r=>String(r.name||''),
+    stock:r=>Number(r.stock)||0, note:r=>String(r.note||'')
+  }
+};
+const tableNumericSortKeys = new Set(['prod','cost','price','stock','stockValue']);
+
+function applyTableSort(entries, tableName){
+  const state = tableSortState[tableName];
+  const getter = state?.key ? tableSortGetters[tableName]?.[state.key] : null;
+  if(!getter || !state.direction) return entries;
+  const factor = state.direction === 'asc' ? 1 : -1;
+  return [...entries].sort((a,b)=>{
+    const av=getter(a.r), bv=getter(b.r);
+    let result;
+    if(tableNumericSortKeys.has(state.key)) result=Number(av)-Number(bv);
+    else result=String(av).localeCompare(String(bv),'ko',{numeric:true,sensitivity:'base'});
+    return result ? result*factor : a.ii-b.ii;
+  });
+}
+function updateTableSortHeaders(tableName){
+  const state=tableSortState[tableName];
+  document.querySelectorAll(`.sort-head-btn[data-sort-table="${tableName}"]`).forEach(btn=>{
+    const active=btn.dataset.sortKey===state.key && !!state.direction;
+    btn.classList.toggle('active',active);
+    const icon=btn.querySelector('.sort-head-icon');
+    if(icon) icon.textContent=active ? (state.direction==='asc'?'▲':'▼') : '↕';
+    const th=btn.closest('th');
+    if(th) th.setAttribute('aria-sort',active?(state.direction==='asc'?'ascending':'descending'):'none');
+  });
+}
+function toggleTableSort(tableName,key){
+  const state=tableSortState[tableName];
+  if(!state || !tableSortGetters[tableName]?.[key]) return;
+  if(state.key!==key){ state.key=key; state.direction='asc'; }
+  else if(state.direction==='asc') state.direction='desc';
+  else { state.key=null; state.direction=null; }
+  if(tableName==='inventory') renderInv(window._iv||'all');
+  if(tableName==='surplus') renderSurplus();
+}
+
 function renderInventoryFilters(active='all'){
   const wrap = document.getElementById('inv-filter-btns');
   if(!wrap) return;
@@ -5706,7 +5768,8 @@ loadSurplusData();
 function renderSurplus(){
   const tbody = document.getElementById('surplus-tbody');
   if(!tbody) return;
-  const rows = surplusData.map((r, i)=>{
+  const data = applyTableSort(surplusData.map((r,ii)=>({r,ii})), 'surplus');
+  const rows = data.map(({r,ii})=>{
     const color = acInv[r.artist] || acKanban?.[r.artist] || 'var(--text2)';
     const stock = Number(r.stock || 0);
     const stockColor = stock<=0 ? 'var(--coral)' : stock<=2 ? 'var(--amber)' : 'var(--blue)';
@@ -5715,10 +5778,11 @@ function renderSurplus(){
       <td style="font-weight:500">${invAuditEscape(r.name || '-')}</td>
       <td style="text-align:center;font-family:'DM Mono';font-weight:700;color:${stockColor}">${stock.toLocaleString()}</td>
       <td style="color:var(--text2);word-break:keep-all;overflow-wrap:anywhere">${invAuditEscape(r.note || '')}</td>
-      <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editSurplus(${i})' title='수정'>✎</button><button class='act-btn del' onclick='deleteSurplus(${i})' title='삭제'>✕</button></div></td>
+      <td class='act-col'><div class='row-actions'><button class='act-btn edit' onclick='editSurplus(${ii})' title='수정'>✎</button><button class='act-btn del' onclick='deleteSurplus(${ii})' title='삭제'>✕</button></div></td>
     </tr>`;
   }).join('');
   tbody.innerHTML = rows || '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">등록된 잉여재고가 없습니다.</td></tr>';
+  updateTableSortHeaders('surplus');
   const totalStock = surplusData.reduce((sum,r)=>sum + Number(r.stock || 0), 0);
   const noteItems = surplusData.filter(r=>String(r.note||'').trim()).length;
   const totalStockEl = document.getElementById('surplus-total-stock');
@@ -9754,6 +9818,7 @@ setTimeout(() => {
     <div class="panel-header">
       <div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>재고 현황 상세</div>
       <div style="display:flex;gap:6px">
+        <span class="table-sort-help" style="align-self:center;margin-right:4px">열 제목을 누르면 정렬</span>
         <div id="inv-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
         <button class="btn" onclick="openInventoryAuditSheet()" style="font-size:11px;padding:5px 12px;margin-left:6px">재고실사표</button>
         <button class="btn" onclick="exportInventoryCsv()" style="font-size:11px;padding:5px 12px">CSV</button>
@@ -9763,7 +9828,13 @@ setTimeout(() => {
     <div class="panel-body" style="padding:0;overflow:auto">
       <table class="inv-table" style="min-width:980px">
         <thead><tr>
-          <th>작가</th><th>굿즈명</th><th style="text-align:center">누적 생산</th><th style="text-align:right">적용 평균단가</th><th style="text-align:right">판매가</th><th style="text-align:center">실재고</th><th style="text-align:right">재고 금액</th><th style="width:120px"></th>
+          <th><button type="button" class="sort-head-btn" data-sort-table="inventory" data-sort-key="artist" onclick="toggleTableSort('inventory','artist')">작가 <span class="sort-head-icon">↕</span></button></th>
+          <th><button type="button" class="sort-head-btn" data-sort-table="inventory" data-sort-key="name" onclick="toggleTableSort('inventory','name')">굿즈명 <span class="sort-head-icon">↕</span></button></th>
+          <th style="text-align:center"><button type="button" class="sort-head-btn center" data-sort-table="inventory" data-sort-key="prod" onclick="toggleTableSort('inventory','prod')">누적 생산 <span class="sort-head-icon">↕</span></button></th>
+          <th style="text-align:right"><button type="button" class="sort-head-btn right" data-sort-table="inventory" data-sort-key="cost" onclick="toggleTableSort('inventory','cost')">적용 평균단가 <span class="sort-head-icon">↕</span></button></th>
+          <th style="text-align:right"><button type="button" class="sort-head-btn right" data-sort-table="inventory" data-sort-key="price" onclick="toggleTableSort('inventory','price')">판매가 <span class="sort-head-icon">↕</span></button></th>
+          <th style="text-align:center"><button type="button" class="sort-head-btn center" data-sort-table="inventory" data-sort-key="stock" onclick="toggleTableSort('inventory','stock')">실재고 <span class="sort-head-icon">↕</span></button></th>
+          <th style="text-align:right"><button type="button" class="sort-head-btn right" data-sort-table="inventory" data-sort-key="stockValue" onclick="toggleTableSort('inventory','stockValue')">재고 금액 <span class="sort-head-icon">↕</span></button></th><th style="width:120px"></th>
         </tr></thead>
         <tbody id="inv-tbody"></tbody>
       </table>
@@ -9777,7 +9848,10 @@ setTimeout(() => {
     renderInventoryFilters(window._iv);
     const tbody = document.getElementById('inv-tbody');
     if(!tbody) return;
-    const data = invData.map((r,ii)=>({r,ii})).filter(({r})=>window._iv==='all'||sameArtistName(r.artist,window._iv));
+    const data = applyTableSort(
+      invData.map((r,ii)=>({r,ii})).filter(({r})=>window._iv==='all'||sameArtistName(r.artist,window._iv)),
+      'inventory'
+    );
     tbody.innerHTML = data.length ? data.map(({r,ii})=>{
       const artist = normalizeArtistName(r.artist) || '미지정';
       const color = acInv[artist] || getArtistCssColor(artist) || 'var(--text2)';
@@ -9800,6 +9874,7 @@ setTimeout(() => {
         </div></td>
       </tr>`;
     }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">${window._iv==='all'?'등록된 재고가 없습니다.':`‘${h(window._iv)}’ 작가의 재고가 없습니다.`}</td></tr>`;
+    updateTableSortHeaders('inventory');
     const totalStock=invData.reduce((s,r)=>s+n(r.stock),0);
     const totalValue=invData.reduce((s,r)=>s+n(r.stock)*n(r.cost),0);
     const totalSalesValue=invData.reduce((s,r)=>s+n(r.stock)*n(r.price),0);
